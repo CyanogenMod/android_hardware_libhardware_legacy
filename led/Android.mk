@@ -4,7 +4,7 @@ ifeq ($(TARGET_DEVICE),sooner)
 LOCAL_SRC_FILES += led/led_sardine.c
 LOCAL_CFLAGS    += -DCONFIG_LED_SARDINE
 endif
-ifeq ($(TARGET_DEVICE),dream)
+ifneq (,$(filter $(TARGET_DEVICE),dream sapphire))
 LOCAL_SRC_FILES += led/led_trout.c
 LOCAL_CFLAGS    += -DCONFIG_LED_TROUT
 endif
