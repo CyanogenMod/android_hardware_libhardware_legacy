@@ -46,10 +46,10 @@ static int sendit(int timeout_ms)
     return (ret == nwr) ? 0 : -1;
 }
 
-int vibrator_on()
+int vibrator_on(int timeout_ms)
 {
     /* constant on, up to maximum allowed time */
-    return sendit(-1);
+    return sendit(timeout_ms);
 }
 
 int vibrator_off()

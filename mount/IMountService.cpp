@@ -28,7 +28,10 @@ enum {
     SET_MASS_STORAGE_ENABLED_TRANSACTION,
     GET_MASS_STORAGE_CONNECTED_TRANSACTION,
     MOUNT_MEDIA_TRANSACTION,
-    UNMOUNT_MEDIA_TRANSACTION
+    UNMOUNT_MEDIA_TRANSACTION,
+    FORMAT_MEDIA_TRANSACTION,
+    SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
+    GET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
 };    
 
 class BpMountService : public BpInterface<IMountService>
@@ -80,6 +83,33 @@ public:
         data.writeString16(mountPoint);
         remote()->transact(UNMOUNT_MEDIA_TRANSACTION, data, &reply);
     }
+
+    virtual void formatMedia(String16 mountPoint)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        data.writeString16(mountPoint);
+        remote()->transact(FORMAT_MEDIA_TRANSACTION, data, &reply);
+    }
+
+    virtual bool getPlayNotificationSounds()
+    {
+        uint32_t n;
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        remote()->transact(GET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION, data, &reply);
+        return reply.readInt32();
+    }
+
+    virtual void setPlayNotificationSounds(bool enabled)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        data.writeInt32(enabled ? 1 : 0);
+        remote()->transact(SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION, data, &reply);
+    }
+
+    
 };
 
 IMPLEMENT_META_INTERFACE(MountService, "android.os.IMountService");
