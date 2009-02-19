@@ -211,7 +211,8 @@ public:
                                 int format,
                                 int channelCount,
                                 uint32_t sampleRate,
-                                status_t *status) = 0;
+                                status_t *status,
+                                AudioSystem::audio_in_acoustics acoustics) = 0;
 
     /**This method dumps the state of the audio hardware */
     virtual status_t dumpState(int fd, const Vector<String16>& args) = 0;
