@@ -28,6 +28,10 @@
 #include "cutils/misc.h"
 #include "cutils/properties.h"
 #include "private/android_filesystem_config.h"
+#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
+#define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
+#include <sys/_system_properties.h>
+#endif
 
 static struct wpa_ctrl *ctrl_conn;
 static struct wpa_ctrl *monitor_conn;
@@ -190,30 +194,6 @@ int wifi_unload_driver()
         return -1;
 }
 
-static int control_supplicant(int startIt)
-{
-    char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
-    const char *ctrl_prop = (startIt ? "ctl.start" : "ctl.stop");
-    const char *desired_status = (startIt ? "running" : "stopped");
-    int count = 200; /* wait at most 20 seconds for completion */
-
-    if (property_get(SUPP_PROP_NAME, supp_status, NULL)
-        && strcmp(supp_status, desired_status) == 0) {
-        return 0;  /* supplicant already running */
-    }
-    property_set(ctrl_prop, SUPPLICANT_NAME);
-    sched_yield();
-
-    while (count-- > 0) {
-        if (property_get(SUPP_PROP_NAME, supp_status, NULL)) {
-            if (strcmp(supp_status, desired_status) == 0)
-                return 0;
-        }
-        usleep(100000);
-    }
-    return -1;
-}
-
 int ensure_config_file_exists()
 {
     char buf[2048];
@@ -265,23 +245,104 @@ int ensure_config_file_exists()
 
 int wifi_start_supplicant()
 {
+    char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
+    int count = 200; /* wait at most 20 seconds for completion */
+#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
+    const prop_info *pi;
+    unsigned serial = 0;
+#endif
+
+    /* Check whether already running */
+    if (property_get(SUPP_PROP_NAME, supp_status, NULL)
+            && strcmp(supp_status, "running") == 0) {
+        return 0;
+    }
+
     /* Before starting the daemon, make sure its config file exists */
     if (ensure_config_file_exists() < 0) {
         LOGE("Wi-Fi will not be enabled");
         return -1;
     }
-    return control_supplicant(1);
+
+    /* Clear out any stale socket files that might be left over. */
+    wpa_ctrl_cleanup();
+
+#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
+    /*
+     * Get a reference to the status property, so we can distinguish
+     * the case where it goes stopped => running => stopped (i.e.,
+     * it start up, but fails right away) from the case in which
+     * it starts in the stopped state and never manages to start
+     * running at all.
+     */
+    pi = __system_property_find(SUPP_PROP_NAME);
+    if (pi != NULL) {
+        serial = pi->serial;
+    }
+#endif
+    property_set("ctl.start", SUPPLICANT_NAME);
+    sched_yield();
+
+    while (count-- > 0) {
+ #ifdef HAVE_LIBC_SYSTEM_PROPERTIES
+        if (pi == NULL) {
+            pi = __system_property_find(SUPP_PROP_NAME);
+        }
+        if (pi != NULL) {
+            __system_property_read(pi, NULL, supp_status);
+            if (strcmp(supp_status, "running") == 0) {
+                return 0;
+            } else if (pi->serial != serial &&
+                    strcmp(supp_status, "stopped") == 0) {
+                return -1;
+            }
+        }
+#else
+        if (property_get(SUPP_PROP_NAME, supp_status, NULL)) {
+            if (strcmp(supp_status, "running") == 0)
+                return 0;
+        }
+#endif
+        usleep(100000);
+    }
+    return -1;
 }
 
 int wifi_stop_supplicant()
 {
-    return control_supplicant(0);
+    char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
+    int count = 50; /* wait at most 5 seconds for completion */
+
+    /* Check whether supplicant already stopped */
+    if (property_get(SUPP_PROP_NAME, supp_status, NULL)
+        && strcmp(supp_status, "stopped") == 0) {
+        return 0;
+    }
+
+    property_set("ctl.stop", SUPPLICANT_NAME);
+    sched_yield();
+
+    while (count-- > 0) {
+        if (property_get(SUPP_PROP_NAME, supp_status, NULL)) {
+            if (strcmp(supp_status, "stopped") == 0)
+                return 0;
+        }
+        usleep(100000);
+    }
+    return -1;
 }
 
 int wifi_connect_to_supplicant()
 {
     char ifname[256];
-    static int cleaned_up = 0;
+    char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
+
+    /* Make sure supplicant is running */
+    if (!property_get(SUPP_PROP_NAME, supp_status, NULL)
+            || strcmp(supp_status, "running") != 0) {
+        LOGE("Supplicant not running, cannot connect");
+        return -1;
+    }
 
     property_get("wifi.interface", iface, "sta");
 
@@ -293,24 +354,8 @@ int wifi_connect_to_supplicant()
 
     ctrl_conn = wpa_ctrl_open(ifname);
     if (ctrl_conn == NULL) {
-        LOGD("Unable to open connection to supplicant on \"%s\": %s",
+        LOGE("Unable to open connection to supplicant on \"%s\": %s",
              ifname, strerror(errno));
-        /*
-         * errno == ENOENT means the supplicant daemon isn't
-         * running. Take this opportunity to clear out any
-         * stale socket files that might be left over. Note
-         * there's a possible race with the command line client
-         * trying to connect to the daemon, but it would require
-         * that the supplicant be started and the command line
-         * client connect to it during the window between the
-         * error check and the removal of the files. And in
-         * any event, the remedy is that the user would simply
-         * have to run the command line program again.
-         */
-        if (!cleaned_up && (errno == ENOENT || errno == EADDRINUSE)) {
-            cleaned_up = 1; /* do this just once */
-            wpa_ctrl_cleanup();
-        }
         return -1;
     }
     monitor_conn = wpa_ctrl_open(ifname);
