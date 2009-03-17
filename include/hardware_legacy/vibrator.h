@@ -24,9 +24,11 @@ extern "C" {
 /**
  * Turn on vibrator
  *
+ * @param timeout_ms number of milliseconds to vibrate
+ *
  * @return 0 if successful, -1 if error
  */
-int vibrator_on();
+int vibrator_on(int timeout_ms);
 
 /**
  * Turn off vibrator

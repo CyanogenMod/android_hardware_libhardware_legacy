@@ -54,6 +54,21 @@ public:
      * Safely unmount external storage at given mount point.
      */
     virtual void unmountMedia(String16 mountPoint) = 0;
+
+    /**
+     * Format external storage at given mount point.
+     */
+    virtual void formatMedia(String16 mountPoint) = 0;
+
+    /**
+     * Returns true if we're playing media notification sounds.
+     */
+    virtual bool getPlayNotificationSounds() = 0;
+
+    /**
+     * Sets whether or not media notification sounds are played.
+     */
+    virtual void setPlayNotificationSounds(bool enabled) = 0;
 };
 
 // ----------------------------------------------------------------------
