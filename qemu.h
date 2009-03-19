@@ -35,7 +35,9 @@ typedef struct {
     char   is_inited;
     char   is_available;
     char   is_qemud;
+    char   is_qemud_old;
     char   is_tty;
+    int    fd;
     char   device[32];
 } QemuChannel;
 
@@ -65,15 +67,15 @@ extern int  qemu_command_format( char*        buffer,
                                  const char*  format,
                                  ... );
 
-/* directly sends a command through the 'control' channel.
+/* directly sends a command through the 'hw-control' channel.
  * this will open the channel, send the formatted command, then
  * close the channel automatically.
  * returns 0 on success, or -1 on error.
  */
 extern int  qemu_control_command( const char*  fmt, ... );
 
-/* sends a question to the control channel, then receive an answer in
- * a user-allocated buffer. returns the lenght of the answer, or -1
+/* sends a question to the hw-control channel, then receive an answer in
+ * a user-allocated buffer. returns the length of the answer, or -1
  * in case of error.
  *
  * 'question' *must* have been formatted through qemu_command_format

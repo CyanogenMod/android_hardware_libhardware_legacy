@@ -56,10 +56,6 @@ const char * const NEW_PATHS[] = {
 
 const char * const AUTO_OFF_TIMEOUT_DEV = "/sys/android_power/auto_off_timeout";
 
-const char * const LCD_BACKLIGHT = "/sys/class/leds/lcd-backlight/brightness";
-const char * const BUTTON_BACKLIGHT = "/sys/class/leds/button-backlight/brightness";
-const char * const KEYBOARD_BACKLIGHT = "/sys/class/leds/keyboard-backlight/brightness";
-
 //XXX static pthread_once_t g_initialized = THREAD_ONCE_INIT;
 static int g_initialized = 0;
 static int g_fds[OUR_FD_COUNT];
@@ -161,54 +157,6 @@ set_last_user_activity_timeout(int64_t delay)
         return errno;
     }
 }
-
-static void
-set_a_light(const char* path, int value)
-{
-    int fd;
-    static int already_warned = 0;
-
-    // LOGI("set_a_light(%s, %d)\n", path, value);
-
-    fd = open(path, O_RDWR);
-    if (fd >= 0) {
-        char    buffer[20];
-        int bytes = sprintf(buffer, "%d\n", value);
-        write(fd, buffer, bytes);
-        close(fd);
-    } else {
-        if (already_warned == 0) {
-            LOGE("set_a_light failed to open %s\n", path);
-            already_warned = 1;
-        }
-    }
-}
-
-int
-set_light_brightness(unsigned int mask, unsigned int brightness)
-{
-    QEMU_FALLBACK(set_light_brightness(mask,brightness));
-
-    initialize_fds();
-
-//    LOGI("set_light_brightness mask=0x%08x brightness=%d now=%lld g_error=%s\n",
-//            mask, brightness, systemTime(), strerror(g_error));
-
-    if (mask & KEYBOARD_LIGHT) {
-        set_a_light(KEYBOARD_BACKLIGHT, brightness);
-    }
-
-    if (mask & SCREEN_LIGHT) {
-        set_a_light(LCD_BACKLIGHT, brightness);
-    }
-
-    if (mask & BUTTON_LIGHT) {
-        set_a_light(BUTTON_BACKLIGHT, brightness);
-    }
-
-    return 0;
-}
-
 
 int
 set_screen_state(int on)
