@@ -50,6 +50,116 @@ qemu_check(void)
     return in_qemu;
 }
 
+static int
+qemu_fd_write( int  fd, const char*  cmd, int  len )
+{
+    int  len2;
+    do {
+        len2 = write(fd, cmd, len);
+    } while (len2 < 0 && errno == EINTR);
+    return len2;
+}
+
+static int
+qemu_fd_read( int  fd, char*  buff, int  len )
+{
+    int  len2;
+    do {
+        len2 = read(fd, buff, len);
+    } while (len2 < 0 && errno == EINTR);
+    return len2;
+}
+
+
+static int
+qemu_channel_open_qemud( QemuChannel*  channel,
+                         const char*   name )
+{
+    int   fd, ret, namelen = strlen(name);
+    char  answer[2];
+
+    fd = socket_local_client( "qemud",
+                              ANDROID_SOCKET_NAMESPACE_RESERVED,
+                              SOCK_STREAM );
+    if (fd < 0) {
+        D("no qemud control socket: %s", strerror(errno));
+        return -1;
+    }
+
+    /* send service name to connect */
+    if (qemu_fd_write(fd, name, namelen) != namelen) {
+        D("can't send service name to qemud: %s",
+           strerror(errno));
+        close(fd);
+        return -1;
+    }
+
+    /* read answer from daemon */
+    if (qemu_fd_read(fd, answer, 2) != 2 ||
+        answer[0] != 'O' || answer[1] != 'K') {
+        D("cant' connect to %s service through qemud", name);
+        close(fd);
+        return -1;
+    }
+
+    channel->is_qemud = 1;
+    channel->fd       = fd;
+    return 0;
+}
+
+
+static int
+qemu_channel_open_qemud_old( QemuChannel*  channel,
+                             const char*   name )
+{
+    int  fd;
+
+    snprintf(channel->device, sizeof channel->device,
+                "qemud_%s", name);
+
+    fd = socket_local_client( channel->device,
+                              ANDROID_SOCKET_NAMESPACE_RESERVED,
+                              SOCK_STREAM );
+    if (fd < 0) {
+        D("no '%s' control socket available: %s",
+            channel->device, strerror(errno));
+        return -1;
+    }
+
+    close(fd);
+    channel->is_qemud_old = 1;
+    return 0;
+}
+
+
+static int
+qemu_channel_open_tty( QemuChannel*  channel,
+                       const char*   name,
+                       int           mode )
+{
+    char   key[PROPERTY_KEY_MAX];
+    char   prop[PROPERTY_VALUE_MAX];
+    int    ret;
+
+    ret = snprintf(key, sizeof key, "ro.kernel.android.%s", name);
+    if (ret >= (int)sizeof key)
+        return -1;
+
+    if (property_get(key, prop, "") == 0) {
+        D("no kernel-provided %s device name", name);
+        return -1;
+    }
+
+    ret = snprintf(channel->device, sizeof channel->device,
+                    "/dev/%s", prop);
+    if (ret >= (int)sizeof channel->device) {
+        D("%s device name too long: '%s'", name, prop);
+        return -1;
+    }
+
+    channel->is_tty = !memcmp("/dev/tty", channel->device, 8);
+    return 0;
+}
 
 int
 qemu_channel_open( QemuChannel*  channel,
@@ -61,67 +171,44 @@ qemu_channel_open( QemuChannel*  channel,
     /* initialize the channel is needed */
     if (!channel->is_inited)
     {
-        int  done = 0;
+        channel->is_inited = 1;
 
-        // try to connect to qemud socket first
         do {
-            snprintf(channel->device, sizeof channel->device,
-                     "qemud_%s", name);
-
-            fd = socket_local_client( channel->device,
-                                      ANDROID_SOCKET_NAMESPACE_RESERVED,
-                                      SOCK_STREAM );
-            if (fd < 0) {
-                D("no '%s' control socket available: %s",
-                  channel->device, strerror(errno));
+            if (qemu_channel_open_qemud(channel, name) == 0)
                 break;
-            }
-            close(fd);
-            channel->is_qemud = 1;
-            done = 1;
+
+            if (qemu_channel_open_qemud_old(channel, name) == 0)
+                break;
+
+            if (qemu_channel_open_tty(channel, name, mode) == 0)
+                break;
+
+            channel->is_available = 0;
+            return -1;
         } while (0);
 
-        // otherwise, look for a kernel-provided device name
-        if (!done) do {
-            char   key[PROPERTY_KEY_MAX];
-            char   prop[PROPERTY_VALUE_MAX];
-            int    ret;
-
-            ret = snprintf(key, sizeof key, "ro.kernel.android.%s", name);
-            if (ret >= (int)sizeof key)
-                break;
-
-            if (property_get(key, prop, "") == 0) {
-                D("no kernel-provided %s device name", name);
-                break;
-            }
-
-            ret = snprintf(channel->device, sizeof channel->device,
-                           "/dev/%s", prop);
-            if (ret >= (int)sizeof channel->device) {
-                D("%s device name too long: '%s'", name, prop);
-                break;
-            }
-            channel->is_tty = !memcmp("/dev/tty", channel->device, 8);
-            done            = 1;
-
-        } while (0);
-
-        channel->is_available = done; 
-        channel->is_inited    = 1;
+        channel->is_available = 1;
     }
 
     /* try to open the file */
     if (!channel->is_available) {
-        fd = -1;
         errno = ENOENT;
-    } else if (channel->is_qemud) {
+        return -1;
+    }
+
+    if (channel->is_qemud) {
+        return dup(channel->fd);
+    }
+
+    if (channel->is_qemud_old) {
         do {
             fd = socket_local_client( channel->device,
                                       ANDROID_SOCKET_NAMESPACE_RESERVED,
                                       SOCK_STREAM );
         } while (fd < 0 && errno == EINTR);
-    } else {
+    }
+    else /* /dev/ttySn ? */
+    {
         do {
             fd = open(channel->device, mode);
         } while (fd < 0 && errno == EINTR);
@@ -181,32 +268,12 @@ qemu_control_fd(void)
     static QemuChannel  channel[1];
     int                 fd;
 
-    fd = qemu_channel_open( channel, "control", O_RDWR );
+    fd = qemu_channel_open( channel, "hw-control", O_RDWR );
     if (fd < 0) {
         D("%s: could not open control channel: %s", __FUNCTION__,
           strerror(errno));
     }
     return fd;
-}
-
-static int
-qemu_control_write( int  fd, const char*  cmd, int  len )
-{
-    int  len2;
-    do {
-        len2 = write(fd, cmd, len);
-    } while (len2 < 0 && errno == EINTR);
-    return len2;
-}
-
-static int
-qemu_control_read( int  fd, char*  buff, int  len )
-{
-    int  len2;
-    do {
-        len2 = read(fd, buff, len);
-    } while (len2 < 0 && errno == EINTR);
-    return len2;
 }
 
 static int
@@ -223,7 +290,7 @@ qemu_control_send(const char*  cmd, int  len)
     if (fd < 0)
         return -1;
 
-    len2 = qemu_control_write(fd, cmd, len);
+    len2 = qemu_fd_write(fd, cmd, len);
     close(fd);
     if (len2 != len) {
         D("%s: could not send everything %d < %d",
@@ -273,7 +340,7 @@ extern int  qemu_control_query( const char*  question, int  questionlen,
     if (fd < 0)
         return -1;
 
-    ret = qemu_control_write( fd, question, questionlen );
+    ret = qemu_fd_write( fd, question, questionlen );
     if (ret != questionlen) {
         D("%s: could not write all: %d < %d", __FUNCTION__,
           ret, questionlen);
@@ -281,14 +348,14 @@ extern int  qemu_control_query( const char*  question, int  questionlen,
     }
 
     /* read a 4-byte header giving the length of the following content */
-    ret = qemu_control_read( fd, header, 4 );
+    ret = qemu_fd_read( fd, header, 4 );
     if (ret != 4) {
         D("%s: could not read header (%d != 4)",
           __FUNCTION__, ret);
         goto Exit;
     }
 
-    header[5] = 0;
+    header[4] = 0;
     len = strtol( header, &end,  16 );
     if ( len < 0 || end == NULL || end != header+4 || len > answersize ) {
         D("%s: could not parse header: '%s'",
@@ -297,7 +364,7 @@ extern int  qemu_control_query( const char*  question, int  questionlen,
     }
 
     /* read the answer */
-    ret = qemu_control_read( fd, answer, len );
+    ret = qemu_fd_read( fd, answer, len );
     if (ret != len) {
         D("%s: could not read all of answer %d < %d",
           __FUNCTION__, ret, len);

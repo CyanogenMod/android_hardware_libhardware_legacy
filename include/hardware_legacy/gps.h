@@ -241,6 +241,18 @@ typedef struct {
     int  (*inject_xtra_data)( char* data, int length );
 } GpsXtraInterface;
 
+/** Extended interface for SUPL support. */
+typedef struct {
+    /**
+     * Sets the name of the APN to be used for SUPL.
+     */
+    int  (*set_apn)( const char* apn );
+    /**
+     * Sets the IP address and port for the SUPL server.
+     */
+    int  (*set_server)( uint32_t addr, int port );
+} GpsSuplInterface;
+
 /** Returns the hardware GPS interface. */
 const GpsInterface* gps_get_hardware_interface();
 

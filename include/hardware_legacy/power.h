@@ -33,19 +33,6 @@ enum {
 int acquire_wake_lock(int lock, const char* id);
 int release_wake_lock(const char* id);
 
-
-enum {
-    KEYBOARD_LIGHT  = 0x00000001,
-    SCREEN_LIGHT    = 0x00000002,
-    BUTTON_LIGHT    = 0x00000004,
-};
-
-// set the lights identified in mask to the brightness specified
-// in value.  for example
-//   set_light_brightness(SCREEN_LIGHT | KEYBOARD_LIGHT, 200);
-// sets the screen and keyboard lights to brightness 200
-int set_light_brightness(unsigned int mask, unsigned int brightness);
-
 // true if you want the screen on, false if you want it off
 int set_screen_state(int on);
 

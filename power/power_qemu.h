@@ -19,9 +19,6 @@
 #include <stdint.h>
 
 extern int
-qemu_set_light_brightness(unsigned int mask, unsigned int brightness);
-
-extern int
 qemu_set_screen_state(int on);
 
 #endif /* _power_qemu_h */

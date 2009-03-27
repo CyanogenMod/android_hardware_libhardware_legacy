@@ -19,29 +19,6 @@
 #include <errno.h>
 #include <hardware_legacy/power.h>
 
-static void
-set_a_light(const char*  name, unsigned  brightness)
-{
-    qemu_control_command( "power:light:brightness:%s:%d",
-                          name, brightness );
-}
-
-int
-qemu_set_light_brightness(unsigned int mask, unsigned int brightness)
-{
-    if (mask & KEYBOARD_LIGHT) {
-        set_a_light("keyboard_backlight", brightness);
-    }
-    if (mask & SCREEN_LIGHT) {
-        set_a_light("lcd_backlight", brightness);
-    }
-    if (mask & BUTTON_LIGHT) {
-        set_a_light("button_backlight", brightness);
-    }
-    return 0;
-}
-
-
 int
 qemu_set_screen_state(int on)
 {
