@@ -48,11 +48,26 @@ static char iface[PROPERTY_VALUE_MAX];
 // TODO: use new ANDROID_SOCKET mechanism, once support for multiple
 // sockets is in
 
+#ifndef WIFI_DRIVER_MODULE_PATH
+#define WIFI_DRIVER_MODULE_PATH         "/system/lib/modules/wlan.ko"
+#endif
+#ifndef WIFI_DRIVER_MODULE_NAME
+#define WIFI_DRIVER_MODULE_NAME         "wlan"
+#endif
+#ifndef WIFI_DRIVER_MODULE_ARG
+#define WIFI_DRIVER_MODULE_ARG          ""
+#endif
+#ifndef WIFI_FIRMWARE_LOADER
+#define WIFI_FIRMWARE_LOADER		""
+#endif
+#define WIFI_TEST_INTERFACE		"sta"
+
 static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
-static const char DRIVER_MODULE_NAME[]  = "wlan";
-static const char DRIVER_MODULE_TAG[]   = "wlan ";
-static const char DRIVER_MODULE_PATH[]  = "/system/lib/modules/wlan.ko";
-static const char FIRMWARE_LOADER[]     = "wlan_loader";
+static const char DRIVER_MODULE_NAME[]  = WIFI_DRIVER_MODULE_NAME;
+static const char DRIVER_MODULE_TAG[]   = WIFI_DRIVER_MODULE_NAME " ";
+static const char DRIVER_MODULE_PATH[]  = WIFI_DRIVER_MODULE_PATH;
+static const char DRIVER_MODULE_ARG[]   = WIFI_DRIVER_MODULE_ARG;
+static const char FIRMWARE_LOADER[]     = WIFI_FIRMWARE_LOADER;
 static const char DRIVER_PROP_NAME[]    = "wlan.driver.status";
 static const char SUPPLICANT_NAME[]     = "wpa_supplicant";
 static const char SUPP_PROP_NAME[]      = "init.svc.wpa_supplicant";
@@ -60,7 +75,7 @@ static const char SUPP_CONFIG_TEMPLATE[]= "/system/etc/wifi/wpa_supplicant.conf"
 static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
 static const char MODULE_FILE[]         = "/proc/modules";
 
-static int insmod(const char *filename)
+static int insmod(const char *filename, const char *args)
 {
     void *module;
     unsigned int size;
@@ -70,7 +85,7 @@ static int insmod(const char *filename)
     if (!module)
         return -1;
 
-    ret = init_module(module, size, "");
+    ret = init_module(module, size, args);
 
     free(module);
 
@@ -99,7 +114,7 @@ static int rmmod(const char *modname)
 int do_dhcp_request(int *ipaddr, int *gateway, int *mask,
                     int *dns1, int *dns2, int *server, int *lease) {
     /* For test driver, always report success */
-    if (strcmp(iface, "sta") == 0)
+    if (strcmp(iface, WIFI_TEST_INTERFACE) == 0)
         return 0;
 
     if (ifc_init() < 0)
@@ -135,7 +150,7 @@ static int check_driver_loaded() {
      */
     if ((proc = fopen(MODULE_FILE, "r")) == NULL) {
         LOGW("Could not open %s: %s", MODULE_FILE, strerror(errno));
-	property_set(DRIVER_PROP_NAME, "unloaded");	
+        property_set(DRIVER_PROP_NAME, "unloaded");
         return 0;
     }
     while ((fgets(line, sizeof(line), proc)) != NULL) {
@@ -158,10 +173,16 @@ int wifi_load_driver()
         return 0;
     }
 
-    if (insmod(DRIVER_MODULE_PATH) < 0)
+    if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
         return -1;
-      
-    property_set("ctl.start", FIRMWARE_LOADER);
+
+    if (strcmp(FIRMWARE_LOADER,"") == 0) {
+        usleep(500000);
+        property_set(DRIVER_PROP_NAME, "ok");
+    }
+    else {
+        property_set("ctl.start", FIRMWARE_LOADER);
+    }
     sched_yield();
     while (count-- > 0) {
         if (property_get(DRIVER_PROP_NAME, driver_status, NULL)) {
@@ -179,7 +200,7 @@ int wifi_load_driver()
 int wifi_unload_driver()
 {
     int count = 20; /* wait at most 10 seconds for completion */
-    
+
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
 	while (count-- > 0) {
 	    if (!check_driver_loaded())
@@ -344,7 +365,7 @@ int wifi_connect_to_supplicant()
         return -1;
     }
 
-    property_get("wifi.interface", iface, "sta");
+    property_get("wifi.interface", iface, WIFI_TEST_INTERFACE);
 
     if (access(IFACE_DIR, F_OK) == 0) {
         snprintf(ifname, sizeof(ifname), "%s/%s", IFACE_DIR, iface);
