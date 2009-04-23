@@ -89,6 +89,19 @@ typedef uint16_t GpsAidingData;
 #define GPS_DELETE_CELLDB_INFO      0x8000
 #define GPS_DELETE_ALL              0xFFFF
 
+/** SUPL status event values. */
+typedef uint16_t GpsSuplStatusValue;
+/** GPS requests data connection for SUPL. */
+#define GPS_REQUEST_SUPL_DATA_CONN  1
+/** GPS releases the SUPL data connection. */
+#define GPS_RELEASE_SUPL_DATA_CONN  2
+/** SUPL data connection initiated */
+#define GPS_SUPL_DATA_CONNECTED     3
+/** SUPL data connection completed */
+#define GPS_SUPL_DATA_CONN_DONE     4
+/** SUPL data connection failed */
+#define GPS_SUPL_DATA_CONN_FAILED   5
+
 /**
  * Name for the GPS XTRA interface.
  */
@@ -241,12 +254,40 @@ typedef struct {
     int  (*inject_xtra_data)( char* data, int length );
 } GpsXtraInterface;
 
+/** Represents the status of SUPL. */
+typedef struct {
+    GpsSuplStatusValue status;
+} GpsSuplStatus;
+
+/** Callback with SUPL status information. */
+typedef void (* gps_supl_status_callback)(GpsSuplStatus* status);
+
+/** Callback structure for the SUPL interface. */
+typedef struct {
+        gps_supl_status_callback status_cb;
+} GpsSuplCallbacks;
+
+
 /** Extended interface for SUPL support. */
 typedef struct {
     /**
-     * Sets the name of the APN to be used for SUPL.
+     * Opens the SUPL interface and provides the callback routines
+     * to the implemenation of this interface.
      */
-    int  (*set_apn)( const char* apn );
+    void  (*init)( GpsSuplCallbacks* callbacks );
+    /**
+     * Notifies that a data connection is available and sets 
+     * the name of the APN to be used for SUPL.
+     */
+    int  (*data_conn_open)( const char* apn );
+    /**
+     * Notifies that the SUPL data connection has been closed.
+     */
+    int  (*data_conn_closed)();
+    /**
+     * Notifies that a data connection is not available for SUPL. 
+     */
+    int  (*data_conn_failed)();
     /**
      * Sets the IP address and port for the SUPL server.
      */
