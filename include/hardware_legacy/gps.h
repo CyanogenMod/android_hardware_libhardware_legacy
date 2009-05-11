@@ -35,9 +35,9 @@ typedef uint16_t GpsPositionMode;
 // constants in GpsLocationProvider.java.
 /** Mode for running GPS standalone (no assistance). */
 #define GPS_POSITION_MODE_STANDALONE    0
-/** SUPL MS-Based mode. */
+/** AGPS MS-Based mode. */
 #define GPS_POSITION_MODE_MS_BASED      1
-/** SUPL MS-Assisted mode. */
+/** AGPS MS-Assisted mode. */
 #define GPS_POSITION_MODE_MS_ASSISTED   2
 
 /** GPS status event values. */
@@ -89,18 +89,24 @@ typedef uint16_t GpsAidingData;
 #define GPS_DELETE_CELLDB_INFO      0x8000
 #define GPS_DELETE_ALL              0xFFFF
 
-/** SUPL status event values. */
-typedef uint16_t GpsSuplStatusValue;
-/** GPS requests data connection for SUPL. */
-#define GPS_REQUEST_SUPL_DATA_CONN  1
-/** GPS releases the SUPL data connection. */
-#define GPS_RELEASE_SUPL_DATA_CONN  2
-/** SUPL data connection initiated */
-#define GPS_SUPL_DATA_CONNECTED     3
-/** SUPL data connection completed */
-#define GPS_SUPL_DATA_CONN_DONE     4
-/** SUPL data connection failed */
-#define GPS_SUPL_DATA_CONN_FAILED   5
+/** AGPS type */
+typedef uint16_t AGpsType;
+#define AGPS_TYPE_SUPL          1
+#define AGPS_TYPE_C2K           2
+
+
+/** AGPS status event values. */
+typedef uint16_t AGpsStatusValue;
+/** GPS requests data connection for AGPS. */
+#define GPS_REQUEST_AGPS_DATA_CONN  1
+/** GPS releases the AGPS data connection. */
+#define GPS_RELEASE_AGPS_DATA_CONN  2
+/** AGPS data connection initiated */
+#define GPS_AGPS_DATA_CONNECTED     3
+/** AGPS data connection completed */
+#define GPS_AGPS_DATA_CONN_DONE     4
+/** AGPS data connection failed */
+#define GPS_AGPS_DATA_CONN_FAILED   5
 
 /**
  * Name for the GPS XTRA interface.
@@ -108,9 +114,9 @@ typedef uint16_t GpsSuplStatusValue;
 #define GPS_XTRA_INTERFACE      "gps-xtra"
 
 /**
- * Name for the GPS SUPL interface.
+ * Name for the AGPS interface.
  */
-#define GPS_SUPL_INTERFACE      "gps-supl"
+#define AGPS_INTERFACE      "agps"
 
 /** Represents a location. */
 typedef struct {
@@ -206,9 +212,6 @@ typedef struct {
     /** Stops navigating. */
     int   (*stop)( void );
 
-    /** Sets requested frequency of fixes in seconds. */
-    void  (*set_fix_frequency)( int frequency );
-
     /** Closes the interface. */
     void  (*cleanup)( void );
 
@@ -254,45 +257,46 @@ typedef struct {
     int  (*inject_xtra_data)( char* data, int length );
 } GpsXtraInterface;
 
-/** Represents the status of SUPL. */
+/** Represents the status of AGPS. */
 typedef struct {
-    GpsSuplStatusValue status;
-} GpsSuplStatus;
+    AGpsType        type;
+    AGpsStatusValue status;
+} AGpsStatus;
 
-/** Callback with SUPL status information. */
-typedef void (* gps_supl_status_callback)(GpsSuplStatus* status);
+/** Callback with AGPS status information. */
+typedef void (* agps_status_callback)(AGpsStatus* status);
 
-/** Callback structure for the SUPL interface. */
+/** Callback structure for the AGPS interface. */
 typedef struct {
-        gps_supl_status_callback status_cb;
-} GpsSuplCallbacks;
+        agps_status_callback status_cb;
+} AGpsCallbacks;
 
 
-/** Extended interface for SUPL support. */
+/** Extended interface for AGPS support. */
 typedef struct {
     /**
-     * Opens the SUPL interface and provides the callback routines
+     * Opens the AGPS interface and provides the callback routines
      * to the implemenation of this interface.
      */
-    void  (*init)( GpsSuplCallbacks* callbacks );
+    void  (*init)( AGpsCallbacks* callbacks );
     /**
      * Notifies that a data connection is available and sets 
      * the name of the APN to be used for SUPL.
      */
     int  (*data_conn_open)( const char* apn );
     /**
-     * Notifies that the SUPL data connection has been closed.
+     * Notifies that the AGPS data connection has been closed.
      */
     int  (*data_conn_closed)();
     /**
-     * Notifies that a data connection is not available for SUPL. 
+     * Notifies that a data connection is not available for AGPS. 
      */
     int  (*data_conn_failed)();
     /**
-     * Sets the IP address and port for the SUPL server.
+     * Sets the IP address and port for the AGPS server.
      */
-    int  (*set_server)( uint32_t addr, int port );
-} GpsSuplInterface;
+    int  (*set_server)(AGpsType type, uint32_t addr, int port );
+} AGpsInterface;
 
 /** Returns the hardware GPS interface. */
 const GpsInterface* gps_get_hardware_interface();
