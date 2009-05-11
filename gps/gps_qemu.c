@@ -839,20 +839,6 @@ qemu_gps_stop()
 }
 
 
-static void
-qemu_gps_set_fix_frequency()
-{
-    GpsState*  s = _gps_state;
-
-    if (!s->init) {
-        D("%s: called with uninitialized state !!", __FUNCTION__);
-        return;
-    }
-
-    D("%s: called", __FUNCTION__);
-    // FIXME - support fix_frequency
-}
-
 static int
 qemu_gps_inject_time(GpsUtcTime time, int64_t timeReference, int uncertainty)
 {
@@ -883,7 +869,6 @@ static const GpsInterface  qemuGpsInterface = {
     qemu_gps_init,
     qemu_gps_start,
     qemu_gps_stop,
-    qemu_gps_set_fix_frequency,
     qemu_gps_cleanup,
     qemu_gps_inject_time,
     qemu_gps_delete_aiding_data,
