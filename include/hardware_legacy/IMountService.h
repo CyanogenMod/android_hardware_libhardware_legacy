@@ -18,7 +18,7 @@
 #ifndef ANDROID_HARDWARE_IMOUNTSERVICE_H
 #define ANDROID_HARDWARE_IMOUNTSERVICE_H
 
-#include <utils/IInterface.h>
+#include <binder/IInterface.h>
 #include <utils/String16.h>
 
 namespace android {
