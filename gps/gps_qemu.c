@@ -752,7 +752,7 @@ gps_state_init( GpsState*  state )
         return;
     }
 
-    D("gps emulation will read from %s", device);
+    D("gps emulation will read from '%s' qemud channel", QEMU_CHANNEL_NAME );
 
     if ( socketpair( AF_LOCAL, SOCK_STREAM, 0, state->control ) < 0 ) {
         LOGE("could not create thread control socket pair: %s", strerror(errno));
@@ -853,9 +853,6 @@ qemu_gps_delete_aiding_data(GpsAidingData flags)
 static int qemu_gps_set_position_mode(GpsPositionMode mode, int fix_frequency)
 {
     // FIXME - support fix_frequency
-    // only standalone supported for now.
-    if (mode != GPS_POSITION_MODE_STANDALONE)
-        return -1;
     return 0;
 }
 
