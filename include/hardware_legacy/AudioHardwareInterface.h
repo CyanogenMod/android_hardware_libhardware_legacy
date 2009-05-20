@@ -208,6 +208,20 @@ public:
 
     /** This method creates and opens the audio hardware input stream */
     virtual AudioStreamIn* openInputStream(
+                                int inputSource,
+                                int format,
+                                int channelCount,
+                                uint32_t sampleRate,
+                                status_t *status,
+                                AudioSystem::audio_in_acoustics acoustics)
+    {
+        // TODO: Remove temporary implementation after all h/w libs are updated
+        return openInputStream(format, channelCount, sampleRate, status, acoustics);
+    }
+
+    /** This method creates and opens the audio hardware input stream */
+    /** DEPRECATED */
+    virtual AudioStreamIn* openInputStream(
                                 int format,
                                 int channelCount,
                                 uint32_t sampleRate,
