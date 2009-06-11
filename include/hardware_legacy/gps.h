@@ -219,6 +219,13 @@ typedef struct {
     int   (*inject_time)(GpsUtcTime time, int64_t timeReference,
                          int uncertainty);
 
+    /** Injects current location from another location provider
+     *  (typically cell ID).
+     *  latitude and longitude are measured in degrees
+     *  expected accuracy is measured in meters
+     */
+    int  (*inject_location)(double latitude, double longitude, float accuracy);
+
     /**
      * Specifies that the next call to start will not use the
      * information defined in the flags. GPS_DELETE_ALL is passed for
