@@ -300,9 +300,9 @@ typedef struct {
      */
     int  (*data_conn_failed)();
     /**
-     * Sets the IP address and port for the AGPS server.
+     * Sets the hostname and port for the AGPS server.
      */
-    int  (*set_server)(AGpsType type, uint32_t addr, int port );
+    int  (*set_server)( AGpsType type, const char* hostname, int port );
 } AGpsInterface;
 
 /** Returns the hardware GPS interface. */
