@@ -150,6 +150,8 @@ public:
 class AudioHardwareInterface
 {
 public:
+    virtual ~AudioHardwareInterface() {}
+
     /**
      * check to see if the audio hardware interface has been initialized.
      * return status based on values defined in include/utils/Errors.h
