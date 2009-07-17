@@ -23,6 +23,7 @@
 #include <utils/Errors.h>
 #include <utils/Vector.h>
 #include <utils/String16.h>
+#include <utils/String8.h>
 
 #include <media/IAudioFlinger.h>
 #include "media/AudioSystem.h"
@@ -48,10 +49,9 @@ public:
     virtual size_t      bufferSize() const = 0;
 
     /**
-     * return number of output audio channels.
-     * Acceptable values are 1 (mono) or 2 (stereo)
+     * returns the output channel nask
      */
-    virtual int         channelCount() const = 0;
+    virtual uint32_t    channels() const = 0;
 
     /**
      * return audio format in 8bit or 16bit PCM format -
@@ -62,7 +62,7 @@ public:
     /**
      * return the frame size (number of bytes per sample).
      */
-    uint32_t    frameSize() const { return channelCount()*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
+    uint32_t    frameSize() const { return AudioSystem::popCount(channels())*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
 
     /**
      * return the audio hardware driver latency in milli seconds.
@@ -76,7 +76,7 @@ public:
      * This method might produce multiple PCM outputs or hardware accelerated
      * codecs, such as MP3 or AAC.
      */
-    virtual status_t    setVolume(float volume) = 0;
+    virtual status_t    setVolume(float left, float right) = 0;
 
     /** write audio buffer to driver. Returns number of bytes written */
     virtual ssize_t     write(const void* buffer, size_t bytes) = 0;
@@ -89,6 +89,15 @@ public:
 
     /** dump the state of the audio output device */
     virtual status_t dump(int fd, const Vector<String16>& args) = 0;
+
+    // set/get audio output parameters. The function accepts a list of parameters
+    // key value pairs in the form: key1=value1;key2=value2;...
+    // Some keys are reserved for standard parameters (See AudioParameter class).
+    // If the implementation does not accept a parameter change while the output is
+    // active but the parameter is acceptable otherwise, it must return INVALID_OPERATION.
+    // The audio flinger will put the output in standby and then change the parameter value.
+    virtual status_t    setParameters(const String8& keyValuePairs) = 0;
+    virtual String8     getParameters(const String8& keys) = 0;
 };
 
 /**
@@ -100,11 +109,14 @@ class AudioStreamIn {
 public:
     virtual             ~AudioStreamIn() = 0;
 
+    /** return audio sampling rate in hz - eg. 44100 */
+    virtual uint32_t    sampleRate() const = 0;
+
     /** return the input buffer size allowed by audio driver */
     virtual size_t      bufferSize() const = 0;
 
-    /** return the number of audio input channels */
-    virtual int         channelCount() const = 0;
+    /** return input channel mask */
+    virtual uint32_t    channels() const = 0;
 
     /**
      * return audio format in 8bit or 16bit PCM format -
@@ -115,7 +127,7 @@ public:
     /**
      * return the frame size (number of bytes per sample).
      */
-    uint32_t    frameSize() const { return channelCount()*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
+    uint32_t    frameSize() const { return AudioSystem::popCount(channels())*((format()==AudioSystem::PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
 
     /** set the input gain for the audio driver. This method is for
      *  for future use */
@@ -133,6 +145,14 @@ public:
      */
     virtual status_t    standby() = 0;
 
+    // set/get audio input parameters. The function accepts a list of parameters
+    // key value pairs in the form: key1=value1;key2=value2;...
+    // Some keys are reserved for standard parameters (See AudioParameter class).
+    // If the implementation does not accept a parameter change while the output is
+    // active but the parameter is acceptable otherwise, it must return INVALID_OPERATION.
+    // The audio flinger will put the input in standby and then change the parameter value.
+    virtual status_t    setParameters(const String8& keyValuePairs) = 0;
+    virtual String8     getParameters(const String8& keys) = 0;
 };
 
 /**
@@ -169,53 +189,41 @@ public:
     virtual status_t    setMasterVolume(float volume) = 0;
 
     /**
-     * Audio routing methods. Routes defined in include/hardware_legacy/AudioSystem.h.
-     * Audio routes can be (ROUTE_EARPIECE | ROUTE_SPEAKER | ROUTE_BLUETOOTH
-     *                    | ROUTE_HEADSET)
-     *
-     * setRouting sets the routes for a mode. This is called at startup. It is
-     * also called when a new device is connected, such as a wired headset is
-     * plugged in or a Bluetooth headset is paired.
-     */
-    virtual status_t    setRouting(int mode, uint32_t routes) = 0;
-
-    virtual status_t    getRouting(int mode, uint32_t* routes) = 0;
-
-    /**
      * setMode is called when the audio mode changes. NORMAL mode is for
      * standard audio playback, RINGTONE when a ringtone is playing, and IN_CALL
      * when a call is in progress.
      */
     virtual status_t    setMode(int mode) = 0;
-    virtual status_t    getMode(int* mode) = 0;
 
     // mic mute
     virtual status_t    setMicMute(bool state) = 0;
     virtual status_t    getMicMute(bool* state) = 0;
 
-    // Temporary interface, do not use
-    // TODO: Replace with a more generic key:value get/set mechanism
-    virtual status_t    setParameter(const char* key, const char* value) = 0;
+    // set/get global audio parameters
+    virtual status_t    setParameters(const String8& keyValuePairs) = 0;
+    virtual String8     getParameters(const String8& keys) = 0;
 
     // Returns audio input buffer size according to parameters passed or 0 if one of the
     // parameters is not supported
     virtual size_t    getInputBufferSize(uint32_t sampleRate, int format, int channelCount) = 0;
-    
+
     /** This method creates and opens the audio hardware output stream */
     virtual AudioStreamOut* openOutputStream(
-                                int format=0,
-                                int channelCount=0,
-                                uint32_t sampleRate=0,
+                                uint32_t devices,
+                                int *format=0,
+                                uint32_t *channels=0,
+                                uint32_t *sampleRate=0,
                                 status_t *status=0) = 0;
-
+    virtual    void        closeOutputStream(AudioStreamOut* out) = 0;
     /** This method creates and opens the audio hardware input stream */
     virtual AudioStreamIn* openInputStream(
-                                int inputSource,
-                                int format,
-                                int channelCount,
-                                uint32_t sampleRate,
+                                uint32_t devices,
+                                int *format,
+                                uint32_t *channels,
+                                uint32_t *sampleRate,
                                 status_t *status,
                                 AudioSystem::audio_in_acoustics acoustics) = 0;
+    virtual    void        closeInputStream(AudioStreamIn* in) = 0;
 
     /**This method dumps the state of the audio hardware */
     virtual status_t dumpState(int fd, const Vector<String16>& args) = 0;
@@ -223,13 +231,6 @@ public:
     static AudioHardwareInterface* create();
 
 protected:
-    /**
-     * doRouting actually initiates the routing. A call to setRouting
-     * or setMode may result in a routing change. The generic logic calls
-     * doRouting when required. If the device has any special requirements these
-     * methods can be overriden.
-     */
-    virtual status_t    doRouting() = 0;
 
     virtual status_t dump(int fd, const Vector<String16>& args) = 0;
 };
