@@ -150,6 +150,8 @@ public:
 class AudioHardwareInterface
 {
 public:
+    virtual ~AudioHardwareInterface() {}
+
     /**
      * check to see if the audio hardware interface has been initialized.
      * return status based on values defined in include/utils/Errors.h
@@ -208,6 +210,7 @@ public:
 
     /** This method creates and opens the audio hardware input stream */
     virtual AudioStreamIn* openInputStream(
+                                int inputSource,
                                 int format,
                                 int channelCount,
                                 uint32_t sampleRate,

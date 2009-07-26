@@ -752,7 +752,7 @@ gps_state_init( GpsState*  state )
         return;
     }
 
-    D("gps emulation will read from %s", device);
+    D("gps emulation will read from '%s' qemud channel", QEMU_CHANNEL_NAME );
 
     if ( socketpair( AF_LOCAL, SOCK_STREAM, 0, state->control ) < 0 ) {
         LOGE("could not create thread control socket pair: %s", strerror(errno));
@@ -839,22 +839,14 @@ qemu_gps_stop()
 }
 
 
-static void
-qemu_gps_set_fix_frequency()
+static int
+qemu_gps_inject_time(GpsUtcTime time, int64_t timeReference, int uncertainty)
 {
-    GpsState*  s = _gps_state;
-
-    if (!s->init) {
-        D("%s: called with uninitialized state !!", __FUNCTION__);
-        return;
-    }
-
-    D("%s: called", __FUNCTION__);
-    // FIXME - support fix_frequency
+    return 0;
 }
 
 static int
-qemu_gps_inject_time(GpsUtcTime time, int64_t timeReference, int uncertainty)
+qemu_gps_inject_location(double latitude, double longitude, float accuracy)
 {
     return 0;
 }
@@ -867,9 +859,6 @@ qemu_gps_delete_aiding_data(GpsAidingData flags)
 static int qemu_gps_set_position_mode(GpsPositionMode mode, int fix_frequency)
 {
     // FIXME - support fix_frequency
-    // only standalone supported for now.
-    if (mode != GPS_POSITION_MODE_STANDALONE)
-        return -1;
     return 0;
 }
 
@@ -883,9 +872,9 @@ static const GpsInterface  qemuGpsInterface = {
     qemu_gps_init,
     qemu_gps_start,
     qemu_gps_stop,
-    qemu_gps_set_fix_frequency,
     qemu_gps_cleanup,
     qemu_gps_inject_time,
+    qemu_gps_inject_location,
     qemu_gps_delete_aiding_data,
     qemu_gps_set_position_mode,
     qemu_gps_get_extension,
