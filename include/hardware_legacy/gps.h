@@ -190,11 +190,15 @@ typedef void (* gps_status_callback)(GpsStatus* status);
 /** Callback with SV status information. */
 typedef void (* gps_sv_status_callback)(GpsSvStatus* sv_info);
 
+/** Callback for reporting NMEA sentences. */
+typedef void (* gps_nmea_callback)(GpsUtcTime timestamp, const char* nmea, int length);
+
 /** GPS callback structure. */
 typedef struct {
         gps_location_callback location_cb;
         gps_status_callback status_cb;
         gps_sv_status_callback sv_status_cb;
+        gps_nmea_callback nmea_cb;
 } GpsCallbacks;
 
 
