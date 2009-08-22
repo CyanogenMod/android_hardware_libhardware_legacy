@@ -247,12 +247,13 @@ nmea_reader_update_time( NmeaReader*  r, Token  tok )
     minute  = str2int(tok.p+2, tok.p+4);
     seconds = str2float(tok.p+4, tok.end);
 
-    tm.tm_hour = hour;
-    tm.tm_min  = minute;
-    tm.tm_sec  = (int) seconds;
-    tm.tm_year = r->utc_year - 1900;
-    tm.tm_mon  = r->utc_mon - 1;
-    tm.tm_mday = r->utc_day;
+    tm.tm_hour  = hour;
+    tm.tm_min   = minute;
+    tm.tm_sec   = (int) seconds;
+    tm.tm_year  = r->utc_year - 1900;
+    tm.tm_mon   = r->utc_mon - 1;
+    tm.tm_mday  = r->utc_day;
+    tm.tm_isdst = -1;
 
     fix_time = mktime( &tm ) + r->utc_diff;
     r->fix.timestamp = (long long)fix_time * 1000;
