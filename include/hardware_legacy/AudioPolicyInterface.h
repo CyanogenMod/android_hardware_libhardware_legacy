@@ -175,13 +175,13 @@ public:
 
     // set a stream volume for a particular output. For the same user setting, a given stream type can have different volumes
     // for each output (destination device) it is attached to.
-    virtual status_t setStreamVolume(AudioSystem::stream_type stream, float volume, audio_io_handle_t output) = 0;
+    virtual status_t setStreamVolume(AudioSystem::stream_type stream, float volume, audio_io_handle_t output, int delayMs = 0) = 0;
 
     // reroute a given stream type to the specified output
     virtual status_t setStreamOutput(AudioSystem::stream_type stream, audio_io_handle_t output) = 0;
 
     // function enabling to send proprietary informations directly from audio policy manager to audio hardware interface.
-    virtual void setParameters(audio_io_handle_t ioHandle, const String8& keyValuePairs) = 0;
+    virtual void setParameters(audio_io_handle_t ioHandle, const String8& keyValuePairs, int delayMs = 0) = 0;
     // function enabling to receive proprietary informations directly from audio hardware interface to audio policy manager.
     virtual String8 getParameters(audio_io_handle_t ioHandle, const String8& keys) = 0;
 
