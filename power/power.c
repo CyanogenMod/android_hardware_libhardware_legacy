@@ -163,7 +163,7 @@ set_screen_state(int on)
 {
     QEMU_FALLBACK(set_screen_state(on));
 
-    //LOGI("*** set_screen_state %d", on);
+    LOGI("*** set_screen_state %d", on);
 
     initialize_fds();
 
