@@ -189,6 +189,9 @@ public:
     // over a telephony device during a phone call.
     virtual status_t startTone(ToneGenerator::tone_type tone, AudioSystem::stream_type stream) = 0;
     virtual status_t stopTone() = 0;
+
+    // set down link audio volume.
+    virtual status_t setVoiceVolume(float volume, int delayMs = 0) = 0;
 };
 
 extern "C" AudioPolicyInterface* createAudioPolicyManager(AudioPolicyClientInterface *clientInterface);
