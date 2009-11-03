@@ -123,6 +123,9 @@ public:
     virtual status_t setStreamVolumeIndex(AudioSystem::stream_type stream, int index) = 0;
     // retreive current volume index for the specified stream
     virtual status_t getStreamVolumeIndex(AudioSystem::stream_type stream, int *index) = 0;
+
+    //dump state
+    virtual status_t    dump(int fd) = 0;
 };
 
 
