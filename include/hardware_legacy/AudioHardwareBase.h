@@ -33,19 +33,6 @@ class AudioHardwareBase : public AudioHardwareInterface
 public:
                         AudioHardwareBase();
     virtual             ~AudioHardwareBase() { }
-
-    /**  
-     * Audio routing methods. Routes defined in include/hardware_legacy/AudioSystem.h. 
-     * Audio routes can be (ROUTE_EARPIECE | ROUTE_SPEAKER | ROUTE_BLUETOOTH 
-     *                    | ROUTE_HEADSET)
-     * 
-     * setRouting sets the routes for a mode. This is called at startup. It is
-     * also called when a new device is connected, such as a wired headset is 
-     * plugged in or a Bluetooth headset is paired.
-     */
-    virtual status_t    setRouting(int mode, uint32_t routes);
-    
-    virtual status_t    getRouting(int mode, uint32_t* routes);
     
     /**
      * setMode is called when the audio mode changes. NORMAL mode is for
@@ -53,11 +40,9 @@ public:
      * when a call is in progress.
      */
     virtual status_t    setMode(int mode);
-    virtual status_t    getMode(int* mode);
 
-    // Temporary interface, do not use
-    // TODO: Replace with a more generic key:value get/set mechanism
-    virtual status_t    setParameter(const char* key, const char* value);
+    virtual status_t    setParameters(const String8& keyValuePairs);
+    virtual String8     getParameters(const String8& keys);
     
     virtual  size_t     getInputBufferSize(uint32_t sampleRate, int format, int channelCount);
     
@@ -66,7 +51,6 @@ public:
 
 protected:
     int             mMode;
-    uint32_t        mRoutes[AudioSystem::NUM_MODES];
 };
 
 }; // namespace android

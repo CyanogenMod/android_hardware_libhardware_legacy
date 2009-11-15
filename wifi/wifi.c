@@ -188,12 +188,15 @@ int wifi_load_driver()
         if (property_get(DRIVER_PROP_NAME, driver_status, NULL)) {
             if (strcmp(driver_status, "ok") == 0)
                 return 0;
-            else if (strcmp(DRIVER_PROP_NAME, "failed") == 0)
+            else if (strcmp(DRIVER_PROP_NAME, "failed") == 0) {
+                wifi_unload_driver();
                 return -1;
+            }
         }
         usleep(200000);
     }
     property_set(DRIVER_PROP_NAME, "timeout");
+    wifi_unload_driver();
     return -1;
 }
 
