@@ -114,6 +114,11 @@ typedef uint16_t AGpsStatusValue;
 #define GPS_XTRA_INTERFACE      "gps-xtra"
 
 /**
+ * Name for the GPS DEBUG interface.
+ */
+#define GPS_DEBUG_INTERFACE      "gps-debug"
+
+/**
  * Name for the AGPS interface.
  */
 #define AGPS_INTERFACE      "agps"
@@ -267,6 +272,15 @@ typedef struct {
     /** Injects XTRA data into the GPS. */
     int  (*inject_xtra_data)( char* data, int length );
 } GpsXtraInterface;
+
+/** Extended interface for DEBUG support. */
+typedef struct {
+    /**
+     * This function should return any information that the native
+     * implementation wishes to include in a bugreport.
+     */
+    size_t (*get_internal_state)(char* buffer, size_t bufferSize);
+} GpsDebugInterface;
 
 /** Represents the status of AGPS. */
 typedef struct {
