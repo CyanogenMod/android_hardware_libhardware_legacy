@@ -32,14 +32,14 @@ enum {
     FORMAT_MEDIA_TRANSACTION,
     GET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
     SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
-    GET_AUTOSTART_UMS_TRANSACTION,
-    SET_AUTOSTART_UMS_TRANSACTION,
     GET_VOLUME_STATE_TRANSACTION,
     CREATE_SECURE_CACHE_TRANSACTION,
     FINALIZE_SECURE_CACHE_TRANSACTION,
     DESTROY_SECURE_CACHE_TRANSACTION,
     MOUNT_SECURE_CACHE_TRANSACTION,
-    GET_SECURE_CACHE_PATH_TRANSACTION
+    GET_SECURE_CACHE_PATH_TRANSACTION,
+    GET_SECURE_CACHE_LIST_TRANSACTION,
+    SHUTDOWN_TRANSACTION,
 };    
 
 class BpMountService : public BpInterface<IMountService>
@@ -117,23 +117,6 @@ public:
         remote()->transact(SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION, data, &reply);
     }
 
-    virtual bool getAutoStartUms()
-    {
-        uint32_t n;
-        Parcel data, reply;
-        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        remote()->transact(GET_AUTOSTART_UMS_TRANSACTION, data, &reply);
-        return reply.readInt32();
-    }
-
-    virtual void setAutoStartUms(bool enabled)
-    {
-        Parcel data, reply;
-        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        data.writeInt32(enabled ? 1 : 0);
-        remote()->transact(SET_AUTOSTART_UMS_TRANSACTION, data, &reply);
-    }
-
     virtual String16 getVolumeState(String16 mountPoint)
     {
         uint32_t n;
@@ -193,6 +176,24 @@ public:
         data.writeString16(id);
         remote()->transact(GET_SECURE_CACHE_PATH_TRANSACTION, data, &reply);
         return reply.readString16();
+    }
+
+    virtual void getSecureCacheList()
+    {
+        uint32_t n;
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        remote()->transact(GET_SECURE_CACHE_LIST_TRANSACTION, data, &reply);
+        return;
+    }
+
+    virtual void shutdown()
+    {
+        uint32_t n;
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        remote()->transact(SHUTDOWN_TRANSACTION, data, &reply);
+        return;
     }
 };
 

@@ -70,24 +70,14 @@ public:
      */
     virtual void setPlayNotificationSounds(bool enabled) = 0;
 
-    /**
-     * Returns true if USB Mass Storage is automatically started
-     * when a UMS host is detected.
-     */
-    virtual bool getAutoStartUms() = 0;
-
-    /*
-     * Sets whether or not USB Mass Storage is automatically started
-     * when a UMS host is detected.
-     */
-    virtual void setAutoStartUms(bool autostart) = 0;
-
     virtual String16 getVolumeState(String16 mountPoint) = 0;
     virtual String16 createSecureCache(String16 id, int sizeMb, String16 fstype, String16 key, int ownerUid) = 0;
     virtual void finalizeSecureCache(String16 id) = 0;
     virtual void destroySecureCache(String16 id) = 0;
     virtual String16 mountSecureCache(String16 id, String16 key, int ownerUid) = 0;
     virtual String16 getSecureCachePath(String16 id) = 0;
+    virtual void getSecureCacheList() = 0;
+    virtual void shutdown() = 0;
 };
 
 // ----------------------------------------------------------------------
