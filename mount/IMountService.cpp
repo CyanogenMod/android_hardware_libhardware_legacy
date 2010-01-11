@@ -33,12 +33,12 @@ enum {
     GET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
     SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
     GET_VOLUME_STATE_TRANSACTION,
-    CREATE_SECURE_CACHE_TRANSACTION,
-    FINALIZE_SECURE_CACHE_TRANSACTION,
-    DESTROY_SECURE_CACHE_TRANSACTION,
-    MOUNT_SECURE_CACHE_TRANSACTION,
-    GET_SECURE_CACHE_PATH_TRANSACTION,
-    GET_SECURE_CACHE_LIST_TRANSACTION,
+    CREATE_SECURE_CONTAINER_TRANSACTION,
+    FINALIZE_SECURE_CONTAINER_TRANSACTION,
+    DESTROY_SECURE_CONTAINER_TRANSACTION,
+    MOUNT_SECURE_CONTAINER_TRANSACTION,
+    GET_SECURE_CONTAINER_PATH_TRANSACTION,
+    GET_SECURE_CONTAINER_LIST_TRANSACTION,
     SHUTDOWN_TRANSACTION,
 };    
 
@@ -127,7 +127,7 @@ public:
         return reply.readString16();
     }
 
-    virtual String16 createSecureCache(String16 id, int sizeMb, String16 fstype, String16 key, int ownerUid)
+    virtual String16 createSecureContainer(String16 id, int sizeMb, String16 fstype, String16 key, int ownerUid)
     {
         uint32_t n;
         Parcel data, reply;
@@ -137,53 +137,53 @@ public:
         data.writeString16(fstype);
         data.writeString16(key);
         data.writeInt32(ownerUid);
-        remote()->transact(CREATE_SECURE_CACHE_TRANSACTION, data, &reply);
+        remote()->transact(CREATE_SECURE_CONTAINER_TRANSACTION, data, &reply);
         return reply.readString16();
     }
 
-    virtual void finalizeSecureCache(String16 id)
+    virtual void finalizeSecureContainer(String16 id)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
-        remote()->transact(FINALIZE_SECURE_CACHE_TRANSACTION, data, &reply);
+        remote()->transact(FINALIZE_SECURE_CONTAINER_TRANSACTION, data, &reply);
     }
 
-    virtual void destroySecureCache(String16 id)
+    virtual void destroySecureContainer(String16 id)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
-        remote()->transact(DESTROY_SECURE_CACHE_TRANSACTION, data, &reply);
+        remote()->transact(DESTROY_SECURE_CONTAINER_TRANSACTION, data, &reply);
     }
 
-    virtual String16 mountSecureCache(String16 id, String16 key, int ownerUid)
+    virtual String16 mountSecureContainer(String16 id, String16 key, int ownerUid)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
         data.writeString16(key);
         data.writeInt32(ownerUid);
-        remote()->transact(MOUNT_SECURE_CACHE_TRANSACTION, data, &reply);
+        remote()->transact(MOUNT_SECURE_CONTAINER_TRANSACTION, data, &reply);
         return reply.readString16();
     }
 
-    virtual String16 getSecureCachePath(String16 id)
+    virtual String16 getSecureContainerPath(String16 id)
     {
         uint32_t n;
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
-        remote()->transact(GET_SECURE_CACHE_PATH_TRANSACTION, data, &reply);
+        remote()->transact(GET_SECURE_CONTAINER_PATH_TRANSACTION, data, &reply);
         return reply.readString16();
     }
 
-    virtual void getSecureCacheList()
+    virtual void getSecureContainerList()
     {
         uint32_t n;
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        remote()->transact(GET_SECURE_CACHE_LIST_TRANSACTION, data, &reply);
+        remote()->transact(GET_SECURE_CONTAINER_LIST_TRANSACTION, data, &reply);
         return;
     }
 

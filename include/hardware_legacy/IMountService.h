@@ -71,12 +71,12 @@ public:
     virtual void setPlayNotificationSounds(bool enabled) = 0;
 
     virtual String16 getVolumeState(String16 mountPoint) = 0;
-    virtual String16 createSecureCache(String16 id, int sizeMb, String16 fstype, String16 key, int ownerUid) = 0;
-    virtual void finalizeSecureCache(String16 id) = 0;
-    virtual void destroySecureCache(String16 id) = 0;
-    virtual String16 mountSecureCache(String16 id, String16 key, int ownerUid) = 0;
-    virtual String16 getSecureCachePath(String16 id) = 0;
-    virtual void getSecureCacheList() = 0;
+    virtual String16 createSecureContainer(String16 id, int sizeMb, String16 fstype, String16 key, int ownerUid) = 0;
+    virtual void finalizeSecureContainer(String16 id) = 0;
+    virtual void destroySecureContainer(String16 id) = 0;
+    virtual String16 mountSecureContainer(String16 id, String16 key, int ownerUid) = 0;
+    virtual String16 getSecureContainerPath(String16 id) = 0;
+    virtual void getSecureContainerList() = 0;
     virtual void shutdown() = 0;
 };
 
