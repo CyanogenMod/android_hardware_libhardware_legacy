@@ -27,9 +27,9 @@ enum {
     GET_MASS_STORAGE_ENABLED_TRANSACTION = IBinder::FIRST_CALL_TRANSACTION,
     SET_MASS_STORAGE_ENABLED_TRANSACTION,
     GET_MASS_STORAGE_CONNECTED_TRANSACTION,
-    MOUNT_MEDIA_TRANSACTION,
-    UNMOUNT_MEDIA_TRANSACTION,
-    FORMAT_MEDIA_TRANSACTION,
+    MOUNT_VOLUME_TRANSACTION,
+    UNMOUNT_VOLUME_TRANSACTION,
+    FORMAT_VOLUME_TRANSACTION,
     GET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
     SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
     GET_VOLUME_STATE_TRANSACTION,
@@ -76,28 +76,28 @@ public:
         return reply.readInt32();
     }
 
-    virtual void mountMedia(String16 mountPoint)
+    virtual void mountVolume(String16 mountPoint)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(mountPoint);
-        remote()->transact(MOUNT_MEDIA_TRANSACTION, data, &reply);
+        remote()->transact(MOUNT_VOLUME_TRANSACTION, data, &reply);
     }
 
-    virtual void unmountMedia(String16 mountPoint)
+    virtual void unmountVolume(String16 mountPoint)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(mountPoint);
-        remote()->transact(UNMOUNT_MEDIA_TRANSACTION, data, &reply);
+        remote()->transact(UNMOUNT_VOLUME_TRANSACTION, data, &reply);
     }
 
-    virtual void formatMedia(String16 mountPoint)
+    virtual void formatVolume(String16 mountPoint)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(mountPoint);
-        remote()->transact(FORMAT_MEDIA_TRANSACTION, data, &reply);
+        remote()->transact(FORMAT_VOLUME_TRANSACTION, data, &reply);
     }
 
     virtual bool getPlayNotificationSounds()

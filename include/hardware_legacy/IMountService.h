@@ -48,17 +48,17 @@ public:
     /**
      * Mount external storage at given mount point.
      */
-    virtual void mountMedia(String16 mountPoint) = 0;
+    virtual void mountVolume(String16 mountPoint) = 0;
 
     /**
      * Safely unmount external storage at given mount point.
      */
-    virtual void unmountMedia(String16 mountPoint) = 0;
+    virtual void unmountVolume(String16 mountPoint) = 0;
 
     /**
      * Format external storage at given mount point.
      */
-    virtual void formatMedia(String16 mountPoint) = 0;
+    virtual void formatVolume(String16 mountPoint) = 0;
 
     /**
      * Returns true if we're playing media notification sounds.
