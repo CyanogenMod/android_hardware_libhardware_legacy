@@ -98,6 +98,10 @@ public:
     // The audio flinger will put the output in standby and then change the parameter value.
     virtual status_t    setParameters(const String8& keyValuePairs) = 0;
     virtual String8     getParameters(const String8& keys) = 0;
+
+    // return the number of audio frames written by the audio dsp to DAC since
+    // the output has exited standby
+    virtual status_t    getRenderPosition(uint32_t *dspFrames) = 0;
 };
 
 /**
