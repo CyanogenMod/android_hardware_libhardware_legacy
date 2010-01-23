@@ -76,6 +76,7 @@ public:
     virtual void destroySecureContainer(String16 id) = 0;
     virtual String16 mountSecureContainer(String16 id, String16 key, int ownerUid) = 0;
     virtual void unmountSecureContainer(String16 id) = 0;
+    virtual void renameSecureContainer(String16 oldId, String16 newId) = 0;
     virtual String16 getSecureContainerPath(String16 id) = 0;
     virtual void getSecureContainerList() = 0;
     virtual void shutdown() = 0;

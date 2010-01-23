@@ -38,6 +38,7 @@ enum {
     DESTROY_SECURE_CONTAINER_TRANSACTION,
     MOUNT_SECURE_CONTAINER_TRANSACTION,
     UNMOUNT_SECURE_CONTAINER_TRANSACTION,
+    RENAME_SECURE_CONTAINER_TRANSACTION,
     GET_SECURE_CONTAINER_PATH_TRANSACTION,
     GET_SECURE_CONTAINER_LIST_TRANSACTION,
     SHUTDOWN_TRANSACTION,
@@ -175,6 +176,15 @@ public:
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
         remote()->transact(UNMOUNT_SECURE_CONTAINER_TRANSACTION, data, &reply);
+    }
+
+    virtual void renameSecureContainer(String16 oldId, String16 newId)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        data.writeString16(oldId);
+        data.writeString16(newId);
+        remote()->transact(RENAME_SECURE_CONTAINER_TRANSACTION, data, &reply);
     }
 
     virtual String16 getSecureContainerPath(String16 id)
