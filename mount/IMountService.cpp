@@ -24,14 +24,14 @@
 namespace android {
 
 enum {
-    GET_MASS_STORAGE_ENABLED_TRANSACTION = IBinder::FIRST_CALL_TRANSACTION,
-    SET_MASS_STORAGE_ENABLED_TRANSACTION,
-    GET_MASS_STORAGE_CONNECTED_TRANSACTION,
+    GET_SHARE_METHOD_LIST_TRANSACTION = IBinder::FIRST_CALL_TRANSACTION,
+    GET_SHARE_METHOD_AVAILABLE_TRANSACTION,
+    SHARE_VOLUME_TRANSACTION,
+    UNSHARE_VOLUME_TRANSACTION,
+    GET_VOLUME_SHARED_TRANSACTION,
     MOUNT_VOLUME_TRANSACTION,
     UNMOUNT_VOLUME_TRANSACTION,
     FORMAT_VOLUME_TRANSACTION,
-    GET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
-    SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION,
     GET_VOLUME_STATE_TRANSACTION,
     CREATE_SECURE_CONTAINER_TRANSACTION,
     FINALIZE_SECURE_CONTAINER_TRANSACTION,
@@ -52,84 +52,92 @@ public:
     {
     }
 
-    virtual bool getMassStorageEnabled()
+    virtual void getShareMethodList()
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        remote()->transact(GET_SHARE_METHOD_LIST_TRANSACTION, data, &reply);
+    }
+
+    virtual bool getShareMethodAvailable(String16 method)
     {
         uint32_t n;
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        remote()->transact(GET_MASS_STORAGE_ENABLED_TRANSACTION, data, &reply);
+        data.writeString16(method);
+        remote()->transact(GET_SHARE_METHOD_AVAILABLE_TRANSACTION, data, &reply);
         return reply.readInt32();
     }
 
-    virtual void setMassStorageEnabled(bool enabled)
+    virtual int shareVolume(String16 path, String16 method)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        data.writeInt32(enabled ? 1 : 0);
-        remote()->transact(SET_MASS_STORAGE_ENABLED_TRANSACTION, data, &reply);
+        data.writeString16(path);
+        data.writeString16(method);
+        remote()->transact(SHARE_VOLUME_TRANSACTION, data, &reply);
+        return reply.readInt32();
     }
 
-    virtual bool getMassStorageConnected()
+    virtual int unshareVolume(String16 path, String16 method)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        data.writeString16(path);
+        data.writeString16(method);
+        remote()->transact(UNSHARE_VOLUME_TRANSACTION, data, &reply);
+        return reply.readInt32();
+    }
+
+    virtual bool getVolumeShared(String16 path, String16 method)
     {
         uint32_t n;
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        remote()->transact(GET_MASS_STORAGE_CONNECTED_TRANSACTION, data, &reply);
+        data.writeString16(path);
+        data.writeString16(method);
+        remote()->transact(GET_VOLUME_SHARED_TRANSACTION, data, &reply);
         return reply.readInt32();
     }
 
-    virtual void mountVolume(String16 mountPoint)
+    virtual int mountVolume(String16 path)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        data.writeString16(mountPoint);
+        data.writeString16(path);
         remote()->transact(MOUNT_VOLUME_TRANSACTION, data, &reply);
-    }
-
-    virtual void unmountVolume(String16 mountPoint)
-    {
-        Parcel data, reply;
-        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        data.writeString16(mountPoint);
-        remote()->transact(UNMOUNT_VOLUME_TRANSACTION, data, &reply);
-    }
-
-    virtual void formatVolume(String16 mountPoint)
-    {
-        Parcel data, reply;
-        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        data.writeString16(mountPoint);
-        remote()->transact(FORMAT_VOLUME_TRANSACTION, data, &reply);
-    }
-
-    virtual bool getPlayNotificationSounds()
-    {
-        uint32_t n;
-        Parcel data, reply;
-        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        remote()->transact(GET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION, data, &reply);
         return reply.readInt32();
     }
 
-    virtual void setPlayNotificationSounds(bool enabled)
+    virtual int unmountVolume(String16 path)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        data.writeInt32(enabled ? 1 : 0);
-        remote()->transact(SET_PLAY_NOTIFICATION_SOUNDS_TRANSACTION, data, &reply);
+        data.writeString16(path);
+        remote()->transact(UNMOUNT_VOLUME_TRANSACTION, data, &reply);
+        return reply.readInt32();
     }
 
-    virtual String16 getVolumeState(String16 mountPoint)
+    virtual int formatVolume(String16 path)
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
+        data.writeString16(path);
+        remote()->transact(FORMAT_VOLUME_TRANSACTION, data, &reply);
+        return reply.readInt32();
+    }
+
+    virtual String16 getVolumeState(String16 path)
     {
         uint32_t n;
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
-        data.writeString16(mountPoint);
+        data.writeString16(path);
         remote()->transact(GET_VOLUME_STATE_TRANSACTION, data, &reply);
         return reply.readString16();
     }
 
-    virtual String16 createSecureContainer(String16 id, int sizeMb, String16 fstype, String16 key, int ownerUid)
+    virtual int createSecureContainer(String16 id, int sizeMb, String16 fstype, String16 key, int ownerUid)
     {
         uint32_t n;
         Parcel data, reply;
@@ -140,26 +148,28 @@ public:
         data.writeString16(key);
         data.writeInt32(ownerUid);
         remote()->transact(CREATE_SECURE_CONTAINER_TRANSACTION, data, &reply);
-        return reply.readString16();
+        return reply.readInt32();
     }
 
-    virtual void finalizeSecureContainer(String16 id)
+    virtual int finalizeSecureContainer(String16 id)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
         remote()->transact(FINALIZE_SECURE_CONTAINER_TRANSACTION, data, &reply);
+        return reply.readInt32();
     }
 
-    virtual void destroySecureContainer(String16 id)
+    virtual int destroySecureContainer(String16 id)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
         remote()->transact(DESTROY_SECURE_CONTAINER_TRANSACTION, data, &reply);
+        return reply.readInt32();
     }
 
-    virtual String16 mountSecureContainer(String16 id, String16 key, int ownerUid)
+    virtual int mountSecureContainer(String16 id, String16 key, int ownerUid)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
@@ -167,24 +177,26 @@ public:
         data.writeString16(key);
         data.writeInt32(ownerUid);
         remote()->transact(MOUNT_SECURE_CONTAINER_TRANSACTION, data, &reply);
-        return reply.readString16();
+        return reply.readInt32();
     }
 
-    virtual void unmountSecureContainer(String16 id)
+    virtual int unmountSecureContainer(String16 id)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(id);
         remote()->transact(UNMOUNT_SECURE_CONTAINER_TRANSACTION, data, &reply);
+        return reply.readInt32();
     }
 
-    virtual void renameSecureContainer(String16 oldId, String16 newId)
+    virtual int renameSecureContainer(String16 oldId, String16 newId)
     {
         Parcel data, reply;
         data.writeInterfaceToken(IMountService::getInterfaceDescriptor());
         data.writeString16(oldId);
         data.writeString16(newId);
         remote()->transact(RENAME_SECURE_CONTAINER_TRANSACTION, data, &reply);
+        return reply.readInt32();
     }
 
     virtual String16 getSecureContainerPath(String16 id)
