@@ -236,7 +236,15 @@ protected:
         // cached values are used by getDeviceForStrategy() if parameter fromCache is true.
          // Must be called after checkOutputForAllStrategies()
         void updateDeviceForStrategy();
-
+        // true if current platform requires a specific output to be opened for this particular
+        // set of parameters. This function is called by getOutput() and is implemented by platform
+        // specific audio policy manager.
+        virtual bool needsDirectOuput(AudioSystem::stream_type stream,
+                                    uint32_t samplingRate,
+                                    uint32_t format,
+                                    uint32_t channels,
+                                    AudioSystem::output_flags flags,
+                                    uint32_t device);
 #ifdef AUDIO_POLICY_TEST
         virtual     bool        threadLoop();
                     void        exit();
