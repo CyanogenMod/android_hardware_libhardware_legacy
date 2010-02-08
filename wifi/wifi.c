@@ -308,7 +308,7 @@ int wifi_start_supplicant()
     sched_yield();
 
     while (count-- > 0) {
- #ifdef HAVE_LIBC_SYSTEM_PROPERTIES
+#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
         if (pi == NULL) {
             pi = __system_property_find(SUPP_PROP_NAME);
         }
@@ -428,6 +428,7 @@ int wifi_wait_for_event(char *buf, size_t buflen)
     struct timeval *tptr;
     
     if (monitor_conn == NULL) {
+        LOGD("Connection closed\n");
         strncpy(buf, WPA_EVENT_TERMINATING " - connection closed", buflen-1);
         buf[buflen-1] = '\0';
         return strlen(buf);
