@@ -190,7 +190,7 @@ protected:
         audio_io_handle_t getActiveInput();
         // compute the actual volume for a given stream according to the requested index and a particular
         // device
-        float computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device);
+        virtual float computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device);
         // check that volume change is permitted, compute and send new volume to audio hardware
         status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
         // apply all stream volumes to the specified output and device
