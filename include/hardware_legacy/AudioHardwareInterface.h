@@ -157,6 +157,14 @@ public:
     // The audio flinger will put the input in standby and then change the parameter value.
     virtual status_t    setParameters(const String8& keyValuePairs) = 0;
     virtual String8     getParameters(const String8& keys) = 0;
+
+
+    // Return the amount of input frames lost in the audio driver since the last call of this function.
+    // Audio driver is expected to reset the value to 0 and restart counting upon returning the current value by this function call.
+    // Such loss typically occurs when the user space process is blocked longer than the capacity of audio driver buffers.
+    // Unit: the number of input audio frames
+    virtual unsigned int  getInputFramesLost() const = 0;
+
 };
 
 /**
