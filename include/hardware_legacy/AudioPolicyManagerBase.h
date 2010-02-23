@@ -35,6 +35,9 @@ namespace android {
 // Time in seconds during which we consider that music is still active after a music
 // track was stopped - see computeVolume()
 #define SONIFICATION_HEADSET_MUSIC_DELAY  5
+// Time in milliseconds during witch some streams are muted while the audio path
+// is switched
+#define MUTE_TIME_MS 2000
 
 #define NUM_TEST_OUTPUTS 5
 
