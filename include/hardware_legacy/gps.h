@@ -124,6 +124,11 @@ typedef uint16_t AGpsStatusValue;
  */
 #define AGPS_INTERFACE      "agps"
 
+/**
+ * Name for the GPS privacy interface.
+ */
+#define GPS_PRIVACY_INTERFACE      "privacy"
+
 /** Represents a location. */
 typedef struct {
     /** Contains GpsLocationFlags bits. */
@@ -323,6 +328,15 @@ typedef struct {
      */
     int  (*set_server)( AGpsType type, const char* hostname, int port );
 } AGpsInterface;
+
+/** Extended interface for GPS privacy support. */
+typedef struct {
+    /**
+     * Opens the AGPS interface and provides the callback routines
+     * to the implemenation of this interface.
+     */
+    void  (*set_privacy_lock)( int enable_lock );
+} GpsPrivacyInterface;
 
 /** Returns the hardware GPS interface. */
 const GpsInterface* gps_get_hardware_interface();
