@@ -31,3 +31,12 @@ endif
 LOCAL_MODULE:= libhardware_legacy
 
 include $(BUILD_SHARED_LIBRARY)
+
+# static library for librpc
+include $(CLEAR_VARS)
+
+LOCAL_MODULE:= libpower
+
+LOCAL_SRC_FILES += power/power.c
+
+include $(BUILD_STATIC_LIBRARY)
