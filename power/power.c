@@ -149,7 +149,8 @@ set_last_user_activity_timeout(int64_t delay)
     if (fd >= 0) {
         char buf[32];
         ssize_t len;
-        len = sprintf(buf, "%d", ((int)(delay)));
+        len = snprintf(buf, sizeof(buf), "%d", ((int)(delay)));
+        buf[sizeof(buf) - 1] = '\0';
         len = write(fd, buf, len);
         close(fd);
         return 0;
@@ -175,9 +176,11 @@ set_screen_state(int on)
     char buf[32];
     int len;
     if(on)
-        len = sprintf(buf, on_state);
+        len = snprintf(buf, sizeof(buf), "%s", on_state);
     else
-        len = sprintf(buf, off_state);
+        len = snprintf(buf, sizeof(buf), "%s", off_state);
+
+    buf[sizeof(buf) - 1] = '\0';
     len = write(g_fds[REQUEST_STATE], buf, len);
     if(len < 0) {
         LOGE("Failed setting last user activity: g_error=%d\n", g_error);
