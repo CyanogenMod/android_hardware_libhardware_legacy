@@ -36,11 +36,6 @@
 static struct wpa_ctrl *ctrl_conn;
 static struct wpa_ctrl *monitor_conn;
 
-extern int do_dhcp();
-extern int ifc_init();
-extern void ifc_close();
-extern char *dhcp_lasterror();
-extern void get_dhcp_info();
 extern int init_module(void *, unsigned long, const char *);
 extern int delete_module(const char *, unsigned int);
 
@@ -109,28 +104,6 @@ static int rmmod(const char *modname)
         LOGD("Unable to unload driver module \"%s\": %s\n",
              modname, strerror(errno));
     return ret;
-}
-
-int do_dhcp_request(int *ipaddr, int *gateway, int *mask,
-                    int *dns1, int *dns2, int *server, int *lease) {
-    /* For test driver, always report success */
-    if (strcmp(iface, WIFI_TEST_INTERFACE) == 0)
-        return 0;
-
-    if (ifc_init() < 0)
-        return -1;
-
-    if (do_dhcp(iface) < 0) {
-        ifc_close();
-        return -1;
-    }
-    ifc_close();
-    get_dhcp_info(ipaddr, gateway, mask, dns1, dns2, server, lease);
-    return 0;
-}
-
-const char *get_dhcp_error_string() {
-    return dhcp_lasterror();
 }
 
 static int check_driver_loaded() {
