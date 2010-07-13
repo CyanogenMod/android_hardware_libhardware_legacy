@@ -44,7 +44,7 @@ namespace android {
 // ----------------------------------------------------------------------------
 // AudioPolicyManagerBase implements audio policy manager behavior common to all platforms.
 // Each platform must implement an AudioPolicyManager class derived from AudioPolicyManagerBase
-// and override methods for which the platfrom specific behavior differs from the implementation
+// and override methods for which the platform specific behavior differs from the implementation
 // in AudioPolicyManagerBase. Even if no specific behavior is required, the AudioPolicyManager
 // class must be implemented as well as the class factory function createAudioPolicyManager()
 // and provided in a shared library libaudiopolicy.so.
@@ -72,12 +72,17 @@ public:
         virtual AudioSystem::forced_config getForceUse(AudioSystem::force_use usage);
         virtual void setSystemProperty(const char* property, const char* value);
         virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
-                                            uint32_t samplingRate,
-                                            uint32_t format,
-                                            uint32_t channels,
-                                            AudioSystem::output_flags flags);
-        virtual status_t startOutput(audio_io_handle_t output, AudioSystem::stream_type stream);
-        virtual status_t stopOutput(audio_io_handle_t output, AudioSystem::stream_type stream);
+                                            uint32_t samplingRate = 0,
+                                            uint32_t format = AudioSystem::FORMAT_DEFAULT,
+                                            uint32_t channels = 0,
+                                            AudioSystem::output_flags flags =
+                                                    AudioSystem::OUTPUT_FLAG_INDIRECT);
+        virtual status_t startOutput(audio_io_handle_t output,
+                                     AudioSystem::stream_type stream,
+                                     int session = 0);
+        virtual status_t stopOutput(audio_io_handle_t output,
+                                    AudioSystem::stream_type stream,
+                                    int session = 0);
         virtual void releaseOutput(audio_io_handle_t output);
         virtual audio_io_handle_t getInput(int inputSource,
                                             uint32_t samplingRate,
@@ -94,6 +99,17 @@ public:
                                                     int indexMax);
         virtual status_t setStreamVolumeIndex(AudioSystem::stream_type stream, int index);
         virtual status_t getStreamVolumeIndex(AudioSystem::stream_type stream, int *index);
+
+        // return the strategy corresponding to a given stream type
+        virtual uint32_t getStrategyForStream(AudioSystem::stream_type stream);
+
+        virtual audio_io_handle_t getOutputForEffect(effect_descriptor_t *desc);
+        virtual status_t registerEffect(effect_descriptor_t *desc,
+                                        audio_io_handle_t output,
+                                        uint32_t strategy,
+                                        int session,
+                                        int id);
+        virtual status_t unregisterEffect(int id);
 
         virtual status_t dump(int fd);
 
@@ -168,6 +184,19 @@ protected:
             int mIndexMax;      // max volume index
             int mIndexCur;      // current volume index
             bool mCanBeMuted;   // true is the stream can be muted
+        };
+
+        // stream descriptor used for volume control
+        class EffectDescriptor
+        {
+        public:
+
+            status_t dump(int fd);
+
+            int mOutput;                // output the effect is attached to
+            routing_strategy mStrategy; // routing strategy the effect is associated to
+            int mSession;               // audio session the effect is on
+            effect_descriptor_t mDesc;  // effect descriptor
         };
 
         void addOutput(audio_io_handle_t id, AudioOutputDescriptor *outputDesc);
@@ -245,6 +274,8 @@ protected:
                                     uint32_t channels,
                                     AudioSystem::output_flags flags,
                                     uint32_t device);
+        virtual uint32_t getMaxEffectsCpuLoad();
+        virtual uint32_t getMaxEffectsMemory();
 #ifdef AUDIO_POLICY_TEST
         virtual     bool        threadLoop();
                     void        exit();
@@ -270,6 +301,14 @@ protected:
         nsecs_t mMusicStopTime;                                             // time when last music stream was stopped
         bool    mLimitRingtoneVolume;                                       // limit ringtone volume to music volume if headset connected
         uint32_t mDeviceForStrategy[NUM_STRATEGIES];
+
+        // Maximum CPU load allocated to audio effects in 0.1 MIPS (ARMv5TE, 0 WS memory) units
+        static const uint32_t MAX_EFFECTS_CPU_LOAD = 1000;
+        // Maximum memory allocated to audio effects in KB
+        static const uint32_t MAX_EFFECTS_MEMORY = 512;
+        uint32_t mTotalEffectsCpuLoad; // current CPU load used by effects
+        uint32_t mTotalEffectsMemory;  // current memory used by effects
+        KeyedVector<int, EffectDescriptor *> mEffects;  // list of registered audio effects
 
 #ifdef AUDIO_POLICY_TEST
         Mutex   mLock;
