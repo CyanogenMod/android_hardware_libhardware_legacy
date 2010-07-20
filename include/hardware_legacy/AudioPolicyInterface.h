@@ -91,9 +91,13 @@ public:
                                         uint32_t channels = 0,
                                         AudioSystem::output_flags flags = AudioSystem::OUTPUT_FLAG_INDIRECT) = 0;
     // indicates to the audio policy manager that the output starts being used by corresponding stream.
-    virtual status_t startOutput(audio_io_handle_t output, AudioSystem::stream_type stream) = 0;
+    virtual status_t startOutput(audio_io_handle_t output,
+                                 AudioSystem::stream_type stream,
+                                 int session = 0) = 0;
     // indicates to the audio policy manager that the output stops being used by corresponding stream.
-    virtual status_t stopOutput(audio_io_handle_t output, AudioSystem::stream_type stream) = 0;
+    virtual status_t stopOutput(audio_io_handle_t output,
+                                AudioSystem::stream_type stream,
+                                int session = 0) = 0;
     // releases the output.
     virtual void releaseOutput(audio_io_handle_t output) = 0;
 
@@ -123,6 +127,18 @@ public:
     virtual status_t setStreamVolumeIndex(AudioSystem::stream_type stream, int index) = 0;
     // retreive current volume index for the specified stream
     virtual status_t getStreamVolumeIndex(AudioSystem::stream_type stream, int *index) = 0;
+
+    // return the strategy corresponding to a given stream type
+    virtual uint32_t getStrategyForStream(AudioSystem::stream_type stream) = 0;
+
+    // Audio effect management
+    virtual audio_io_handle_t getOutputForEffect(effect_descriptor_t *desc) = 0;
+    virtual status_t registerEffect(effect_descriptor_t *desc,
+                                    audio_io_handle_t output,
+                                    uint32_t strategy,
+                                    int session,
+                                    int id) = 0;
+    virtual status_t unregisterEffect(int id) = 0;
 
     //dump state
     virtual status_t    dump(int fd) = 0;
@@ -195,6 +211,12 @@ public:
 
     // set down link audio volume.
     virtual status_t setVoiceVolume(float volume, int delayMs = 0) = 0;
+
+    // move effect to the specified output
+    virtual status_t moveEffects(int session,
+                                     audio_io_handle_t srcOutput,
+                                     audio_io_handle_t dstOutput) = 0;
+
 };
 
 extern "C" AudioPolicyInterface* createAudioPolicyManager(AudioPolicyClientInterface *clientInterface);
