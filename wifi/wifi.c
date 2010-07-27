@@ -135,7 +135,7 @@ const char *get_dhcp_error_string() {
     return dhcp_lasterror();
 }
 
-static int check_driver_loaded() {
+int is_wifi_driver_loaded() {
     char driver_status[PROPERTY_VALUE_MAX];
     FILE *proc;
     char line[sizeof(DRIVER_MODULE_TAG)+10];
@@ -171,7 +171,7 @@ int wifi_load_driver()
     char driver_status[PROPERTY_VALUE_MAX];
     int count = 100; /* wait at most 20 seconds for completion */
 
-    if (check_driver_loaded()) {
+    if (is_wifi_driver_loaded()) {
         return 0;
     }
 
@@ -208,7 +208,7 @@ int wifi_unload_driver()
 
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
 	while (count-- > 0) {
-	    if (!check_driver_loaded())
+	    if (!is_wifi_driver_loaded())
 		break;
     	    usleep(500000);
 	}

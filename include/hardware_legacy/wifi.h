@@ -36,6 +36,14 @@ int wifi_load_driver();
 int wifi_unload_driver();
 
 /**
+ * Check if the Wi-Fi driver is loaded.
+ *
+ * @return 0 on success, < 0 on failure.
+ */
+int is_wifi_driver_loaded();
+
+
+/**
  * Start supplicant.
  *
  * @return 0 on success, < 0 on failure.
