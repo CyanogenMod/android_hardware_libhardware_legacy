@@ -77,6 +77,13 @@ static const char SUPP_CONFIG_TEMPLATE[]= "/system/etc/wifi/wpa_supplicant.conf"
 static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
 static const char MODULE_FILE[]         = "/proc/modules";
 
+#ifdef WIFI_EXT_MODULE_NAME
+static const char EXT_MODULE_NAME[] = WIFI_EXT_MODULE_NAME;
+#endif
+#ifdef WIFI_EXT_MODULE_PATH
+static const char EXT_MODULE_PATH[] = WIFI_EXT_MODULE_PATH;
+#endif
+
 static int insmod(const char *filename, const char *args)
 {
     void *module;
@@ -100,7 +107,7 @@ static int rmmod(const char *modname)
     int maxtry = 10;
 
     while (maxtry-- > 0) {
-        ret = delete_module(modname, O_NONBLOCK | O_EXCL);
+        ret = delete_module(modname, O_NONBLOCK | O_EXCL | O_TRUNC);
         if (ret < 0 && errno == EAGAIN)
             usleep(500000);
         else
@@ -175,6 +182,11 @@ int wifi_load_driver()
         return 0;
     }
 
+#ifdef WIFI_EXT_MODULE_PATH
+    if (insmod(EXT_MODULE_PATH, "") < 0)
+        return -1;
+#endif
+
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
         return -1;
 
@@ -213,6 +225,9 @@ int wifi_unload_driver()
     	    usleep(500000);
 	}
 	if (count) {
+#ifdef WIFI_EXT_MODULE_NAME
+            rmmod(EXT_MODULE_NAME);
+#endif
     	    return 0;
 	}
 	return -1;
@@ -428,7 +443,7 @@ int wifi_wait_for_event(char *buf, size_t buflen)
     int result;
     struct timeval tval;
     struct timeval *tptr;
-    
+
     if (monitor_conn == NULL) {
         LOGD("Connection closed\n");
         strncpy(buf, WPA_EVENT_TERMINATING " - connection closed", buflen-1);
@@ -456,7 +471,7 @@ int wifi_wait_for_event(char *buf, size_t buflen)
     /*
      * Events strings are in the format
      *
-     *     <N>CTRL-EVENT-XXX 
+     *     <N>CTRL-EVENT-XXX
      *
      * where N is the message level in numerical form (0=VERBOSE, 1=DEBUG,
      * etc.) and XXX is the event name. The level information is not useful
