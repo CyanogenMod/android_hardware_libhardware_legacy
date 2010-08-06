@@ -77,6 +77,13 @@ static const char SUPP_CONFIG_TEMPLATE[]= "/system/etc/wifi/wpa_supplicant.conf"
 static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
 static const char MODULE_FILE[]         = "/proc/modules";
 
+#ifdef WIFI_EXT_MODULE_NAME
+static const char EXT_MODULE_NAME[] = WIFI_EXT_MODULE_NAME;
+#endif
+#ifdef WIFI_EXT_MODULE_PATH
+static const char EXT_MODULE_PATH[] = WIFI_EXT_MODULE_PATH;
+#endif
+
 static int insmod(const char *filename, const char *args)
 {
     void *module;
@@ -176,7 +183,7 @@ int wifi_load_driver()
     }
 
 #ifdef WIFI_EXT_MODULE_PATH
-    if (insmod(WIFI_EXT_MODULE_PATH, "") < 0)
+    if (insmod(EXT_MODULE_PATH, "") < 0)
         return -1;
 #endif
 
@@ -219,7 +226,7 @@ int wifi_unload_driver()
 	}
 	if (count) {
 #ifdef WIFI_EXT_MODULE_NAME
-            rmmod(WIFI_EXT_MODULE_NAME);
+            rmmod(EXT_MODULE_NAME);
 #endif
     	    return 0;
 	}
