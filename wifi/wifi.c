@@ -79,6 +79,11 @@ static const char MODULE_FILE[]         = "/proc/modules";
 
 #ifdef WIFI_EXT_MODULE_NAME
 static const char EXT_MODULE_NAME[] = WIFI_EXT_MODULE_NAME;
+#ifdef WIFI_EXT_MODULE_ARG
+static const char EXT_MODULE_ARG[] = WIFI_EXT_MODULE_ARG;
+#else
+static const char EXT_MODULE_ARG[] = "";
+#endif
 #endif
 #ifdef WIFI_EXT_MODULE_PATH
 static const char EXT_MODULE_PATH[] = WIFI_EXT_MODULE_PATH;
@@ -183,7 +188,7 @@ int wifi_load_driver()
     }
 
 #ifdef WIFI_EXT_MODULE_PATH
-    if (insmod(EXT_MODULE_PATH, "") < 0)
+    if (insmod(EXT_MODULE_PATH, EXT_MODULE_ARG) < 0)
         return -1;
 #endif
 
@@ -219,18 +224,20 @@ int wifi_unload_driver()
     int count = 20; /* wait at most 10 seconds for completion */
 
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
-	while (count-- > 0) {
-	    if (!check_driver_loaded())
-		break;
-    	    usleep(500000);
-	}
-	if (count) {
+        while (count-- > 0) {
+            if (!check_driver_loaded())
+                break;
+            usleep(500000);
+        }
+        if (count) {
 #ifdef WIFI_EXT_MODULE_NAME
-            rmmod(EXT_MODULE_NAME);
+            if (rmmod(EXT_MODULE_NAME) == 0)
+                return 0;
+#else
+            return 0;
 #endif
-    	    return 0;
-	}
-	return -1;
+        }
+        return -1;
     } else
         return -1;
 }
