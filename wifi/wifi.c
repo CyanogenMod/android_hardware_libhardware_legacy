@@ -239,7 +239,7 @@ int ensure_config_file_exists()
         return -1;
     }
 
-    destfd = open(SUPP_CONFIG_FILE, O_CREAT|O_WRONLY, 0660);
+    destfd = open(SUPP_CONFIG_FILE, O_CREAT|O_RDWR, 0660);
     if (destfd < 0) {
         close(srcfd);
         LOGE("Cannot create \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
@@ -259,6 +259,14 @@ int ensure_config_file_exists()
 
     close(destfd);
     close(srcfd);
+
+    /* chmod is needed because open() didn't set permisions properly */
+    if (chmod(SUPP_CONFIG_FILE, 0660) < 0) {
+        LOGE("Error changing permissions of %s to 0660: %s",
+             SUPP_CONFIG_FILE, strerror(errno));
+        unlink(SUPP_CONFIG_FILE);
+        return -1;
+    }
 
     if (chown(SUPP_CONFIG_FILE, AID_SYSTEM, AID_WIFI) < 0) {
         LOGE("Error changing group ownership of %s to %d: %s",
