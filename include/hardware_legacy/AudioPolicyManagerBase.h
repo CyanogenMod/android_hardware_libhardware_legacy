@@ -104,6 +104,7 @@ protected:
             STRATEGY_PHONE,
             STRATEGY_SONIFICATION,
             STRATEGY_DTMF,
+            STRATEGY_MEDIA_SONIFICATION,
             NUM_STRATEGIES
         };
 
