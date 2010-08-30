@@ -249,9 +249,9 @@ protected:
         // must be called every time a condition that affects the output choice for a given strategy is
         // changed: connected device, phone state, force use...
         // Must be called before updateDeviceForStrategy()
-        void checkOutputForStrategy(routing_strategy strategy, uint32_t &newDevice);
+        void checkOutputForStrategy(routing_strategy strategy);
         // Same as checkOutputForStrategy() but for a all strategies in order of priority
-        void checkOutputForAllStrategies(uint32_t &newDevice);
+        void checkOutputForAllStrategies();
 
 #endif
         // selects the most appropriate device on output for current state
