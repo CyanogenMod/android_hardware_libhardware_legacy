@@ -244,6 +244,7 @@ int ensure_config_file_exists()
 
 int wifi_start_supplicant()
 {
+    char daemon_cmd[PROPERTY_VALUE_MAX];
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 200; /* wait at most 20 seconds for completion */
 #ifdef HAVE_LIBC_SYSTEM_PROPERTIES
@@ -279,7 +280,9 @@ int wifi_start_supplicant()
         serial = pi->serial;
     }
 #endif
-    property_set("ctl.start", SUPPLICANT_NAME);
+    property_get("wifi.interface", iface, WIFI_TEST_INTERFACE);
+    snprintf(daemon_cmd, PROPERTY_VALUE_MAX, "%s:-i%s", SUPPLICANT_NAME, iface);
+    property_set("ctl.start", daemon_cmd);
     sched_yield();
 
     while (count-- > 0) {
@@ -342,8 +345,6 @@ int wifi_connect_to_supplicant()
         LOGE("Supplicant not running, cannot connect");
         return -1;
     }
-
-    property_get("wifi.interface", iface, WIFI_TEST_INTERFACE);
 
     if (access(IFACE_DIR, F_OK) == 0) {
         snprintf(ifname, sizeof(ifname), "%s/%s", IFACE_DIR, iface);
