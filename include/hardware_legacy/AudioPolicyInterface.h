@@ -217,6 +217,8 @@ public:
                                      audio_io_handle_t srcOutput,
                                      audio_io_handle_t dstOutput) = 0;
 
+    // set FM volume.
+    virtual status_t setFmVolume(float volume, int delayMs = 0) { return 0; }
 };
 
 extern "C" AudioPolicyInterface* createAudioPolicyManager(AudioPolicyClientInterface *clientInterface);
