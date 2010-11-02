@@ -252,7 +252,8 @@ protected:
         void checkOutputForStrategy(routing_strategy strategy);
         // Same as checkOutputForStrategy() but for a all strategies in order of priority
         void checkOutputForAllStrategies();
-
+        // manages A2DP output suspend/restore according to phone state and BT SCO usage
+        void checkA2dpSuspend();
 #endif
         // selects the most appropriate device on output for current state
         // must be called every time a condition that affects the device choice for a given output is
@@ -309,6 +310,7 @@ protected:
         uint32_t mTotalEffectsCpuLoad; // current CPU load used by effects
         uint32_t mTotalEffectsMemory;  // current memory used by effects
         KeyedVector<int, EffectDescriptor *> mEffects;  // list of registered audio effects
+        bool    mA2dpSuspended;  // true if A2DP output is suspended
 
 #ifdef AUDIO_POLICY_TEST
         Mutex   mLock;
