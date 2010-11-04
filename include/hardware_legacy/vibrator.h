@@ -22,6 +22,13 @@ extern "C" {
 #endif
 
 /**
+ * Return whether the device has a vibrator.
+ *
+ * @return 1 if a vibrator exists, 0 if it doesn't.
+ */
+int vibrator_exists();
+
+/**
  * Turn on vibrator
  *
  * @param timeout_ms number of milliseconds to vibrate
