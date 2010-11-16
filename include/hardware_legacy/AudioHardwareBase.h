@@ -24,8 +24,8 @@ namespace android {
 
 // ----------------------------------------------------------------------------
 
-/** 
- * AudioHardwareBase is a convenient base class used for implementing the 
+/**
+ * AudioHardwareBase is a convenient base class used for implementing the
  * AudioHardwareInterface interface.
  */
 class AudioHardwareBase : public AudioHardwareInterface
@@ -33,24 +33,30 @@ class AudioHardwareBase : public AudioHardwareInterface
 public:
                         AudioHardwareBase();
     virtual             ~AudioHardwareBase() { }
-    
+
     /**
      * setMode is called when the audio mode changes. NORMAL mode is for
-     * standard audio playback, RINGTONE when a ringtone is playing, and IN_CALL
-     * when a call is in progress.
+     * standard audio playback, RINGTONE when a ringtone is playing, IN_CALL
+     * when a telephony call is in progress, IN_COMMUNICATION when a VoIP call is in progress.
      */
     virtual status_t    setMode(int mode);
 
     virtual status_t    setParameters(const String8& keyValuePairs);
     virtual String8     getParameters(const String8& keys);
-    
+
     virtual  size_t     getInputBufferSize(uint32_t sampleRate, int format, int channelCount);
-    
+
     /**This method dumps the state of the audio hardware */
     virtual status_t dumpState(int fd, const Vector<String16>& args);
 
 protected:
-    int             mMode;
+    /** returns true if the given mode maps to a telephony or VoIP call is in progress */
+    virtual bool     isModeInCall(int mode)
+                        { return ((mode == AudioSystem::MODE_IN_CALL)
+                                || (mode == AudioSystem::MODE_IN_COMMUNICATION)); };
+    /** returns true if a telephony or VoIP call is in progress */
+    virtual bool     isInCall() { return isModeInCall(mMode); };
+    int              mMode;
 };
 
 }; // namespace android

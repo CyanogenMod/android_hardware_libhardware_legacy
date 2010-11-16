@@ -236,6 +236,10 @@ protected:
         void handleIncallSonification(int stream, bool starting, bool stateChange);
         // true is current platform implements a back microphone
         virtual bool hasBackMicrophone() const { return false; }
+        // true if device is in a telephony or VoIP call
+        virtual bool isInCall();
+        // true if given state represents a device in a telephony or VoIP call
+        virtual bool isStateInCall(int state);
 
 #ifdef WITH_A2DP
         // true is current platform supports suplication of notifications and ringtones over A2DP output
