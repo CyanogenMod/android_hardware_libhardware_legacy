@@ -190,6 +190,7 @@ int wifi_load_driver()
 #ifdef WIFI_EXT_MODULE_PATH
     if (insmod(EXT_MODULE_PATH, EXT_MODULE_ARG) < 0)
         return -1;
+    usleep(200000);
 #endif
 
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0)
