@@ -302,6 +302,7 @@ protected:
         nsecs_t mMusicStopTime;                                             // time when last music stream was stopped
         bool    mLimitRingtoneVolume;                                       // limit ringtone volume to music volume if headset connected
         uint32_t mDeviceForStrategy[NUM_STRATEGIES];
+        float   mLastVoiceVolume;                                           // last voice volume value sent to audio HAL
 
         // Maximum CPU load allocated to audio effects in 0.1 MIPS (ARMv5TE, 0 WS memory) units
         static const uint32_t MAX_EFFECTS_CPU_LOAD = 1000;
