@@ -171,7 +171,8 @@ set_screen_state(int on)
     //LOGI("go_to_sleep eventTime=%lld now=%lld g_error=%s\n", eventTime,
       //      systemTime(), strerror(g_error));
 
-    if (g_error) return g_error;
+    if (g_error)
+        goto failure;
 
     char buf[32];
     int len;
@@ -183,6 +184,7 @@ set_screen_state(int on)
     buf[sizeof(buf) - 1] = '\0';
     len = write(g_fds[REQUEST_STATE], buf, len);
     if(len < 0) {
+    failure:
         LOGE("Failed setting last user activity: g_error=%d\n", g_error);
     }
     return 0;
