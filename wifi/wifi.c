@@ -224,10 +224,14 @@ int ensure_config_file_exists()
 {
     char buf[2048];
     int srcfd, destfd;
+    struct stat sb;
     int nread;
 
     if (access(SUPP_CONFIG_FILE, R_OK|W_OK) == 0) {
-        return 0;
+        /* return if filesize is atleast 10 bytes */
+        if (stat(SUPP_CONFIG_FILE, &sb) == 0 && sb.st_size > 10) {
+            return 0;
+        }
     } else if (errno != ENOENT) {
         LOGE("Cannot access \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
         return -1;
