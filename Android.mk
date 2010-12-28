@@ -28,10 +28,6 @@ ifeq ($(TARGET_SIMULATOR),true)
 	endif
 endif
 
-ifeq ($(BOARD_HAVE_FM_RADIO),true)
-    LOCAL_CFLAGS += -DHAVE_FM_RADIO
-endif
-
 LOCAL_MODULE:= libhardware_legacy
 
 include $(BUILD_SHARED_LIBRARY)
