@@ -207,15 +207,15 @@ int wifi_unload_driver()
     int count = 20; /* wait at most 10 seconds for completion */
 
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
-	while (count-- > 0) {
-	    if (!is_wifi_driver_loaded())
-		break;
-    	    usleep(500000);
-	}
-	if (count) {
-    	    return 0;
-	}
-	return -1;
+        while (count-- > 0) {
+            if (!is_wifi_driver_loaded())
+                break;
+            usleep(500000);
+        }
+        if (count) {
+            return 0;
+        }
+        return -1;
     } else
         return -1;
 }
@@ -223,13 +223,56 @@ int wifi_unload_driver()
 int ensure_config_file_exists()
 {
     char buf[2048];
+    char ifc[PROPERTY_VALUE_MAX];
+    char *sptr;
+    char *pbuf;
     int srcfd, destfd;
     struct stat sb;
     int nread;
 
     if (access(SUPP_CONFIG_FILE, R_OK|W_OK) == 0) {
-        /* return if filesize is atleast 10 bytes */
+        /* return if filesize is at least 10 bytes */
         if (stat(SUPP_CONFIG_FILE, &sb) == 0 && sb.st_size > 10) {
+            pbuf = malloc(sb.st_size + PROPERTY_VALUE_MAX);
+            if (!pbuf)
+                return 0;
+            srcfd = open(SUPP_CONFIG_FILE, O_RDONLY);
+            if (srcfd < 0) {
+                LOGE("Cannot open \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
+                free(pbuf);
+                return 0;
+            }
+            nread = read(srcfd, pbuf, sb.st_size);
+            close(srcfd);
+            if (nread < 0) {
+                LOGE("Cannot read \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
+                free(pbuf);
+                return 0;
+            }
+            property_get("wifi.interface", ifc, WIFI_TEST_INTERFACE);
+            if ((sptr = strstr(pbuf, "ctrl_interface="))) {
+                char *iptr = sptr + strlen("ctrl_interface=");
+                int ilen = 0;
+                int mlen = strlen(ifc);
+                if (strncmp(ifc, iptr, mlen) != 0) {
+                    LOGE("ctrl_interface != %s", ifc);
+                    while (((ilen + (iptr - pbuf)) < nread) && (iptr[ilen] != '\n'))
+                        ilen++;
+                    mlen = ((ilen >= mlen) ? ilen : mlen) + 1;
+                    memmove(iptr + mlen, iptr + ilen + 1, nread - (iptr + ilen + 1 - pbuf));
+                    memset(iptr, '\n', mlen);
+                    memcpy(iptr, ifc, strlen(ifc));
+                    destfd = open(SUPP_CONFIG_FILE, O_RDWR, 0660);
+                    if (destfd < 0) {
+                        LOGE("Cannot update \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
+                        free(pbuf);
+                        return -1;
+                    }
+                    write(destfd, pbuf, nread);
+                    close(destfd);
+                }
+            }
+            free(pbuf);
             return 0;
         }
     } else if (errno != ENOENT) {
@@ -441,7 +484,7 @@ int wifi_wait_for_event(char *buf, size_t buflen)
     int result;
     struct timeval tval;
     struct timeval *tptr;
-    
+
     if (monitor_conn == NULL) {
         LOGD("Connection closed\n");
         strncpy(buf, WPA_EVENT_TERMINATING " - connection closed", buflen-1);
