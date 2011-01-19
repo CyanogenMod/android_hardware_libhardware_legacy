@@ -71,6 +71,7 @@ public:
         virtual void setForceUse(AudioSystem::force_use usage, AudioSystem::forced_config config);
         virtual AudioSystem::forced_config getForceUse(AudioSystem::force_use usage);
         virtual void setSystemProperty(const char* property, const char* value);
+        virtual status_t initCheck();
         virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
                                             uint32_t samplingRate = 0,
                                             uint32_t format = AudioSystem::FORMAT_DEFAULT,
