@@ -41,6 +41,8 @@ namespace android {
 
 #define NUM_TEST_OUTPUTS 5
 
+#define NUM_VOL_CURVE_KNEES 2
+
 // ----------------------------------------------------------------------------
 // AudioPolicyManagerBase implements audio policy manager behavior common to all platforms.
 // Each platform must implement an AudioPolicyManager class derived from AudioPolicyManagerBase
@@ -185,6 +187,15 @@ protected:
             int mIndexMax;      // max volume index
             int mIndexCur;      // current volume index
             bool mCanBeMuted;   // true is the stream can be muted
+
+            // 4 points to define the volume attenuation curve, each characterized by the volume
+            // index (from 0 to 100) at which they apply, and the attenuation in dB at that index.
+            int mVolIndex[NUM_VOL_CURVE_KNEES+2];   // minimum index, index at knees, and max index
+            float mVolDbAtt[NUM_VOL_CURVE_KNEES+2]; // largest attenuation, attenuation at knees,
+                                                    //     and attenuation at max vol (usually 0dB)
+            // indices in mVolIndex and mVolDbAtt respectively for points at lowest volume, knee 1,
+            //    knee 2 and highest volume.
+            enum { VOLMIN = 0, VOLKNEE1 = 1, VOLKNEE2 = 2, VOLMAX = 3 };
         };
 
         // stream descriptor used for volume control
@@ -221,6 +232,7 @@ protected:
         virtual uint32_t getDeviceForInputSource(int inputSource);
         // return io handle of active input or 0 if no input is active
         audio_io_handle_t getActiveInput();
+        virtual void initializeVolumeCurves();
         // compute the actual volume for a given stream according to the requested index and a particular
         // device
         virtual float computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device);
@@ -332,6 +344,10 @@ protected:
         uint32_t        mTestChannels;
         uint32_t        mTestLatencyMs;
 #endif //AUDIO_POLICY_TEST
+
+private:
+        static float volIndexToAmpl(uint32_t device, const StreamDescriptor& streamDesc,
+                int indexInUi);
 };
 
 };
