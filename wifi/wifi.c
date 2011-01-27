@@ -174,6 +174,11 @@ static int set_wifi_power(int on) {
         if (init_rfkill()) goto out;
     }
 
+    if (check_wifi_power() == on) {
+        /* Don't change to the same state */
+        return 0;
+    }
+
     fd = open(rfkill_state_path, O_WRONLY);
     if (fd < 0) {
         LOGE("open(%s) for write failed: %s (%d)", rfkill_state_path,
@@ -185,6 +190,10 @@ static int set_wifi_power(int on) {
         LOGE("write(%s) failed: %s (%d)", rfkill_state_path, strerror(errno),
                 errno);
         goto out;
+    }
+    if (!on) {
+        /* Give it a few seconds to fully shutdown */ 
+        sleep(3); 
     }
     ret = 0;
 
