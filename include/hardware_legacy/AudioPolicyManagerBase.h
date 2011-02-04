@@ -32,9 +32,9 @@ namespace android {
 #define SONIFICATION_HEADSET_VOLUME_FACTOR 0.5
 // Min volume for STRATEGY_SONIFICATION streams when limited by music volume: -36dB
 #define SONIFICATION_HEADSET_VOLUME_MIN  0.016
-// Time in seconds during which we consider that music is still active after a music
+// Time in milliseconds during which we consider that music is still active after a music
 // track was stopped - see computeVolume()
-#define SONIFICATION_HEADSET_MUSIC_DELAY  5
+#define SONIFICATION_HEADSET_MUSIC_DELAY  5000
 // Time in milliseconds during witch some streams are muted while the audio path
 // is switched
 #define MUTE_TIME_MS 2000
@@ -114,6 +114,8 @@ public:
                                         int id);
         virtual status_t unregisterEffect(int id);
 
+        virtual bool isStreamActive(int stream, uint32_t inPastMs = 0) const;
+
         virtual status_t dump(int fd);
 
 protected:
@@ -150,6 +152,7 @@ protected:
             AudioSystem::output_flags mFlags;   //
             uint32_t mDevice;                   // current device this output is routed to
             uint32_t mRefCount[AudioSystem::NUM_STREAM_TYPES]; // number of streams of each type using this output
+            nsecs_t mStopTime[AudioSystem::NUM_STREAM_TYPES];
             AudioOutputDescriptor *mOutput1;    // used by duplicated outputs: first output
             AudioOutputDescriptor *mOutput2;    // used by duplicated outputs: second output
             float mCurVolume[AudioSystem::NUM_STREAM_TYPES];   // current stream volume
@@ -316,7 +319,6 @@ protected:
         StreamDescriptor mStreams[AudioSystem::NUM_STREAM_TYPES];           // stream descriptors for volume control
         String8 mA2dpDeviceAddress;                                         // A2DP device MAC address
         String8 mScoDeviceAddress;                                          // SCO device MAC address
-        nsecs_t mMusicStopTime;                                             // time when last music stream was stopped
         bool    mLimitRingtoneVolume;                                       // limit ringtone volume to music volume if headset connected
         uint32_t mDeviceForStrategy[NUM_STRATEGIES];
         float   mLastVoiceVolume;                                           // last voice volume value sent to audio HAL

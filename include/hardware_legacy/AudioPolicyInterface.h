@@ -141,6 +141,8 @@ public:
                                     int id) = 0;
     virtual status_t unregisterEffect(int id) = 0;
 
+    virtual bool isStreamActive(int stream, uint32_t inPastMs = 0) const = 0;
+
     //dump state
     virtual status_t    dump(int fd) = 0;
 };
