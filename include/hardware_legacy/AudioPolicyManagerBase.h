@@ -106,6 +106,9 @@ public:
         // return the strategy corresponding to a given stream type
         virtual uint32_t getStrategyForStream(AudioSystem::stream_type stream);
 
+        // return the enabled output devices for the given stream type
+        virtual uint32_t getDevicesForStream(AudioSystem::stream_type stream);
+
         virtual audio_io_handle_t getOutputForEffect(effect_descriptor_t *desc);
         virtual status_t registerEffect(effect_descriptor_t *desc,
                                         audio_io_handle_t output,
