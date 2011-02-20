@@ -91,7 +91,6 @@ static const char SET_PROP_NAME[]       = WIMAX_SETPROP_NAME;
 static const char WIMAX_DHCP_START[]    = WIMAX_DHCP_RENEW;
 static const char WIMAX_DHCP_NAME[]        = "dhcpWimax";
 static const char WIMAX_DHCP_STOP[]     = WIMAX_DHCP_RELEASE;
-static const char CHOWN_THP_NAME[]      = "chownThp";
 static const char DRIVER_PROP_NAME[]    = "wimax.sequansd.pid";
 static const char MODULE_FILE[]         = "/proc/modules";
 static const char SQN_CONFIG_TEMPLATE[] = "/system/etc/wimax/sequansd/sequansd_app.xml";
@@ -143,19 +142,6 @@ static int rmmod(const char *modname)
     return ret;
 }
 
-int startChownThp()
-{
-    int count = 200; /* wait at most 20 seconds for completion */
-
-    property_set("ctl.start", CHOWN_THP_NAME);
-    sched_yield();
-
-    while (count-- > 0) {
-        usleep(100000);
-    }
-    return -1;
-}
-
 static int check_driver_loaded() {
     char driver_status[PROPERTY_VALUE_MAX];
     FILE *proc;
@@ -197,9 +183,7 @@ int unloadWimaxDriver()
 	LOGI("NATIVE::unloadWimaxDriver() - Killing sequansd...");
         kill(atoi(pid), SIGQUIT);
     }
-    // sleep for 50 seconds - this is a hack because restarting is 'fuct' as toastcfh would say
     sched_yield();
-    usleep(100000*500);
     property_set(DRIVER_PROP_NAME, "");
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
         while (count-- > 0) {
@@ -305,14 +289,6 @@ int startWimaxDaemon()
 {
     char wimax_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 50; // wait at most 15 seconds for completion
-    //LOGI("NATIVE::startWimaxDaemon() - checking driver loaded");
-
-//    if (check_driver_loaded()) {      
-//    }
-
-//    ifc_init();
-//    ifc_up("wimax0");
-//    LOGI("wimax0 up and chown thp for sequansd");
 
     sched_yield();
     //Check whether already running 
