@@ -33,6 +33,10 @@ enum {
 int acquire_wake_lock(int lock, const char* id);
 int release_wake_lock(const char* id);
 
+//while you have a cpu lock held, the cpu freq will be held at max cpu freq
+int acquire_cpu_max_lock();
+int release_cpu_max_lock();
+
 // true if you want the screen on, false if you want it off
 int set_screen_state(int on);
 

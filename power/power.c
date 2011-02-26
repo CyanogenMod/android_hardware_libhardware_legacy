@@ -42,6 +42,17 @@ enum {
     OUR_FD_COUNT
 };
 
+enum {
+    CPU_SCALING_MAX_FREQ = 0,
+    CPU_SCALING_MIN_FREQ,
+    CPU_FD_COUNT
+};
+
+const char * const CPU_PATHS[] = {
+    "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
+    "/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq"
+};
+
 const char * const OLD_PATHS[] = {
     "/sys/android_power/acquire_partial_wake_lock",
     "/sys/android_power/release_wake_lock",
@@ -60,6 +71,14 @@ const char * const AUTO_OFF_TIMEOUT_DEV = "/sys/android_power/auto_off_timeout";
 static int g_initialized = 0;
 static int g_fds[OUR_FD_COUNT];
 static int g_error = 1;
+
+static int cpu_fds_initialized = 0;
+static int cpu_min_max_initialized = 0;
+static int cpu_fds[CPU_FD_COUNT];
+static int cpu_fds_error = 0;
+#define CPU_FREQ_MAX_SIZE 20
+static char cpu_scaling_max_freq_default[CPU_FREQ_MAX_SIZE];
+static char cpu_scaling_min_freq_default[CPU_FREQ_MAX_SIZE];
 
 static const char *off_state = "mem";
 static const char *on_state = "on";
@@ -106,6 +125,8 @@ initialize_fds(void)
     }
 }
 
+
+
 int
 acquire_wake_lock(int lock, const char* id)
 {
@@ -139,6 +160,68 @@ release_wake_lock(const char* id)
     ssize_t len = write(g_fds[RELEASE_WAKE_LOCK], id, strlen(id));
     return len >= 0;
 }
+
+static int
+open_cpu_file_descriptors()
+{
+    int i;
+    for (i=0; i<CPU_FD_COUNT; i++) {
+        int fd = open(CPU_PATHS[i], O_RDWR);
+        if (fd < 0) {
+            LOGE("fatal error opening \"%s\"\n", CPU_PATHS[i]);
+            cpu_fds_error = errno;
+            return -1;
+        }
+        cpu_fds[i] = fd;
+    }
+
+    cpu_fds_error = 0;
+    return 0;
+}
+
+static inline void
+initialize_cpu_fds(void)
+{
+    if (cpu_fds_initialized == 0)
+        if (open_cpu_file_descriptors() == 0)
+            cpu_fds_initialized = 1;
+}
+
+static inline void
+initialize_cpu_min_max(void)
+{
+    if(cpu_min_max_initialized == 0) {
+        read(cpu_fds[CPU_SCALING_MAX_FREQ],
+                cpu_scaling_max_freq_default, CPU_FREQ_MAX_SIZE);
+        read(cpu_fds[CPU_SCALING_MIN_FREQ],
+                cpu_scaling_min_freq_default, CPU_FREQ_MAX_SIZE);
+        cpu_min_max_initialized = 1;
+    }
+}
+
+int
+acquire_cpu_max_lock()
+{
+    initialize_cpu_fds();
+    if (cpu_fds_error) return cpu_fds_error;
+    initialize_cpu_min_max();
+
+    return write(cpu_fds[CPU_SCALING_MIN_FREQ],
+                cpu_scaling_max_freq_default, CPU_FREQ_MAX_SIZE);
+}
+
+int
+release_cpu_max_lock()
+{
+    initialize_cpu_fds();
+    if (cpu_fds_error) return cpu_fds_error;
+
+    if(cpu_min_max_initialized == 0) return 0;
+
+    return write(cpu_fds[CPU_SCALING_MIN_FREQ],
+                cpu_scaling_min_freq_default, CPU_FREQ_MAX_SIZE);
+}
+
 
 int
 set_last_user_activity_timeout(int64_t delay)
