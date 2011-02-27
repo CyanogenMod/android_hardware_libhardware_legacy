@@ -452,3 +452,7 @@ int addRouteToGateway()
    
     return 0;
 }
+
+int getBlockSize() {
+        return 0;
+}

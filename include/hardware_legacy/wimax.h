@@ -87,6 +87,8 @@ int doWimaxDhcpRequest(int *ipaddr, int *gateway, int *mask,
 
 const char *getWimaxDhcpError();
 
+int getBlockSize();
+
 #ifdef __cplusplus
 }
 #endif
