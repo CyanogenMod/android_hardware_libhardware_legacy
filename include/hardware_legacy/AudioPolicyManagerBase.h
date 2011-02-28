@@ -237,6 +237,10 @@ protected:
         void handleIncallSonification(int stream, bool starting, bool stateChange);
         // true is current platform implements a back microphone
         virtual bool hasBackMicrophone() const { return false; }
+        // true if device is in a telephony or VoIP call
+        virtual bool isInCall();
+        // true if given state represents a device in a telephony or VoIP call
+        virtual bool isStateInCall(int state);
 
 #ifdef WITH_A2DP
         // true is current platform supports suplication of notifications and ringtones over A2DP output
@@ -253,7 +257,8 @@ protected:
         void checkOutputForStrategy(routing_strategy strategy);
         // Same as checkOutputForStrategy() but for a all strategies in order of priority
         void checkOutputForAllStrategies();
-
+        // manages A2DP output suspend/restore according to phone state and BT SCO usage
+        void checkA2dpSuspend();
 #endif
         // selects the most appropriate device on output for current state
         // must be called every time a condition that affects the device choice for a given output is
@@ -302,6 +307,7 @@ protected:
         nsecs_t mMusicStopTime;                                             // time when last music stream was stopped
         bool    mLimitRingtoneVolume;                                       // limit ringtone volume to music volume if headset connected
         uint32_t mDeviceForStrategy[NUM_STRATEGIES];
+        float   mLastVoiceVolume;                                           // last voice volume value sent to audio HAL
 
         // Maximum CPU load allocated to audio effects in 0.1 MIPS (ARMv5TE, 0 WS memory) units
         static const uint32_t MAX_EFFECTS_CPU_LOAD = 1000;
@@ -310,6 +316,7 @@ protected:
         uint32_t mTotalEffectsCpuLoad; // current CPU load used by effects
         uint32_t mTotalEffectsMemory;  // current memory used by effects
         KeyedVector<int, EffectDescriptor *> mEffects;  // list of registered audio effects
+        bool    mA2dpSuspended;  // true if A2DP output is suspended
 
 #ifdef AUDIO_POLICY_TEST
         Mutex   mLock;
