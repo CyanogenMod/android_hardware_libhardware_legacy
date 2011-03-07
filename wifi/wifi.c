@@ -229,8 +229,15 @@ int ensure_config_file_exists()
     int srcfd, destfd;
     struct stat sb;
     int nread;
+    int ret;
 
-    if (access(SUPP_CONFIG_FILE, R_OK|W_OK) == 0) {
+    ret = access(SUPP_CONFIG_FILE, R_OK|W_OK);
+    if ((ret == 0) || (errno == EACCES)) {
+        if ((ret != 0) &&
+            (chmod(SUPP_CONFIG_FILE, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP) != 0)) {
+            LOGE("Cannot set RW to \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
+            return -1;
+        }
         /* return if filesize is at least 10 bytes */
         if (stat(SUPP_CONFIG_FILE, &sb) == 0 && sb.st_size > 10) {
             pbuf = malloc(sb.st_size + PROPERTY_VALUE_MAX);
