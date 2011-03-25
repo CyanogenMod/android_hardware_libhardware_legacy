@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <dirent.h>
 
 #include "hardware_legacy/wifi.h"
 #include "libwpa_client/wpa_ctrl.h"
@@ -331,6 +332,45 @@ int ensure_config_file_exists()
     return 0;
 }
 
+/**
+ * wifi_wpa_ctrl_cleanup() - Delete any local UNIX domain socket files that
+ * may be left over from clients that were previously connected to
+ * wpa_supplicant. This keeps these files from being orphaned in the
+ * event of crashes that prevented them from being removed as part
+ * of the normal orderly shutdown.
+ */
+void wifi_wpa_ctrl_cleanup(void)
+{
+    DIR *dir;
+    struct dirent entry;
+    struct dirent *result;
+    size_t dirnamelen;
+    size_t maxcopy;
+    char pathname[PATH_MAX];
+    char *namep;
+    char *local_socket_dir = CONFIG_CTRL_IFACE_CLIENT_DIR;
+    char *local_socket_prefix = CONFIG_CTRL_IFACE_CLIENT_PREFIX;
+
+    if ((dir = opendir(local_socket_dir)) == NULL)
+        return;
+
+    dirnamelen = (size_t)snprintf(pathname, sizeof(pathname), "%s/", local_socket_dir);
+    if (dirnamelen >= sizeof(pathname)) {
+        closedir(dir);
+        return;
+    }
+    namep = pathname + dirnamelen;
+    maxcopy = PATH_MAX - dirnamelen;
+    while (readdir_r(dir, &entry, &result) == 0 && result != NULL) {
+        if (strncmp(entry.d_name, local_socket_prefix, strlen(local_socket_prefix)) == 0) {
+            if (strlcpy(namep, entry.d_name, maxcopy) < maxcopy) {
+                unlink(pathname);
+            }
+        }
+    }
+    closedir(dir);
+}
+
 int wifi_start_supplicant()
 {
     char daemon_cmd[PROPERTY_VALUE_MAX];
@@ -354,7 +394,7 @@ int wifi_start_supplicant()
     }
 
     /* Clear out any stale socket files that might be left over. */
-    wpa_ctrl_cleanup();
+    wifi_wpa_ctrl_cleanup();
 
 #ifdef HAVE_LIBC_SYSTEM_PROPERTIES
     /*
