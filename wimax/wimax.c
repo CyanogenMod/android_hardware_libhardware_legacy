@@ -66,43 +66,24 @@ static char iface[PROPERTY_VALUE_MAX];
 #ifndef WIMAX_SETPROP_NAME
 #define WIMAX_SETPROP_NAME		"setWMXPropd"
 #endif
-#ifndef WIMAX_DHCP_RENEW
-#define WIMAX_DHCP_RENEW		"wimaxDhcpRenew"
-#endif
-#ifndef WIMAX_DHCP_RELEASE
-#define WIMAX_DHCP_RELEASE		"wimaxDhcpRelease"
-#endif
 
-#ifndef WIMAX_IPD
-#define WIMAX_IPD                  "ipd"
-#endif
-
-#define WIMAX_TEST_INTERFACE		"thp"
-
-#define WIMAX_DRIVER_LOADER_DELAY	1000000
-
-static const char IFACE_DIR[]           = "/dev/thp";
+// driver
 static const char DRIVER_MODULE_PATH[]	= WIMAX_DRIVER_MODULE_PATH;
 static const char DRIVER_MODULE_NAME[]	= WIMAX_DRIVER_MODULE_NAME;
 static const char DRIVER_MODULE_TAG[]   = WIMAX_DRIVER_MODULE_NAME " ";
 static const char DRIVER_MODULE_ARG[]   = WIMAX_DRIVER_MODULE_ARG;
+static const char MODULE_FILE[]         = "/proc/modules";
+// TODO wimax properties
 static const char GET_PROP_NAME[]       = WIMAX_GETPROP_NAME;
 static const char SET_PROP_NAME[]       = WIMAX_SETPROP_NAME;
-static const char WIMAX_DHCP_START[]    = WIMAX_DHCP_RENEW;
-static const char WIMAX_DHCP_NAME[]        = "dhcpWimax";
-static const char WIMAX_DHCP_STOP[]     = WIMAX_DHCP_RELEASE;
+// wimax daemon
 static const char DRIVER_PROP_NAME[]    = "wimax.sequansd.pid";
-static const char MODULE_FILE[]         = "/proc/modules";
-static const char SQN_CONFIG_TEMPLATE[] = "/system/etc/wimax/sequansd/sequansd_app.xml";
-static const char SQN_CONFIG_FILE[]     = "/etc/wimax/sequansd/sequansd_app.xml";
-static const char PROP_CONFIG_TEMPLATE[] = "/system/etc/wimax/sequansd/DefaultTree.xml";
-static const char PROP_CONFIG_FILE[]    = "/etc/wimax/sequansd/DefaultTree.xml";
 static const char SERVICE_NAME[]	= WIMAX_SERVICE_NAME;
-static const char IP_ROUTE_NAME[]	= WIMAX_IPD;
+// routing
 static const char WIMAX_ADD_ROUTE[]	= "wimaxAddRoute";
-static const char WIMAX_DELETE_DEFAULT[]= "exetest";
-static const char DHCP_DAEMON_NAME[]        = "dhcpcd";
-static const char DHCP_DAEMON_PROP_NAME[]   = "init.svc.dhcpcd";
+// dhcp
+static const char WIMAX_DHCP_NAME[]        = "dhcpWimax";
+static const char DHCP_WIMAX_PROP_NAME[]   = "init.svc.dhcpWimax";
 
 extern int init_module(void *, unsigned long, const char *);
 extern int delete_module(const char *, unsigned int);
@@ -255,9 +236,6 @@ int getWimaxProp()
     property_set("ctl.start", GET_PROP_NAME);
     sched_yield();
 
-    //while (count-- > 0) {
-    //    usleep(100000);
-    //}
     return -1;
 }
 
@@ -271,9 +249,6 @@ int setWimaxProp()
     property_set("ctl.start", SET_PROP_NAME);
     sched_yield();
 
-    //while (count-- > 0) {
-    //    usleep(100000);
-    //}
     return -1;
 }
 
@@ -312,11 +287,7 @@ int startWimaxDaemon()
             if (strcmp(wimax_status, "") != 0) {
                 LOGI("NATIVE::startWimaxDaemon() - daemon started!");
                 return 0;
-            } /*else {
-                LOGI("NATIVE::startWimaxDaemon() - something failed - unloading driver");
-                unloadWimaxDriver();
-                return -1;
-            }*/
+            }
         }
         usleep(100000);
     }
@@ -374,19 +345,50 @@ const char *getWimaxDhcpError() {
     return dhcp_lasterror();
 }
 
- int startDhcpWimaxDaemon()
+int terminateProcess(char *pid) {
+    if(!kill(atoi(pid), SIGTERM)) {
+    LOGD("Process terminated successfully.");
+      stopDhcpWimax();
+       return 0;
+    } else {
+    LOGE("Process could not be killed!");
+  }
+  return -1;
+}
+
+int stopDhcpWimax()
+{
+    LOGD("Stopping DHCP...");
+    char dhcp_status[PROPERTY_VALUE_MAX] = {'\0'};
+    int count = 50; /* wait at most 5 seconds for completion */
+
+    /* Check whether dhcpcd already stopped */
+    if (property_get(DHCP_WIMAX_PROP_NAME, dhcp_status, NULL)
+        && strcmp(dhcp_status, "stopped") == 0) {
+        return 0;
+    }
+
+    property_set("ctl.stop", WIMAX_DHCP_NAME);
+    sched_yield();
+
+    while (count-- > 0) {
+        if (property_get(DHCP_WIMAX_PROP_NAME, dhcp_status, NULL)) {
+            if (strcmp(dhcp_status, "stopped") == 0)
+                return 0;
+        }
+        usleep(100000);
+    }
+    return -1;
+}
+
+int startDhcpWimaxDaemon()
 {
     char dhcp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 100; /* wait at most 10 seconds for completion */
 
-    if (property_get("dhcp.wimax0.pid", dhcp_status, NULL)) {
-        if (strcmp(dhcp_status, "") != 0) {
-            LOGI("NATIVE::startDhcpWimaxDaemon() - Killing dhcpcd...");
-            property_set("dhcp.wimax0.pid", "");
-            kill(atoi(dhcp_status), SIGQUIT);
-        }
-    }
-
+    LOGI("NATIVE::startDhcpWimaxDaemon() - stopping dhcpWimax");
+    stopDhcpWimax();
+    LOGI("NATIVE::startDhcpWimaxDaemon() - dhcpWimax stopped");
     ifc_init();
     ifc_up("wimax0");
     LOGI("NATIVE::startDhcpWimaxDaemon() - wimax0 up!");
@@ -401,42 +403,6 @@ const char *getWimaxDhcpError() {
                 LOGI("NATIVE::startDhcpWimaxDaemon() - dhcp finished!");
                 return 0;
             }
-        }
-        usleep(100000);
-    }
-    return -1;
-}
-
-int terminateProcess(char *pid) {
-  if(!kill(atoi(pid), SIGTERM)) {
-    LOGD("Process terminated successfully.");
-    stopDhcpWimax();
-    return 0;
-  } else {
-    LOGE("Process could not be killed!");
-  }
-  return -1;
-}
-
-int stopDhcpWimax()
-{
-    LOGD("Stopping DHCP...");
-    char dhcp_status[PROPERTY_VALUE_MAX] = {'\0'};
-    int count = 50; /* wait at most 5 seconds for completion */
-
-    /* Check whether dhcpcd already stopped */
-    if (property_get(DHCP_DAEMON_PROP_NAME, dhcp_status, NULL)
-        && strcmp(dhcp_status, "stopped") == 0) {
-        return 0;
-    }
-
-    property_set("ctl.stop", DHCP_DAEMON_NAME);
-    sched_yield();
-
-    while (count-- > 0) {
-        if (property_get(DHCP_DAEMON_PROP_NAME, dhcp_status, NULL)) {
-            if (strcmp(dhcp_status, "stopped") == 0)
-                return 0;
         }
         usleep(100000);
     }
