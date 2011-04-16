@@ -40,3 +40,14 @@ LOCAL_MODULE:= libpower
 LOCAL_SRC_FILES += power/power.c
 
 include $(BUILD_STATIC_LIBRARY)
+
+# shared library for various HALs
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := libpower
+
+LOCAL_SRC_FILES := power/power.c
+
+LOCAL_SHARED_LIBRARIES := libcutils
+
+include $(BUILD_SHARED_LIBRARY)
