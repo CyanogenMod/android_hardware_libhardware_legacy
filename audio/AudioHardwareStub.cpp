@@ -25,7 +25,7 @@
 #include "AudioHardwareStub.h"
 #include <media/AudioRecord.h>
 
-namespace android {
+namespace android_audio_legacy {
 
 // ----------------------------------------------------------------------------
 

@@ -21,8 +21,12 @@
 #include <media/ToneGenerator.h>
 #include <utils/String8.h>
 
-namespace android {
+#include <hardware_legacy/AudioSystemLegacy.h>
 
+namespace android_audio_legacy {
+    using android::Vector;
+    using android::String8;
+    using android::ToneGenerator;
 
 // ----------------------------------------------------------------------------
 

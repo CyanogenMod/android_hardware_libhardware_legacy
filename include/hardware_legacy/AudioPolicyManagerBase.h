@@ -23,7 +23,8 @@
 #include <hardware_legacy/AudioPolicyInterface.h>
 
 
-namespace android {
+namespace android_audio_legacy {
+    using android::KeyedVector;
 
 // ----------------------------------------------------------------------------
 

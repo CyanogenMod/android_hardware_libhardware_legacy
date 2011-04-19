@@ -32,7 +32,9 @@
 #include "AudioHardwareGeneric.h"
 #include <media/AudioRecord.h>
 
-namespace android {
+#include <hardware_legacy/AudioSystemLegacy.h>
+
+namespace android_audio_legacy {
 
 // ----------------------------------------------------------------------------
 

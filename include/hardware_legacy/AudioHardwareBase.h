@@ -17,10 +17,11 @@
 #ifndef ANDROID_AUDIO_HARDWARE_BASE_H
 #define ANDROID_AUDIO_HARDWARE_BASE_H
 
-#include "hardware_legacy/AudioHardwareInterface.h"
+#include <hardware_legacy/AudioHardwareInterface.h>
 
+#include <hardware/audio.h>
 
-namespace android {
+namespace android_audio_legacy {
 
 // ----------------------------------------------------------------------------
 

@@ -38,7 +38,7 @@
 // change to 1 to log routing calls
 #define LOG_ROUTING_CALLS 1
 
-namespace android {
+namespace android_audio_legacy {
 
 #if LOG_ROUTING_CALLS
 static const char* routingModeStrings[] =
@@ -66,46 +66,7 @@ static const char* displayMode(int mode)
 
 AudioHardwareInterface* AudioHardwareInterface::create()
 {
-    /*
-     * FIXME: This code needs to instantiate the correct audio device
-     * interface. For now - we use compile-time switches.
-     */
-    AudioHardwareInterface* hw = 0;
-    char value[PROPERTY_VALUE_MAX];
-
-#ifdef GENERIC_AUDIO
-    hw = new AudioHardwareGeneric();
-#else
-    // if running in emulation - use the emulator driver
-    if (property_get("ro.kernel.qemu", value, 0)) {
-        LOGD("Running in emulation - using generic audio driver");
-        hw = new AudioHardwareGeneric();
-    }
-    else {
-        LOGV("Creating Vendor Specific AudioHardware");
-        hw = createAudioHardware();
-    }
-#endif
-    if (hw->initCheck() != NO_ERROR) {
-        LOGW("Using stubbed audio hardware. No sound will be produced.");
-        delete hw;
-        hw = new AudioHardwareStub();
-    }
-    
-#ifdef WITH_A2DP
-    hw = new A2dpAudioInterface(hw);
-#endif
-
-#ifdef ENABLE_AUDIO_DUMP
-    // This code adds a record of buffers in a file to write calls made by AudioFlinger.
-    // It replaces the current AudioHardwareInterface object by an intermediate one which
-    // will record buffers in a file (after sending them to hardware) for testing purpose.
-    // This feature is enabled by defining symbol ENABLE_AUDIO_DUMP.
-    // The output file is set with setParameters("test_cmd_file_name=<name>"). Pause are not recorded in the file.
-    LOGV("opening PCM dump interface");
-    hw = new AudioDumpInterface(hw);    // replace interface
-#endif
-    return hw;
+    return NULL;
 }
 
 AudioStreamOut::~AudioStreamOut()

@@ -23,9 +23,12 @@
 
 #include <utils/threads.h>
 
+#include <hardware_legacy/AudioSystemLegacy.h>
 #include <hardware_legacy/AudioHardwareBase.h>
 
-namespace android {
+namespace android_audio_legacy {
+    using android::Mutex;
+    using android::AutoMutex;
 
 // ----------------------------------------------------------------------------
 

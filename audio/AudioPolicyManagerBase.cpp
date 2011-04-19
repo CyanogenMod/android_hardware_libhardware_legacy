@@ -21,8 +21,7 @@
 #include <media/mediarecorder.h>
 #include <math.h>
 
-namespace android {
-
+namespace android_audio_legacy {
 
 // ----------------------------------------------------------------------------
 // AudioPolicyInterface implementation
@@ -542,7 +541,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
     }
 
 
-    LOGW_IF((output == 0), "getOutput() could not find output for stream %d, samplingRate %d, format %d, channels %x, flags %x",
+    LOGW_IF((output ==0), "getOutput() could not find output for stream %d, samplingRate %d, format %d, channels %x, flags %x",
                 stream, samplingRate, format, channels, flags);
 
     return output;
@@ -2114,7 +2113,7 @@ bool AudioPolicyManagerBase::needsDirectOuput(AudioSystem::stream_type stream,
                                     uint32_t device)
 {
    return ((flags & AudioSystem::OUTPUT_FLAG_DIRECT) ||
-          (format != 0 && !AudioSystem::isLinearPCM(format)));
+          (format !=0 && !AudioSystem::isLinearPCM(format)));
 }
 
 uint32_t AudioPolicyManagerBase::getMaxEffectsCpuLoad()
@@ -2166,7 +2165,7 @@ void AudioPolicyManagerBase::AudioOutputDescriptor::changeRefCount(AudioSystem::
         return;
     }
     mRefCount[stream] += delta;
-    LOGV("changeRefCount() delta %d, stream %d, refCount %d", delta, stream, mRefCount[stream]);
+    LOGV("changeRefCount() stream %d, count %d", stream, mRefCount[stream]);
 }
 
 uint32_t AudioPolicyManagerBase::AudioOutputDescriptor::refCount()
@@ -2222,8 +2221,7 @@ status_t AudioPolicyManagerBase::AudioOutputDescriptor::dump(int fd)
 
 AudioPolicyManagerBase::AudioInputDescriptor::AudioInputDescriptor()
     : mSamplingRate(0), mFormat(0), mChannels(0),
-      mAcoustics((AudioSystem::audio_in_acoustics)0), mDevice(0), mRefCount(0),
-      mInputSource(0)
+     mAcoustics((AudioSystem::audio_in_acoustics)0), mDevice(0), mRefCount(0)
 {
 }
 

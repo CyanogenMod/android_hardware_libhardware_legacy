@@ -23,7 +23,7 @@
 
 #include <hardware_legacy/AudioHardwareBase.h>
 
-namespace android {
+namespace android_audio_legacy {
 
 // ----------------------------------------------------------------------------
 

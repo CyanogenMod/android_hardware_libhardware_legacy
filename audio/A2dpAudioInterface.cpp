@@ -25,7 +25,8 @@
 #include "audio/liba2dp.h"
 #include <hardware_legacy/power.h>
 
-namespace android {
+
+namespace android_audio_legacy {
 
 static const char *sA2dpWakeLock = "A2dpOutputStream";
 #define MAX_WRITE_RETRIES  5

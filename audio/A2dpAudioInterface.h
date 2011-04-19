@@ -25,7 +25,8 @@
 #include <hardware_legacy/AudioHardwareBase.h>
 
 
-namespace android {
+namespace android_audio_legacy {
+    using android::Mutex;
 
 class A2dpAudioInterface : public AudioHardwareBase
 {
