@@ -4,6 +4,7 @@
 legacy_modules := power uevent vibrator wifi qemu qemu_tracing
 
 SAVE_MAKEFILES := $(call all-named-subdir-makefiles,$(legacy_modules))
+LEGACY_AUDIO_MAKEFILES := $(call all-named-subdir-makefiles,audio)
 
 LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
@@ -53,3 +54,7 @@ LOCAL_SRC_FILES := power/power.c
 LOCAL_SHARED_LIBRARIES := libcutils
 
 include $(BUILD_SHARED_LIBRARY)
+
+# legacy_audio builds it's own set of libraries that aren't linked into
+# hardware_legacy
+include $(LEGACY_AUDIO_MAKEFILES)
