@@ -41,6 +41,34 @@ LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_STATIC_LIBRARY)
 
+# The default audio policy, for now still implemented on top of legacy
+# policy code
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := \
+    AudioPolicyManagerDefault.cpp
+
+LOCAL_SHARED_LIBRARIES := \
+    libcutils \
+    libutils \
+    libmedia
+
+LOCAL_STATIC_LIBRARIES := \
+    libmedia_helper
+
+LOCAL_WHOLE_STATIC_LIBRARIES := \
+    libaudiopolicy_legacy
+
+LOCAL_MODULE := audio_policy.default
+LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
+LOCAL_MODULE_TAGS := optional
+
+ifeq ($(BOARD_HAVE_BLUETOOTH),true)
+  LOCAL_CFLAGS += -DWITH_A2DP
+endif
+
+include $(BUILD_SHARED_LIBRARY)
+
 #ifeq ($(ENABLE_AUDIO_DUMP),true)
 #  LOCAL_SRC_FILES += AudioDumpInterface.cpp
 #  LOCAL_CFLAGS += -DENABLE_AUDIO_DUMP
