@@ -17,7 +17,7 @@
 #ifndef ANDROID_AUDIOPOLICYCLIENTLEGACY_H
 #define ANDROID_AUDIOPOLICYCLIENTLEGACY_H
 
-#include <hardware/audio.h>
+#include <system/audio.h>
 #include <hardware/audio_policy.h>
 #include <hardware/audio_policy_hal.h>
 

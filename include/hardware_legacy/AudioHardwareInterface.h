@@ -28,7 +28,7 @@
 #include <media/IAudioFlinger.h>
 #include <hardware_legacy/AudioSystemLegacy.h>
 
-#include <hardware/audio.h>
+#include <system/audio.h>
 #include <hardware/audio_hal.h>
 
 #include <cutils/bitops.h>

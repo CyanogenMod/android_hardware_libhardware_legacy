@@ -19,7 +19,7 @@
 
 #include <hardware_legacy/AudioHardwareInterface.h>
 
-#include <hardware/audio.h>
+#include <system/audio.h>
 
 namespace android_audio_legacy {
 
