@@ -207,6 +207,7 @@ int wifi_unload_driver()
 {
     int count = 20; /* wait at most 10 seconds for completion */
 
+    usleep(200000); /* allow to finish interface down */
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
         while (count-- > 0) {
             if (!is_wifi_driver_loaded())
