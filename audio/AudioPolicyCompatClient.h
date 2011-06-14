@@ -18,8 +18,8 @@
 #define ANDROID_AUDIOPOLICYCLIENTLEGACY_H
 
 #include <system/audio.h>
+#include <system/audio_policy.h>
 #include <hardware/audio_policy.h>
-#include <hardware/audio_policy_hal.h>
 
 #include <hardware_legacy/AudioSystemLegacy.h>
 #include <hardware_legacy/AudioPolicyInterface.h>

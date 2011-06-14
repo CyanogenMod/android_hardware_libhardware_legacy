@@ -21,8 +21,8 @@
 
 #include <hardware/hardware.h>
 #include <system/audio.h>
+#include <system/audio_policy.h>
 #include <hardware/audio_policy.h>
-#include <hardware/audio_policy_hal.h>
 
 #include <hardware_legacy/AudioSystemLegacy.h>
 

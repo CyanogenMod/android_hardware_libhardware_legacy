@@ -21,7 +21,7 @@
 #include <media/AudioParameter.h>
 
 #include <system/audio.h>
-#include <hardware/audio_policy.h>
+#include <system/audio_policy.h>
 
 namespace android_audio_legacy {
 

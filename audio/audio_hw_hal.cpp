@@ -21,7 +21,7 @@
 
 #include <hardware/hardware.h>
 #include <system/audio.h>
-#include <hardware/audio_hal.h>
+#include <hardware/audio.h>
 
 #include <hardware_legacy/AudioHardwareInterface.h>
 #include <hardware_legacy/AudioSystemLegacy.h>

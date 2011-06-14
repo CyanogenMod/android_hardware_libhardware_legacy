@@ -29,7 +29,7 @@
 #include <hardware_legacy/AudioSystemLegacy.h>
 
 #include <system/audio.h>
-#include <hardware/audio_hal.h>
+#include <hardware/audio.h>
 
 #include <cutils/bitops.h>
 
