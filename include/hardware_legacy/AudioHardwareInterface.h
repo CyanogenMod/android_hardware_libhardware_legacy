@@ -172,6 +172,8 @@ public:
     // Unit: the number of input audio frames
     virtual unsigned int  getInputFramesLost() const = 0;
 
+    virtual status_t addAudioEffect(effect_handle_t effect) = 0;
+    virtual status_t removeAudioEffect(effect_handle_t effect) = 0;
 };
 
 /**
