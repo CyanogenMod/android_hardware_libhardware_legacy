@@ -142,7 +142,7 @@ public:
     // Audio effect management
     virtual audio_io_handle_t getOutputForEffect(effect_descriptor_t *desc) = 0;
     virtual status_t registerEffect(effect_descriptor_t *desc,
-                                    audio_io_handle_t output,
+                                    audio_io_handle_t io,
                                     uint32_t strategy,
                                     int session,
                                     int id) = 0;
