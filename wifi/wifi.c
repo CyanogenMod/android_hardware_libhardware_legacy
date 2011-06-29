@@ -49,12 +49,6 @@ static char iface[PROPERTY_VALUE_MAX];
 // TODO: use new ANDROID_SOCKET mechanism, once support for multiple
 // sockets is in
 
-#ifndef WIFI_DRIVER_MODULE_PATH
-#define WIFI_DRIVER_MODULE_PATH         "/system/lib/modules/wlan.ko"
-#endif
-#ifndef WIFI_DRIVER_MODULE_NAME
-#define WIFI_DRIVER_MODULE_NAME         "wlan"
-#endif
 #ifndef WIFI_DRIVER_MODULE_ARG
 #define WIFI_DRIVER_MODULE_ARG          ""
 #endif
@@ -66,10 +60,12 @@ static char iface[PROPERTY_VALUE_MAX];
 #define WIFI_DRIVER_LOADER_DELAY	1000000
 
 static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
+#ifdef WIFI_DRIVER_MODULE_PATH
 static const char DRIVER_MODULE_NAME[]  = WIFI_DRIVER_MODULE_NAME;
 static const char DRIVER_MODULE_TAG[]   = WIFI_DRIVER_MODULE_NAME " ";
 static const char DRIVER_MODULE_PATH[]  = WIFI_DRIVER_MODULE_PATH;
 static const char DRIVER_MODULE_ARG[]   = WIFI_DRIVER_MODULE_ARG;
+#endif
 static const char FIRMWARE_LOADER[]     = WIFI_FIRMWARE_LOADER;
 static const char DRIVER_PROP_NAME[]    = "wlan.driver.status";
 static const char SUPPLICANT_NAME[]     = "wpa_supplicant";
@@ -138,13 +134,16 @@ const char *get_dhcp_error_string() {
 
 int is_wifi_driver_loaded() {
     char driver_status[PROPERTY_VALUE_MAX];
+#ifdef WIFI_DRIVER_MODULE_PATH
     FILE *proc;
     char line[sizeof(DRIVER_MODULE_TAG)+10];
+#endif
 
     if (!property_get(DRIVER_PROP_NAME, driver_status, NULL)
             || strcmp(driver_status, "ok") != 0) {
         return 0;  /* driver not loaded */
     }
+#ifdef WIFI_DRIVER_MODULE_PATH
     /*
      * If the property says the driver is loaded, check to
      * make sure that the property setting isn't just left
@@ -165,10 +164,14 @@ int is_wifi_driver_loaded() {
     fclose(proc);
     property_set(DRIVER_PROP_NAME, "unloaded");
     return 0;
+#else
+    return 1;
+#endif
 }
 
 int wifi_load_driver()
 {
+#ifdef WIFI_DRIVER_MODULE_PATH
     char driver_status[PROPERTY_VALUE_MAX];
     int count = 100; /* wait at most 20 seconds for completion */
 
@@ -201,10 +204,15 @@ int wifi_load_driver()
     property_set(DRIVER_PROP_NAME, "timeout");
     wifi_unload_driver();
     return -1;
+#else
+    property_set(DRIVER_PROP_NAME, "ok");
+    return 0;
+#endif
 }
 
 int wifi_unload_driver()
 {
+#ifdef WIFI_DRIVER_MODULE_PATH
     int count = 20; /* wait at most 10 seconds for completion */
 
     usleep(200000); /* allow to finish interface down */
@@ -220,6 +228,10 @@ int wifi_unload_driver()
         return -1;
     } else
         return -1;
+#else
+    property_set(DRIVER_PROP_NAME, "unloaded");
+    return 0;
+#endif
 }
 
 int ensure_config_file_exists()
