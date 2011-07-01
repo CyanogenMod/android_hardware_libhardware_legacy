@@ -172,6 +172,14 @@ int do_dhcp_request(int *ipaddr, int *gateway, int *mask,
  */
 const char *get_dhcp_error_string();
 
+/**
+ * Return the path to requested firmware
+ */
+#define WIFI_GET_FW_PATH_STA	0
+#define WIFI_GET_FW_PATH_AP	1
+#define WIFI_GET_FW_PATH_P2P	2
+const char *wifi_get_fw_path(int fw_type);
+
 #if __cplusplus
 };  // extern "C"
 #endif

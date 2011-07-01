@@ -57,6 +57,16 @@ static char iface[PROPERTY_VALUE_MAX];
 #endif
 #define WIFI_TEST_INTERFACE		"sta"
 
+#ifndef WIFI_DRIVER_FW_PATH_STA
+#define WIFI_DRIVER_FW_PATH_STA		NULL
+#endif
+#ifndef WIFI_DRIVER_FW_PATH_AP
+#define WIFI_DRIVER_FW_PATH_AP		NULL
+#endif
+#ifndef WIFI_DRIVER_FW_PATH_P2P
+#define WIFI_DRIVER_FW_PATH_P2P		NULL
+#endif
+
 #define WIFI_DRIVER_LOADER_DELAY	1000000
 
 static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
@@ -603,4 +613,17 @@ void wifi_close_supplicant_connection()
 int wifi_command(const char *command, char *reply, size_t *reply_len)
 {
     return wifi_send_command(ctrl_conn, command, reply, reply_len);
+}
+
+const char *wifi_get_fw_path(int fw_type)
+{
+    switch (fw_type) {
+    case WIFI_GET_FW_PATH_STA:
+        return WIFI_DRIVER_FW_PATH_STA;
+    case WIFI_GET_FW_PATH_AP:
+        return WIFI_DRIVER_FW_PATH_AP;
+    case WIFI_GET_FW_PATH_P2P:
+        return WIFI_DRIVER_FW_PATH_P2P;
+    }
+    return NULL;
 }
