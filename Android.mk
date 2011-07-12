@@ -13,23 +13,12 @@ LOCAL_SHARED_LIBRARIES := libcutils libwpa_client
 
 LOCAL_INCLUDES += $(LOCAL_PATH)
 
-ifneq ($(TARGET_SIMULATOR),true)
-  LOCAL_CFLAGS  += -DQEMU_HARDWARE
-  QEMU_HARDWARE := true
-endif
+LOCAL_CFLAGS  += -DQEMU_HARDWARE
+QEMU_HARDWARE := true
 
-ifneq ($(TARGET_SIMULATOR),true)
 LOCAL_SHARED_LIBRARIES += libdl
-endif
 
 include $(SAVE_MAKEFILES)
-
-# need "-lrt" on Linux simulator to pick up clock_gettime
-ifeq ($(TARGET_SIMULATOR),true)
-	ifeq ($(HOST_OS),linux)
-		LOCAL_LDLIBS += -lrt -lpthread -ldl
-	endif
-endif
 
 LOCAL_MODULE:= libhardware_legacy
 
