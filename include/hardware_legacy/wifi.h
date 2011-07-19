@@ -180,6 +180,11 @@ const char *get_dhcp_error_string();
 #define WIFI_GET_FW_PATH_P2P	2
 const char *wifi_get_fw_path(int fw_type);
 
+/**
+ * Change the path to firmware for the wlan driver
+ */
+int wifi_change_fw_path(const char *fwpath);
+
 #if __cplusplus
 };  // extern "C"
 #endif

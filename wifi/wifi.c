@@ -67,6 +67,10 @@ static char iface[PROPERTY_VALUE_MAX];
 #define WIFI_DRIVER_FW_PATH_P2P		NULL
 #endif
 
+#ifndef WIFI_DRIVER_FW_PATH_PARAM
+#define WIFI_DRIVER_FW_PATH_PARAM	"/sys/module/wlan/parameters/fwpath"
+#endif
+
 #define WIFI_DRIVER_LOADER_DELAY	1000000
 
 static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
@@ -626,4 +630,26 @@ const char *wifi_get_fw_path(int fw_type)
         return WIFI_DRIVER_FW_PATH_P2P;
     }
     return NULL;
+}
+
+int wifi_change_fw_path(const char *fwpath)
+{
+    int len;
+    int fd;
+    int ret = 0;
+
+    if (!fwpath)
+        return ret;
+    fd = open(WIFI_DRIVER_FW_PATH_PARAM, O_WRONLY);
+    if (fd < 0) {
+        LOGE("Failed to open wlan fw path param (%s)", strerror(errno));
+        return -1;
+    }
+    len = strlen(fwpath) + 1;
+    if (write(fd, fwpath, len) != len) {
+        LOGE("Failed to write wlan fw path param (%s)", strerror(errno));
+        ret = -1;
+    }
+    close(fd);
+    return ret;
 }
