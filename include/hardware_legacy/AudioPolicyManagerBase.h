@@ -112,7 +112,7 @@ public:
 
         virtual audio_io_handle_t getOutputForEffect(effect_descriptor_t *desc);
         virtual status_t registerEffect(effect_descriptor_t *desc,
-                                        audio_io_handle_t output,
+                                        audio_io_handle_t io,
                                         uint32_t strategy,
                                         int session,
                                         int id);
@@ -212,7 +212,7 @@ protected:
 
             status_t dump(int fd);
 
-            int mOutput;                // output the effect is attached to
+            int mIo;                // io the effect is attached to
             routing_strategy mStrategy; // routing strategy the effect is associated to
             int mSession;               // audio session the effect is on
             effect_descriptor_t mDesc;  // effect descriptor

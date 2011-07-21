@@ -18,7 +18,7 @@
 //#define LOG_NDEBUG 0
 #include <utils/Log.h>
 #include <hardware_legacy/AudioPolicyManagerBase.h>
-#include <media/mediarecorder.h>
+#include <hardware/audio_effect.h>
 #include <math.h>
 
 namespace android_audio_legacy {
@@ -847,15 +847,18 @@ audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(effect_descriptor_t
 }
 
 status_t AudioPolicyManagerBase::registerEffect(effect_descriptor_t *desc,
-                                audio_io_handle_t output,
+                                audio_io_handle_t io,
                                 uint32_t strategy,
                                 int session,
                                 int id)
 {
-    ssize_t index = mOutputs.indexOfKey(output);
+    ssize_t index = mOutputs.indexOfKey(io);
     if (index < 0) {
-        LOGW("registerEffect() unknown output %d", output);
-        return INVALID_OPERATION;
+        index = mInputs.indexOfKey(io);
+        if (index < 0) {
+            LOGW("registerEffect() unknown io %d", io);
+            return INVALID_OPERATION;
+        }
     }
 
     if (mTotalEffectsCpuLoad + desc->cpuLoad > getMaxEffectsCpuLoad()) {
@@ -870,15 +873,15 @@ status_t AudioPolicyManagerBase::registerEffect(effect_descriptor_t *desc,
     }
     mTotalEffectsCpuLoad += desc->cpuLoad;
     mTotalEffectsMemory += desc->memoryUsage;
-    LOGV("registerEffect() effect %s, output %d, strategy %d session %d id %d",
-            desc->name, output, strategy, session, id);
+    LOGV("registerEffect() effect %s, io %d, strategy %d session %d id %d",
+            desc->name, io, strategy, session, id);
 
     LOGV("registerEffect() CPU %d, memory %d", desc->cpuLoad, desc->memoryUsage);
     LOGV("  total CPU %d, total memory %d", mTotalEffectsCpuLoad, mTotalEffectsMemory);
 
     EffectDescriptor *pDesc = new EffectDescriptor();
     memcpy (&pDesc->mDesc, desc, sizeof(effect_descriptor_t));
-    pDesc->mOutput = output;
+    pDesc->mIo = io;
     pDesc->mStrategy = (routing_strategy)strategy;
     pDesc->mSession = session;
     mEffects.add(id, pDesc);
@@ -1443,10 +1446,10 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
             EffectDescriptor *desc = mEffects.valueAt(i);
             if (desc->mSession != AudioSystem::SESSION_OUTPUT_STAGE &&
                     desc->mStrategy == strategy &&
-                    desc->mOutput == srcOutput) {
+                    desc->mIo == srcOutput) {
                 LOGV("checkOutputForStrategy() moving effect %d to output %d", mEffects.keyAt(i), dstOutput);
                 mpClientInterface->moveEffects(desc->mSession, srcOutput, dstOutput);
-                desc->mOutput = dstOutput;
+                desc->mIo = dstOutput;
             }
         }
         // Move tracks associated to this strategy from previous output to new output
@@ -1818,7 +1821,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
         device = AudioSystem::DEVICE_IN_VOICE_CALL;
         break;
     default:
-        LOGW("getInput() invalid input source %d", inputSource);
+        LOGW("getDeviceForInputSource() invalid input source %d", inputSource);
         device = 0;
         break;
     }
@@ -2221,7 +2224,8 @@ status_t AudioPolicyManagerBase::AudioOutputDescriptor::dump(int fd)
 
 AudioPolicyManagerBase::AudioInputDescriptor::AudioInputDescriptor()
     : mSamplingRate(0), mFormat(0), mChannels(0),
-     mAcoustics((AudioSystem::audio_in_acoustics)0), mDevice(0), mRefCount(0)
+      mAcoustics((AudioSystem::audio_in_acoustics)0), mDevice(0), mRefCount(0),
+      mInputSource(0)
 {
 }
 
@@ -2267,7 +2271,7 @@ status_t AudioPolicyManagerBase::EffectDescriptor::dump(int fd)
     char buffer[SIZE];
     String8 result;
 
-    snprintf(buffer, SIZE, " Output: %d\n", mOutput);
+    snprintf(buffer, SIZE, " I/O: %d\n", mIo);
     result.append(buffer);
     snprintf(buffer, SIZE, " Strategy: %d\n", mStrategy);
     result.append(buffer);

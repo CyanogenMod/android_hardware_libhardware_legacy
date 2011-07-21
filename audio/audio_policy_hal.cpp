@@ -250,13 +250,13 @@ static audio_io_handle_t ap_get_output_for_effect(struct audio_policy *pol,
 
 static int ap_register_effect(struct audio_policy *pol,
                               struct effect_descriptor_s *desc,
-                              audio_io_handle_t output,
+                              audio_io_handle_t io,
                               uint32_t strategy,
                               int session,
                               int id)
 {
     struct legacy_audio_policy *lap = to_lap(pol);
-    return lap->apm->registerEffect(desc, output, strategy, session, id);
+    return lap->apm->registerEffect(desc, io, strategy, session, id);
 }
 
 static int ap_unregister_effect(struct audio_policy *pol, int id)
