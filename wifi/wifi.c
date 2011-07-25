@@ -88,6 +88,12 @@ static const char SUPP_CONFIG_TEMPLATE[]= "/system/etc/wifi/wpa_supplicant.conf"
 static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
 static const char MODULE_FILE[]         = "/proc/modules";
 
+static const char SUPP_ENTROPY_FILE[]   = WIFI_ENTROPY_FILE;
+static unsigned char dummy_key[20] = { 0x11, 0xbe, 0x33, 0x43, 0x35,
+                                       0x68, 0x47, 0x84, 0x99, 0xa9,
+                                       0x2b, 0x1c, 0xd3, 0xee, 0xff,
+                                       0xf1, 0xe2, 0xf3, 0xf4, 0xf5 };
+
 static int insmod(const char *filename, const char *args)
 {
     void *module;
@@ -246,6 +252,50 @@ int wifi_unload_driver()
     property_set(DRIVER_PROP_NAME, "unloaded");
     return 0;
 #endif
+}
+
+int ensure_entropy_file_exists()
+{
+    int ret;
+    int destfd;
+
+    ret = access(SUPP_ENTROPY_FILE, R_OK|W_OK);
+    if ((ret == 0) || (errno == EACCES)) {
+        if ((ret != 0) &&
+            (chmod(SUPP_ENTROPY_FILE, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP) != 0)) {
+            LOGE("Cannot set RW to \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
+            return -1;
+        }
+        return 0;
+    }
+    destfd = open(SUPP_ENTROPY_FILE, O_CREAT|O_RDWR, 0660);
+    if (destfd < 0) {
+        LOGE("Cannot create \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
+        return -1;
+    }
+
+    if (write(destfd, dummy_key, sizeof(dummy_key)) != sizeof(dummy_key)) {
+        LOGE("Error writing \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
+        close(destfd);
+        return -1;
+    }
+    close(destfd);
+
+    /* chmod is needed because open() didn't set permisions properly */
+    if (chmod(SUPP_ENTROPY_FILE, 0660) < 0) {
+        LOGE("Error changing permissions of %s to 0660: %s",
+             SUPP_ENTROPY_FILE, strerror(errno));
+        unlink(SUPP_ENTROPY_FILE);
+        return -1;
+    }
+
+    if (chown(SUPP_ENTROPY_FILE, AID_SYSTEM, AID_WIFI) < 0) {
+        LOGE("Error changing group ownership of %s to %d: %s",
+             SUPP_ENTROPY_FILE, AID_WIFI, strerror(errno));
+        unlink(SUPP_ENTROPY_FILE);
+        return -1;
+    }
+    return 0;
 }
 
 int ensure_config_file_exists()
@@ -418,6 +468,10 @@ int wifi_start_supplicant()
     if (ensure_config_file_exists() < 0) {
         LOGE("Wi-Fi will not be enabled");
         return -1;
+    }
+
+    if (ensure_entropy_file_exists() < 0) {
+        LOGE("Wi-Fi entropy file was not created");
     }
 
     /* Clear out any stale socket files that might be left over. */
