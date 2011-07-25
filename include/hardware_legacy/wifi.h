@@ -185,6 +185,12 @@ const char *wifi_get_fw_path(int fw_type);
  */
 int wifi_change_fw_path(const char *fwpath);
 
+/**
+ * Check and create if necessary initial entropy file
+ */
+#define WIFI_ENTROPY_FILE	"/data/misc/wifi/entropy.bin"
+int ensure_entropy_file_exists();
+
 #if __cplusplus
 };  // extern "C"
 #endif
