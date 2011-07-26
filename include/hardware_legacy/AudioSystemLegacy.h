@@ -140,29 +140,26 @@ public:
         PCM_8_BIT          = (PCM|PCM_SUB_8_BIT)
     };
 
-
-    // Channel mask definitions must be kept in sync with JAVA values
-    //   in /media/java/android/media/AudioFormat.java
     enum audio_channels {
         // output channels
-        CHANNEL_OUT_FRONT_LEFT            = 0x4,
-        CHANNEL_OUT_FRONT_RIGHT           = 0x8,
-        CHANNEL_OUT_FRONT_CENTER          = 0x10,
-        CHANNEL_OUT_LOW_FREQUENCY         = 0x20,
-        CHANNEL_OUT_BACK_LEFT             = 0x40,
-        CHANNEL_OUT_BACK_RIGHT            = 0x80,
-        CHANNEL_OUT_FRONT_LEFT_OF_CENTER  = 0x100,
-        CHANNEL_OUT_FRONT_RIGHT_OF_CENTER = 0x200,
-        CHANNEL_OUT_BACK_CENTER           = 0x400,
-        CHANNEL_OUT_SIDE_LEFT             = 0x800,
-        CHANNEL_OUT_SIDE_RIGHT            = 0x1000,
-        CHANNEL_OUT_TOP_CENTER            = 0x2000,
-        CHANNEL_OUT_TOP_FRONT_LEFT        = 0x4000,
-        CHANNEL_OUT_TOP_FRONT_CENTER      = 0x8000,
-        CHANNEL_OUT_TOP_FRONT_RIGHT       = 0x10000,
-        CHANNEL_OUT_TOP_BACK_LEFT         = 0x20000,
-        CHANNEL_OUT_TOP_BACK_CENTER       = 0x40000,
-        CHANNEL_OUT_TOP_BACK_RIGHT        = 0x80000,
+        CHANNEL_OUT_FRONT_LEFT            = 0x1,
+        CHANNEL_OUT_FRONT_RIGHT           = 0x2,
+        CHANNEL_OUT_FRONT_CENTER          = 0x4,
+        CHANNEL_OUT_LOW_FREQUENCY         = 0x8,
+        CHANNEL_OUT_BACK_LEFT             = 0x10,
+        CHANNEL_OUT_BACK_RIGHT            = 0x20,
+        CHANNEL_OUT_FRONT_LEFT_OF_CENTER  = 0x40,
+        CHANNEL_OUT_FRONT_RIGHT_OF_CENTER = 0x80,
+        CHANNEL_OUT_BACK_CENTER           = 0x100,
+        CHANNEL_OUT_SIDE_LEFT             = 0x200,
+        CHANNEL_OUT_SIDE_RIGHT            = 0x400,
+        CHANNEL_OUT_TOP_CENTER            = 0x800,
+        CHANNEL_OUT_TOP_FRONT_LEFT        = 0x1000,
+        CHANNEL_OUT_TOP_FRONT_CENTER      = 0x2000,
+        CHANNEL_OUT_TOP_FRONT_RIGHT       = 0x4000,
+        CHANNEL_OUT_TOP_BACK_LEFT         = 0x8000,
+        CHANNEL_OUT_TOP_BACK_CENTER       = 0x10000,
+        CHANNEL_OUT_TOP_BACK_RIGHT        = 0x20000,
 
         CHANNEL_OUT_MONO = CHANNEL_OUT_FRONT_LEFT,
         CHANNEL_OUT_STEREO = (CHANNEL_OUT_FRONT_LEFT | CHANNEL_OUT_FRONT_RIGHT),
