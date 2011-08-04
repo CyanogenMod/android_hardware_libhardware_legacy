@@ -36,6 +36,7 @@
 #  define  D(...)   ((void)0)
 #endif
 
+#include "hardware/qemu_pipe.h"
 
 int
 qemu_check(void)
@@ -70,6 +71,24 @@ qemu_fd_read( int  fd, char*  buff, int  len )
     return len2;
 }
 
+static int
+qemu_channel_open_qemud_pipe( QemuChannel*  channel,
+                              const char*   name )
+{
+    int   fd;
+    char  pipe_name[512];
+
+    snprintf(pipe_name, sizeof(pipe_name), "qemud:%s", name);
+    fd = qemu_pipe_open(pipe_name);
+    if (fd < 0) {
+        D("no qemud pipe: %s", strerror(errno));
+        return -1;
+    }
+
+    channel->is_qemud = 1;
+    channel->fd       = fd;
+    return 0;
+}
 
 static int
 qemu_channel_open_qemud( QemuChannel*  channel,
@@ -174,6 +193,9 @@ qemu_channel_open( QemuChannel*  channel,
         channel->is_inited = 1;
 
         do {
+            if (qemu_channel_open_qemud_pipe(channel, name) == 0)
+                break;
+
             if (qemu_channel_open_qemud(channel, name) == 0)
                 break;
 
@@ -226,7 +248,7 @@ qemu_channel_open( QemuChannel*  channel,
 
 
 static int
-qemu_command_vformat( char*        buffer, 
+qemu_command_vformat( char*        buffer,
                       int          buffer_size,
                       const char*  format,
                       va_list      args )
@@ -247,7 +269,7 @@ qemu_command_vformat( char*        buffer,
 }
 
 extern int
-qemu_command_format( char*        buffer, 
+qemu_command_format( char*        buffer,
                      int          buffer_size,
                      const char*  format,
                      ... )
