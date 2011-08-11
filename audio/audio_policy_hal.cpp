@@ -265,6 +265,12 @@ static int ap_unregister_effect(struct audio_policy *pol, int id)
     return lap->apm->unregisterEffect(id);
 }
 
+static int ap_set_effect_enabled(struct audio_policy *pol, int id, bool enabled)
+{
+    struct legacy_audio_policy *lap = to_lap(pol);
+    return lap->apm->setEffectEnabled(id, enabled);
+}
+
 static bool ap_is_stream_active(const struct audio_policy *pol, int stream,
                                 uint32_t in_past_ms)
 {
@@ -318,6 +324,7 @@ static int create_legacy_ap(const struct audio_policy_device *device,
     lap->policy.get_output_for_effect = ap_get_output_for_effect;
     lap->policy.register_effect = ap_register_effect;
     lap->policy.unregister_effect = ap_unregister_effect;
+    lap->policy.set_effect_enabled = ap_set_effect_enabled;
     lap->policy.is_stream_active = ap_is_stream_active;
     lap->policy.dump = ap_dump;
 

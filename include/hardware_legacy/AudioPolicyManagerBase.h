@@ -117,6 +117,7 @@ public:
                                         int session,
                                         int id);
         virtual status_t unregisterEffect(int id);
+        virtual status_t setEffectEnabled(int id, bool enabled);
 
         virtual bool isStreamActive(int stream, uint32_t inPastMs = 0) const;
 
@@ -216,6 +217,7 @@ protected:
             routing_strategy mStrategy; // routing strategy the effect is associated to
             int mSession;               // audio session the effect is on
             effect_descriptor_t mDesc;  // effect descriptor
+            bool mEnabled;              // enabled state: CPU load being used or not
         };
 
         void addOutput(audio_io_handle_t id, AudioOutputDescriptor *outputDesc);
@@ -306,6 +308,8 @@ protected:
                     void        exit();
         int testOutputIndex(audio_io_handle_t output);
 #endif //AUDIO_POLICY_TEST
+
+        status_t setEffectEnabled(EffectDescriptor *pDesc, bool enabled);
 
         AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
         audio_io_handle_t mHardwareOutput;              // hardware output handler

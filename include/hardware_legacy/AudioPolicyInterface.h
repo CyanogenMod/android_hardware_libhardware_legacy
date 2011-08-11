@@ -147,6 +147,7 @@ public:
                                     int session,
                                     int id) = 0;
     virtual status_t unregisterEffect(int id) = 0;
+    virtual status_t setEffectEnabled(int id, bool enabled);
 
     virtual bool isStreamActive(int stream, uint32_t inPastMs = 0) const = 0;
 

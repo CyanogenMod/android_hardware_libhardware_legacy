@@ -861,29 +861,23 @@ status_t AudioPolicyManagerBase::registerEffect(effect_descriptor_t *desc,
         }
     }
 
-    if (mTotalEffectsCpuLoad + desc->cpuLoad > getMaxEffectsCpuLoad()) {
-        LOGW("registerEffect() CPU Load limit exceeded for Fx %s, CPU %f MIPS",
-                desc->name, (float)desc->cpuLoad/10);
-        return INVALID_OPERATION;
-    }
     if (mTotalEffectsMemory + desc->memoryUsage > getMaxEffectsMemory()) {
         LOGW("registerEffect() memory limit exceeded for Fx %s, Memory %d KB",
                 desc->name, desc->memoryUsage);
         return INVALID_OPERATION;
     }
-    mTotalEffectsCpuLoad += desc->cpuLoad;
     mTotalEffectsMemory += desc->memoryUsage;
     LOGV("registerEffect() effect %s, io %d, strategy %d session %d id %d",
             desc->name, io, strategy, session, id);
-
-    LOGV("registerEffect() CPU %d, memory %d", desc->cpuLoad, desc->memoryUsage);
-    LOGV("  total CPU %d, total memory %d", mTotalEffectsCpuLoad, mTotalEffectsMemory);
+    LOGV("registerEffect() memory %d, total memory %d", desc->memoryUsage, mTotalEffectsMemory);
 
     EffectDescriptor *pDesc = new EffectDescriptor();
     memcpy (&pDesc->mDesc, desc, sizeof(effect_descriptor_t));
     pDesc->mIo = io;
     pDesc->mStrategy = (routing_strategy)strategy;
     pDesc->mSession = session;
+    pDesc->mEnabled = false;
+
     mEffects.add(id, pDesc);
 
     return NO_ERROR;
@@ -899,25 +893,60 @@ status_t AudioPolicyManagerBase::unregisterEffect(int id)
 
     EffectDescriptor *pDesc = mEffects.valueAt(index);
 
-    if (mTotalEffectsCpuLoad < pDesc->mDesc.cpuLoad) {
-        LOGW("unregisterEffect() CPU load %d too high for total %d",
-                pDesc->mDesc.cpuLoad, mTotalEffectsCpuLoad);
-        pDesc->mDesc.cpuLoad = mTotalEffectsCpuLoad;
-    }
-    mTotalEffectsCpuLoad -= pDesc->mDesc.cpuLoad;
+    setEffectEnabled(pDesc, false);
+
     if (mTotalEffectsMemory < pDesc->mDesc.memoryUsage) {
         LOGW("unregisterEffect() memory %d too big for total %d",
                 pDesc->mDesc.memoryUsage, mTotalEffectsMemory);
         pDesc->mDesc.memoryUsage = mTotalEffectsMemory;
     }
     mTotalEffectsMemory -= pDesc->mDesc.memoryUsage;
-    LOGV("unregisterEffect() effect %s, ID %d, CPU %d, memory %d",
-            pDesc->mDesc.name, id, pDesc->mDesc.cpuLoad, pDesc->mDesc.memoryUsage);
-    LOGV("  total CPU %d, total memory %d", mTotalEffectsCpuLoad, mTotalEffectsMemory);
+    LOGV("unregisterEffect() effect %s, ID %d, memory %d total memory %d",
+            pDesc->mDesc.name, id, pDesc->mDesc.memoryUsage, mTotalEffectsMemory);
 
     mEffects.removeItem(id);
     delete pDesc;
 
+    return NO_ERROR;
+}
+
+status_t AudioPolicyManagerBase::setEffectEnabled(int id, bool enabled)
+{
+    ssize_t index = mEffects.indexOfKey(id);
+    if (index < 0) {
+        LOGW("unregisterEffect() unknown effect ID %d", id);
+        return INVALID_OPERATION;
+    }
+
+    return setEffectEnabled(mEffects.valueAt(index), enabled);
+}
+
+status_t AudioPolicyManagerBase::setEffectEnabled(EffectDescriptor *pDesc, bool enabled)
+{
+    if (enabled == pDesc->mEnabled) {
+        LOGV("setEffectEnabled(%s) effect already %s",
+             enabled?"true":"false", enabled?"enabled":"disabled");
+        return INVALID_OPERATION;
+    }
+
+    if (enabled) {
+        if (mTotalEffectsCpuLoad + pDesc->mDesc.cpuLoad > getMaxEffectsCpuLoad()) {
+            LOGW("setEffectEnabled(true) CPU Load limit exceeded for Fx %s, CPU %f MIPS",
+                 pDesc->mDesc.name, (float)pDesc->mDesc.cpuLoad/10);
+            return INVALID_OPERATION;
+        }
+        mTotalEffectsCpuLoad += pDesc->mDesc.cpuLoad;
+        LOGV("setEffectEnabled(true) total CPU %d", mTotalEffectsCpuLoad);
+    } else {
+        if (mTotalEffectsCpuLoad < pDesc->mDesc.cpuLoad) {
+            LOGW("setEffectEnabled(false) CPU load %d too high for total %d",
+                    pDesc->mDesc.cpuLoad, mTotalEffectsCpuLoad);
+            pDesc->mDesc.cpuLoad = mTotalEffectsCpuLoad;
+        }
+        mTotalEffectsCpuLoad -= pDesc->mDesc.cpuLoad;
+        LOGV("setEffectEnabled(false) total CPU %d", mTotalEffectsCpuLoad);
+    }
+    pDesc->mEnabled = enabled;
     return NO_ERROR;
 }
 
@@ -2278,6 +2307,8 @@ status_t AudioPolicyManagerBase::EffectDescriptor::dump(int fd)
     snprintf(buffer, SIZE, " Session: %d\n", mSession);
     result.append(buffer);
     snprintf(buffer, SIZE, " Name: %s\n",  mDesc.name);
+    result.append(buffer);
+    snprintf(buffer, SIZE, " %s\n",  mEnabled ? "Enabled" : "Disabled");
     result.append(buffer);
     write(fd, result.string(), result.size());
 
