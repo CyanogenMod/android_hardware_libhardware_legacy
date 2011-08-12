@@ -242,6 +242,7 @@ int wifi_unload_driver()
                 break;
             usleep(500000);
         }
+        usleep(300000); /* allow card removal */
         if (count) {
             return 0;
         }
