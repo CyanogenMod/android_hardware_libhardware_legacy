@@ -125,6 +125,11 @@ size_t AudioHardwareBase::getInputBufferSize(uint32_t sampleRate, int format, in
     return 320;
 }
 
+status_t AudioHardwareBase::getMasterVolume(float *volume)
+{
+    return INVALID_OPERATION;
+}
+
 status_t AudioHardwareBase::dumpState(int fd, const Vector<String16>& args)
 {
     const size_t SIZE = 256;
