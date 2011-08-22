@@ -659,6 +659,9 @@ int wifi_wait_for_event(char *buf, size_t buflen)
 
 void wifi_close_supplicant_connection()
 {
+    char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
+    int count = 50; /* wait at most 5 seconds to ensure init has stopped stupplicant */
+
     if (ctrl_conn != NULL) {
         wpa_ctrl_close(ctrl_conn);
         ctrl_conn = NULL;
@@ -666,6 +669,14 @@ void wifi_close_supplicant_connection()
     if (monitor_conn != NULL) {
         wpa_ctrl_close(monitor_conn);
         monitor_conn = NULL;
+    }
+
+    while (count-- > 0) {
+        if (property_get(SUPP_PROP_NAME, supp_status, NULL)) {
+            if (strcmp(supp_status, "stopped") == 0)
+                return;
+        }
+        usleep(100000);
     }
 }
 
