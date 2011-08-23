@@ -232,17 +232,16 @@ int wifi_load_driver()
 
 int wifi_unload_driver()
 {
-#ifdef WIFI_DRIVER_MODULE_PATH
-    int count = 20; /* wait at most 10 seconds for completion */
-
     usleep(200000); /* allow to finish interface down */
+#ifdef WIFI_DRIVER_MODULE_PATH
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
+        int count = 20; /* wait at most 10 seconds for completion */
         while (count-- > 0) {
             if (!is_wifi_driver_loaded())
                 break;
             usleep(500000);
         }
-        usleep(300000); /* allow card removal */
+        usleep(500000); /* allow card removal */
         if (count) {
             return 0;
         }
