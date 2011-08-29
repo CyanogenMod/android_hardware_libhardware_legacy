@@ -86,6 +86,8 @@ static const char SUPPLICANT_NAME[]     = "wpa_supplicant";
 static const char SUPP_PROP_NAME[]      = "init.svc.wpa_supplicant";
 static const char SUPP_CONFIG_TEMPLATE[]= "/system/etc/wifi/wpa_supplicant.conf";
 static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
+static const char P2P_CONFIG_FILE[]     = "/data/misc/wifi/p2p_supplicant.conf";
+static const char CONTROL_IFACE_PATH[]  = "/data/misc/wifi";
 static const char MODULE_FILE[]         = "/proc/modules";
 
 static const char SUPP_ENTROPY_FILE[]   = WIFI_ENTROPY_FILE;
@@ -298,70 +300,88 @@ int ensure_entropy_file_exists()
     return 0;
 }
 
-int ensure_config_file_exists()
+int update_ctrl_interface(const char *config_file) {
+
+    int srcfd, destfd;
+    int nread;
+    char ifc[PROPERTY_VALUE_MAX];
+    char *pbuf;
+    char *sptr;
+    struct stat sb;
+
+    if (stat(config_file, &sb) != 0)
+        return -1;
+
+    pbuf = malloc(sb.st_size + PROPERTY_VALUE_MAX);
+    if (!pbuf)
+        return 0;
+    srcfd = open(config_file, O_RDONLY);
+    if (srcfd < 0) {
+        LOGE("Cannot open \"%s\": %s", config_file, strerror(errno));
+        free(pbuf);
+        return 0;
+    }
+    nread = read(srcfd, pbuf, sb.st_size);
+    close(srcfd);
+    if (nread < 0) {
+        LOGE("Cannot read \"%s\": %s", config_file, strerror(errno));
+        free(pbuf);
+        return 0;
+    }
+
+    if (!strcmp(config_file, SUPP_CONFIG_FILE)) {
+        property_get("wifi.interface", ifc, WIFI_TEST_INTERFACE);
+    } else {
+        strcpy(ifc, CONTROL_IFACE_PATH);
+    }
+    if ((sptr = strstr(pbuf, "ctrl_interface="))) {
+        char *iptr = sptr + strlen("ctrl_interface=");
+        int ilen = 0;
+        int mlen = strlen(ifc);
+        int nwrite;
+        if (strncmp(ifc, iptr, mlen) != 0) {
+            LOGE("ctrl_interface != %s", ifc);
+            while (((ilen + (iptr - pbuf)) < nread) && (iptr[ilen] != '\n'))
+                ilen++;
+            mlen = ((ilen >= mlen) ? ilen : mlen) + 1;
+            memmove(iptr + mlen, iptr + ilen + 1, nread - (iptr + ilen + 1 - pbuf));
+            memset(iptr, '\n', mlen);
+            memcpy(iptr, ifc, strlen(ifc));
+            destfd = open(config_file, O_RDWR, 0660);
+            if (destfd < 0) {
+                LOGE("Cannot update \"%s\": %s", config_file, strerror(errno));
+                free(pbuf);
+                return -1;
+            }
+            write(destfd, pbuf, nread + mlen - ilen -1);
+            close(destfd);
+        }
+    }
+    free(pbuf);
+    return 0;
+}
+
+int ensure_config_file_exists(const char *config_file)
 {
     char buf[2048];
-    char ifc[PROPERTY_VALUE_MAX];
-    char *sptr;
-    char *pbuf;
     int srcfd, destfd;
     struct stat sb;
     int nread;
     int ret;
 
-    ret = access(SUPP_CONFIG_FILE, R_OK|W_OK);
+    ret = access(config_file, R_OK|W_OK);
     if ((ret == 0) || (errno == EACCES)) {
         if ((ret != 0) &&
-            (chmod(SUPP_CONFIG_FILE, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP) != 0)) {
-            LOGE("Cannot set RW to \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
+            (chmod(config_file, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP) != 0)) {
+            LOGE("Cannot set RW to \"%s\": %s", config_file, strerror(errno));
             return -1;
         }
         /* return if filesize is at least 10 bytes */
-        if (stat(SUPP_CONFIG_FILE, &sb) == 0 && sb.st_size > 10) {
-            pbuf = malloc(sb.st_size + PROPERTY_VALUE_MAX);
-            if (!pbuf)
-                return 0;
-            srcfd = open(SUPP_CONFIG_FILE, O_RDONLY);
-            if (srcfd < 0) {
-                LOGE("Cannot open \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
-                free(pbuf);
-                return 0;
-            }
-            nread = read(srcfd, pbuf, sb.st_size);
-            close(srcfd);
-            if (nread < 0) {
-                LOGE("Cannot read \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
-                free(pbuf);
-                return 0;
-            }
-            property_get("wifi.interface", ifc, WIFI_TEST_INTERFACE);
-            if ((sptr = strstr(pbuf, "ctrl_interface="))) {
-                char *iptr = sptr + strlen("ctrl_interface=");
-                int ilen = 0;
-                int mlen = strlen(ifc);
-                if (strncmp(ifc, iptr, mlen) != 0) {
-                    LOGE("ctrl_interface != %s", ifc);
-                    while (((ilen + (iptr - pbuf)) < nread) && (iptr[ilen] != '\n'))
-                        ilen++;
-                    mlen = ((ilen >= mlen) ? ilen : mlen) + 1;
-                    memmove(iptr + mlen, iptr + ilen + 1, nread - (iptr + ilen + 1 - pbuf));
-                    memset(iptr, '\n', mlen);
-                    memcpy(iptr, ifc, strlen(ifc));
-                    destfd = open(SUPP_CONFIG_FILE, O_RDWR, 0660);
-                    if (destfd < 0) {
-                        LOGE("Cannot update \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
-                        free(pbuf);
-                        return -1;
-                    }
-                    write(destfd, pbuf, nread);
-                    close(destfd);
-                }
-            }
-            free(pbuf);
-            return 0;
+        if (stat(config_file, &sb) == 0 && sb.st_size > 10) {
+            return update_ctrl_interface(config_file);
         }
     } else if (errno != ENOENT) {
-        LOGE("Cannot access \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
+        LOGE("Cannot access \"%s\": %s", config_file, strerror(errno));
         return -1;
     }
 
@@ -371,10 +391,10 @@ int ensure_config_file_exists()
         return -1;
     }
 
-    destfd = open(SUPP_CONFIG_FILE, O_CREAT|O_RDWR, 0660);
+    destfd = open(config_file, O_CREAT|O_RDWR, 0660);
     if (destfd < 0) {
         close(srcfd);
-        LOGE("Cannot create \"%s\": %s", SUPP_CONFIG_FILE, strerror(errno));
+        LOGE("Cannot create \"%s\": %s", config_file, strerror(errno));
         return -1;
     }
 
@@ -383,7 +403,7 @@ int ensure_config_file_exists()
             LOGE("Error reading \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
             close(srcfd);
             close(destfd);
-            unlink(SUPP_CONFIG_FILE);
+            unlink(config_file);
             return -1;
         }
         write(destfd, buf, nread);
@@ -393,20 +413,20 @@ int ensure_config_file_exists()
     close(srcfd);
 
     /* chmod is needed because open() didn't set permisions properly */
-    if (chmod(SUPP_CONFIG_FILE, 0660) < 0) {
+    if (chmod(config_file, 0660) < 0) {
         LOGE("Error changing permissions of %s to 0660: %s",
-             SUPP_CONFIG_FILE, strerror(errno));
-        unlink(SUPP_CONFIG_FILE);
+             config_file, strerror(errno));
+        unlink(config_file);
         return -1;
     }
 
-    if (chown(SUPP_CONFIG_FILE, AID_SYSTEM, AID_WIFI) < 0) {
+    if (chown(config_file, AID_SYSTEM, AID_WIFI) < 0) {
         LOGE("Error changing group ownership of %s to %d: %s",
-             SUPP_CONFIG_FILE, AID_WIFI, strerror(errno));
-        unlink(SUPP_CONFIG_FILE);
+             config_file, AID_WIFI, strerror(errno));
+        unlink(config_file);
         return -1;
     }
-    return 0;
+    return update_ctrl_interface(config_file);
 }
 
 /**
@@ -448,7 +468,7 @@ void wifi_wpa_ctrl_cleanup(void)
     closedir(dir);
 }
 
-int wifi_start_supplicant()
+int wifi_start_supplicant_common(const char *config_file)
 {
     char daemon_cmd[PROPERTY_VALUE_MAX];
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
@@ -465,7 +485,7 @@ int wifi_start_supplicant()
     }
 
     /* Before starting the daemon, make sure its config file exists */
-    if (ensure_config_file_exists() < 0) {
+    if (ensure_config_file_exists(config_file) < 0) {
         LOGE("Wi-Fi will not be enabled");
         return -1;
     }
@@ -491,7 +511,7 @@ int wifi_start_supplicant()
     }
 #endif
     property_get("wifi.interface", iface, WIFI_TEST_INTERFACE);
-    snprintf(daemon_cmd, PROPERTY_VALUE_MAX, "%s:-i%s", SUPPLICANT_NAME, iface);
+    snprintf(daemon_cmd, PROPERTY_VALUE_MAX, "%s:-i%s -c%s", SUPPLICANT_NAME, iface, config_file);
     property_set("ctl.start", daemon_cmd);
     sched_yield();
 
@@ -518,6 +538,16 @@ int wifi_start_supplicant()
         usleep(100000);
     }
     return -1;
+}
+
+int wifi_start_supplicant()
+{
+    return wifi_start_supplicant_common(SUPP_CONFIG_FILE);
+}
+
+int wifi_start_p2p_supplicant()
+{
+    return wifi_start_supplicant_common(P2P_CONFIG_FILE);
 }
 
 int wifi_stop_supplicant()
