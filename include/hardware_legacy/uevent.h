@@ -22,6 +22,7 @@ extern "C" {
 #endif
 
 int uevent_init();
+int uevent_get_fd();
 int uevent_next_event(char* buffer, int buffer_length);
 int uevent_add_native_handler(void (*handler)(void *data, const char *msg, int msg_len),
                               void *handler_data);
