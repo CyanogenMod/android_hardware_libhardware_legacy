@@ -65,6 +65,11 @@ int uevent_init()
     return (fd > 0);
 }
 
+int uevent_get_fd()
+{
+    return fd;
+}
+
 int uevent_next_event(char* buffer, int buffer_length)
 {
     while (1) {
