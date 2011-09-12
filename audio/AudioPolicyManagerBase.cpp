@@ -1871,65 +1871,62 @@ audio_io_handle_t AudioPolicyManagerBase::getActiveInput()
 float AudioPolicyManagerBase::volIndexToAmpl(uint32_t device, const StreamDescriptor& streamDesc,
         int indexInUi) {
     // the volume index in the UI is relative to the min and max volume indices for this stream type
-    int nbSteps = 1 + streamDesc.mVolIndex[StreamDescriptor::VOLMAX] -
-            streamDesc.mVolIndex[StreamDescriptor::VOLMIN];
+    int nbSteps = 1 + streamDesc.mVolumeCurve[VOLMAX].mIndex -
+            streamDesc.mVolumeCurve[VOLMIN].mIndex;
     int volIdx = (nbSteps * (indexInUi - streamDesc.mIndexMin)) /
             (streamDesc.mIndexMax - streamDesc.mIndexMin);
 
     // find what part of the curve this index volume belongs to, or if it's out of bounds
     int segment = 0;
-    if (volIdx < streamDesc.mVolIndex[StreamDescriptor::VOLMIN]) {         // out of bounds
+    if (volIdx < streamDesc.mVolumeCurve[VOLMIN].mIndex) {         // out of bounds
         return 0.0f;
-    } else if (volIdx < streamDesc.mVolIndex[StreamDescriptor::VOLKNEE1]) {
+    } else if (volIdx < streamDesc.mVolumeCurve[VOLKNEE1].mIndex) {
         segment = 0;
-    } else if (volIdx < streamDesc.mVolIndex[StreamDescriptor::VOLKNEE2]) {
+    } else if (volIdx < streamDesc.mVolumeCurve[VOLKNEE2].mIndex) {
         segment = 1;
-    } else if (volIdx <= streamDesc.mVolIndex[StreamDescriptor::VOLMAX]) {
+    } else if (volIdx <= streamDesc.mVolumeCurve[VOLMAX].mIndex) {
         segment = 2;
     } else {                                                               // out of bounds
         return 1.0f;
     }
 
     // linear interpolation in the attenuation table in dB
-    float decibels = streamDesc.mVolDbAtt[segment] +
-            ((float)(volIdx - streamDesc.mVolIndex[segment])) *
-                ( (streamDesc.mVolDbAtt[segment+1] - streamDesc.mVolDbAtt[segment]) /
-                    ((float)(streamDesc.mVolIndex[segment+1] - streamDesc.mVolIndex[segment])) );
+    float decibels = streamDesc.mVolumeCurve[segment].mDBAttenuation +
+            ((float)(volIdx - streamDesc.mVolumeCurve[segment].mIndex)) *
+                ( (streamDesc.mVolumeCurve[segment+1].mDBAttenuation -
+                        streamDesc.mVolumeCurve[segment].mDBAttenuation) /
+                    ((float)(streamDesc.mVolumeCurve[segment+1].mIndex -
+                            streamDesc.mVolumeCurve[segment].mIndex)) );
 
     float amplification = exp( decibels * 0.115129f); // exp( dB * ln(10) / 20 )
 
     LOGV("VOLUME vol index=[%d %d %d], dB=[%.1f %.1f %.1f] ampl=%.5f",
-            streamDesc.mVolIndex[segment], volIdx, streamDesc.mVolIndex[segment+1],
-            streamDesc.mVolDbAtt[segment], decibels, streamDesc.mVolDbAtt[segment+1],
+            streamDesc.mVolumeCurve[segment].mIndex, volIdx,
+            streamDesc.mVolumeCurve[segment+1].mIndex,
+            streamDesc.mVolumeCurve[segment].mDBAttenuation,
+            decibels,
+            streamDesc.mVolumeCurve[segment+1].mDBAttenuation,
             amplification);
 
     return amplification;
 }
 
-void AudioPolicyManagerBase::initializeVolumeCurves() {
-    // initialize the volume curves to a (-49.5 - 0 dB) attenuation in 0.5dB steps
-    for (int i=0 ; i< AudioSystem::NUM_STREAM_TYPES ; i++) {
-        mStreams[i].mVolIndex[StreamDescriptor::VOLMIN] = 1;
-        mStreams[i].mVolDbAtt[StreamDescriptor::VOLMIN] = -49.5f;
-        mStreams[i].mVolIndex[StreamDescriptor::VOLKNEE1] = 33;
-        mStreams[i].mVolDbAtt[StreamDescriptor::VOLKNEE1] = -33.5f;
-        mStreams[i].mVolIndex[StreamDescriptor::VOLKNEE2] = 66;
-        mStreams[i].mVolDbAtt[StreamDescriptor::VOLKNEE2] = -17.0f;
-        // here we use 100 steps to avoid rounding errors
-        // when computing the volume in volIndexToAmpl()
-        mStreams[i].mVolIndex[StreamDescriptor::VOLMAX] = 100;
-        mStreams[i].mVolDbAtt[StreamDescriptor::VOLMAX] = 0.0f;
-    }
+const AudioPolicyManagerBase::VolumeCurvePoint
+            AudioPolicyManagerBase::sVolumeProfiles[AudioPolicyManagerBase::NUM_STRATEGIES]
+                                                   [AudioPolicyManagerBase::VOLCNT] = {
+    { {1, -58.0f}, {20, -40.0f}, {60, -17.0f}, {100, 0.0f}}, // STRATEGY_MEDIA
+    { {1, -49.5f}, {33, -33.5f}, {66, -17.0f}, {100, 0.0f}}, // STRATEGY_PHONE
+    { {1, -29.7f}, {33, -20.1f}, {66, -10.2f}, {100, 0.0f}}, // STRATEGY_SONIFICATION
+    { {1, -49.5f}, {33, -33.5f}, {66, -17.0f}, {100, 0.0f}}  // STRATEGY_DTMF
+};
 
-    // Modification for music: more attenuation for lower volumes, finer steps at high volumes
-    mStreams[AudioSystem::MUSIC].mVolIndex[StreamDescriptor::VOLMIN] = 1;
-    mStreams[AudioSystem::MUSIC].mVolDbAtt[StreamDescriptor::VOLMIN] = -58.0f;
-    mStreams[AudioSystem::MUSIC].mVolIndex[StreamDescriptor::VOLKNEE1] = 20;
-    mStreams[AudioSystem::MUSIC].mVolDbAtt[StreamDescriptor::VOLKNEE1] = -40.0f;
-    mStreams[AudioSystem::MUSIC].mVolIndex[StreamDescriptor::VOLKNEE2] = 60;
-    mStreams[AudioSystem::MUSIC].mVolDbAtt[StreamDescriptor::VOLKNEE2] = -17.0f;
-    mStreams[AudioSystem::MUSIC].mVolIndex[StreamDescriptor::VOLMAX] = 100;
-    mStreams[AudioSystem::MUSIC].mVolDbAtt[StreamDescriptor::VOLMAX] = 0.0f;
+void AudioPolicyManagerBase::initializeVolumeCurves() {
+    for (int i=0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
+        for (int j=0; j < VOLCNT; j++) {
+            mStreams[i].mVolumeCurve[j] =
+                    sVolumeProfiles[getStrategy((AudioSystem::stream_type)i)][j];
+        }
+    }
 }
 
 float AudioPolicyManagerBase::computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device)
