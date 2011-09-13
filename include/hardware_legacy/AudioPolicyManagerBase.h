@@ -133,6 +133,21 @@ protected:
             NUM_STRATEGIES
         };
 
+        // 4 points to define the volume attenuation curve, each characterized by the volume
+        // index (from 0 to 100) at which they apply, and the attenuation in dB at that index.
+        // we use 100 steps to avoid rounding errors when computing the volume in volIndexToAmpl()
+
+        enum { VOLMIN = 0, VOLKNEE1 = 1, VOLKNEE2 = 2, VOLMAX = 3, VOLCNT = 4};
+
+        class VolumeCurvePoint
+        {
+        public:
+            int mIndex;
+            float mDBAttenuation;
+        };
+
+        static const VolumeCurvePoint sVolumeProfiles[NUM_STRATEGIES][VOLCNT];
+
         // descriptor for audio outputs. Used to maintain current configuration of each opened audio output
         // and keep track of the usage of this output by each audio stream type.
         class AudioOutputDescriptor
@@ -196,14 +211,7 @@ protected:
             int mIndexCur;      // current volume index
             bool mCanBeMuted;   // true is the stream can be muted
 
-            // 4 points to define the volume attenuation curve, each characterized by the volume
-            // index (from 0 to 100) at which they apply, and the attenuation in dB at that index.
-            int mVolIndex[NUM_VOL_CURVE_KNEES+2];   // minimum index, index at knees, and max index
-            float mVolDbAtt[NUM_VOL_CURVE_KNEES+2]; // largest attenuation, attenuation at knees,
-                                                    //     and attenuation at max vol (usually 0dB)
-            // indices in mVolIndex and mVolDbAtt respectively for points at lowest volume, knee 1,
-            //    knee 2 and highest volume.
-            enum { VOLMIN = 0, VOLKNEE1 = 1, VOLKNEE2 = 2, VOLMAX = 3 };
+            VolumeCurvePoint mVolumeCurve[VOLCNT];
         };
 
         // stream descriptor used for volume control
