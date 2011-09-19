@@ -36,6 +36,8 @@
 
 static struct wpa_ctrl *ctrl_conn;
 static struct wpa_ctrl *monitor_conn;
+/* pipe used to exit from a blocking read */
+static int exit_pipe[2] = {-1, -1};
 
 extern int do_dhcp();
 extern int ifc_init();
@@ -610,6 +612,14 @@ int wifi_connect_to_supplicant()
         ctrl_conn = monitor_conn = NULL;
         return -1;
     }
+
+    if (pipe(exit_pipe) == -1) {
+        wpa_ctrl_close(monitor_conn);
+        wpa_ctrl_close(ctrl_conn);
+        ctrl_conn = monitor_conn = NULL;
+        return -1;
+    }
+
     return 0;
 }
 
@@ -624,12 +634,36 @@ int wifi_send_command(struct wpa_ctrl *ctrl, const char *cmd, char *reply, size_
     ret = wpa_ctrl_request(ctrl, cmd, strlen(cmd), reply, reply_len, NULL);
     if (ret == -2) {
         LOGD("'%s' command timed out.\n", cmd);
+        /* unblocks the monitor receive socket for termination */
+        write(exit_pipe[1], "T", 1);
         return -2;
     } else if (ret < 0 || strncmp(reply, "FAIL", 4) == 0) {
         return -1;
     }
     if (strncmp(cmd, "PING", 4) == 0) {
         reply[*reply_len] = '\0';
+    }
+    return 0;
+}
+
+int wifi_ctrl_recv(struct wpa_ctrl *ctrl, char *reply, size_t *reply_len)
+{
+    int res;
+    int ctrlfd = wpa_ctrl_get_fd(ctrl);
+    int high = (ctrlfd > exit_pipe[0]) ? ctrlfd : exit_pipe[0];
+    fd_set rfds;
+
+    FD_ZERO(&rfds);
+    FD_SET(ctrlfd, &rfds);
+    FD_SET(exit_pipe[0], &rfds);
+    res = select(high + 1, &rfds, NULL, NULL, NULL);
+    if (res < 0)
+        return res;
+    if (FD_ISSET(ctrlfd, &rfds)) {
+        return wpa_ctrl_recv(ctrl, reply, reply_len);
+    } else {
+        LOGD("Received on exit pipe, terminate");
+        return -1;
     }
     return 0;
 }
@@ -650,9 +684,9 @@ int wifi_wait_for_event(char *buf, size_t buflen)
         return strlen(buf);
     }
 
-    result = wpa_ctrl_recv(monitor_conn, buf, &nread);
+    result = wifi_ctrl_recv(monitor_conn, buf, &nread);
     if (result < 0) {
-        LOGD("wpa_ctrl_recv failed: %s\n", strerror(errno));
+        LOGD("wifi_ctrl_recv failed: %s\n", strerror(errno));
         strncpy(buf, WPA_EVENT_TERMINATING " - recv error", buflen-1);
         buf[buflen-1] = '\0';
         return strlen(buf);
@@ -698,6 +732,16 @@ void wifi_close_supplicant_connection()
     if (monitor_conn != NULL) {
         wpa_ctrl_close(monitor_conn);
         monitor_conn = NULL;
+    }
+
+    if (exit_pipe[0] >= 0) {
+        close(exit_pipe[0]);
+        exit_pipe[0] = -1;
+    }
+
+    if (exit_pipe[1] >= 0) {
+        close(exit_pipe[1]);
+        exit_pipe[1] = -1;
     }
 
     while (count-- > 0) {
