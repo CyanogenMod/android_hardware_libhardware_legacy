@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/socket.h>
+#include <poll.h>
 
 #include "hardware_legacy/wifi.h"
 #include "libwpa_client/wpa_ctrl.h"
@@ -36,8 +38,8 @@
 
 static struct wpa_ctrl *ctrl_conn;
 static struct wpa_ctrl *monitor_conn;
-/* pipe used to exit from a blocking read */
-static int exit_pipe[2] = {-1, -1};
+/* socket pair used to exit from a blocking read */
+static int exit_sockets[2] = { -1, -1 };
 
 extern int do_dhcp();
 extern int ifc_init();
@@ -613,7 +615,7 @@ int wifi_connect_to_supplicant()
         return -1;
     }
 
-    if (pipe(exit_pipe) == -1) {
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, exit_sockets) == -1) {
         wpa_ctrl_close(monitor_conn);
         wpa_ctrl_close(ctrl_conn);
         ctrl_conn = monitor_conn = NULL;
@@ -635,7 +637,7 @@ int wifi_send_command(struct wpa_ctrl *ctrl, const char *cmd, char *reply, size_
     if (ret == -2) {
         LOGD("'%s' command timed out.\n", cmd);
         /* unblocks the monitor receive socket for termination */
-        write(exit_pipe[1], "T", 1);
+        write(exit_sockets[0], "T", 1);
         return -2;
     } else if (ret < 0 || strncmp(reply, "FAIL", 4) == 0) {
         return -1;
@@ -650,19 +652,22 @@ int wifi_ctrl_recv(struct wpa_ctrl *ctrl, char *reply, size_t *reply_len)
 {
     int res;
     int ctrlfd = wpa_ctrl_get_fd(ctrl);
-    int high = (ctrlfd > exit_pipe[0]) ? ctrlfd : exit_pipe[0];
-    fd_set rfds;
+    struct pollfd rfds[2];
 
-    FD_ZERO(&rfds);
-    FD_SET(ctrlfd, &rfds);
-    FD_SET(exit_pipe[0], &rfds);
-    res = select(high + 1, &rfds, NULL, NULL, NULL);
-    if (res < 0)
+    memset(rfds, 0, 2 * sizeof(struct pollfd));
+    rfds[0].fd = ctrlfd;
+    rfds[0].events |= POLLIN;
+    rfds[1].fd = exit_sockets[1];
+    rfds[1].events |= POLLIN;
+    res = poll(rfds, 2, -1);
+    if (res < 0) {
+        LOGE("Error poll = %d", res);
         return res;
-    if (FD_ISSET(ctrlfd, &rfds)) {
+    }
+    if (rfds[0].revents & POLLIN) {
         return wpa_ctrl_recv(ctrl, reply, reply_len);
     } else {
-        LOGD("Received on exit pipe, terminate");
+        LOGD("Received on exit socket, terminate");
         return -1;
     }
     return 0;
@@ -734,14 +739,14 @@ void wifi_close_supplicant_connection()
         monitor_conn = NULL;
     }
 
-    if (exit_pipe[0] >= 0) {
-        close(exit_pipe[0]);
-        exit_pipe[0] = -1;
+    if (exit_sockets[0] >= 0) {
+        close(exit_sockets[0]);
+        exit_sockets[0] = -1;
     }
 
-    if (exit_pipe[1] >= 0) {
-        close(exit_pipe[1]);
-        exit_pipe[1] = -1;
+    if (exit_sockets[1] >= 0) {
+        close(exit_sockets[1]);
+        exit_sockets[1] = -1;
     }
 
     while (count-- > 0) {
