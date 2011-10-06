@@ -95,10 +95,10 @@ static const char CONTROL_IFACE_PATH[]  = "/data/misc/wifi";
 static const char MODULE_FILE[]         = "/proc/modules";
 
 static const char SUPP_ENTROPY_FILE[]   = WIFI_ENTROPY_FILE;
-static unsigned char dummy_key[20] = { 0x11, 0xbe, 0x33, 0x43, 0x35,
-                                       0x68, 0x47, 0x84, 0x99, 0xa9,
-                                       0x2b, 0x1c, 0xd3, 0xee, 0xff,
-                                       0xf1, 0xe2, 0xf3, 0xf4, 0xf5 };
+static unsigned char dummy_key[21] = { 0x02, 0x11, 0xbe, 0x33, 0x43, 0x35,
+                                       0x68, 0x47, 0x84, 0x99, 0xa9, 0x2b,
+                                       0x1c, 0xd3, 0xee, 0xff, 0xf1, 0xe2,
+                                       0xf3, 0xf4, 0xf5 };
 
 static int insmod(const char *filename, const char *args)
 {
