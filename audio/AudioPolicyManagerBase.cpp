@@ -1868,61 +1868,146 @@ audio_io_handle_t AudioPolicyManagerBase::getActiveInput()
     return 0;
 }
 
+
+AudioPolicyManagerBase::device_category AudioPolicyManagerBase::getDeviceCategory(uint32_t device)
+{
+    if (device == 0) {
+        // this happens when forcing a route update and no track is active on an output.
+        // In this case the returned category is not important.
+        return DEVICE_CATEGORY_SPEAKER;
+    }
+
+    if (AudioSystem::popCount(device) > 1) {
+        // Multiple device selection is either:
+        //  - speaker + one other device: give priority to speaker in this case.
+        //  - one A2DP device + another device: happens with duplicated output. In this case
+        // retain the device on the A2DP output as the other must not correspond to an active
+        // selection if not the speaker.
+        if (device & AUDIO_DEVICE_OUT_SPEAKER)
+            return DEVICE_CATEGORY_SPEAKER;
+
+        device &= AUDIO_DEVICE_OUT_ALL_A2DP;
+    }
+
+    LOGW_IF(AudioSystem::popCount(device) != 1,
+            "getDeviceCategory() invalid device combination: %08x",
+            device);
+
+    switch(device) {
+        case AUDIO_DEVICE_OUT_EARPIECE:
+            return DEVICE_CATEGORY_EARPIECE;
+        case AUDIO_DEVICE_OUT_WIRED_HEADSET:
+        case AUDIO_DEVICE_OUT_WIRED_HEADPHONE:
+        case AUDIO_DEVICE_OUT_BLUETOOTH_SCO:
+        case AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET:
+        case AUDIO_DEVICE_OUT_BLUETOOTH_A2DP:
+        case AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES:
+            return DEVICE_CATEGORY_HEADSET;
+        case AUDIO_DEVICE_OUT_SPEAKER:
+        case AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
+        case AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER:
+        default:
+            return DEVICE_CATEGORY_SPEAKER;
+    }
+}
+
 float AudioPolicyManagerBase::volIndexToAmpl(uint32_t device, const StreamDescriptor& streamDesc,
-        int indexInUi) {
+        int indexInUi)
+{
+    device_category deviceCategory = getDeviceCategory(device);
+    const VolumeCurvePoint *curve = streamDesc.mVolumeCurve[deviceCategory];
+
     // the volume index in the UI is relative to the min and max volume indices for this stream type
-    int nbSteps = 1 + streamDesc.mVolumeCurve[VOLMAX].mIndex -
-            streamDesc.mVolumeCurve[VOLMIN].mIndex;
+    int nbSteps = 1 + curve[VOLMAX].mIndex -
+            curve[VOLMIN].mIndex;
     int volIdx = (nbSteps * (indexInUi - streamDesc.mIndexMin)) /
             (streamDesc.mIndexMax - streamDesc.mIndexMin);
 
     // find what part of the curve this index volume belongs to, or if it's out of bounds
     int segment = 0;
-    if (volIdx < streamDesc.mVolumeCurve[VOLMIN].mIndex) {         // out of bounds
+    if (volIdx < curve[VOLMIN].mIndex) {         // out of bounds
         return 0.0f;
-    } else if (volIdx < streamDesc.mVolumeCurve[VOLKNEE1].mIndex) {
+    } else if (volIdx < curve[VOLKNEE1].mIndex) {
         segment = 0;
-    } else if (volIdx < streamDesc.mVolumeCurve[VOLKNEE2].mIndex) {
+    } else if (volIdx < curve[VOLKNEE2].mIndex) {
         segment = 1;
-    } else if (volIdx <= streamDesc.mVolumeCurve[VOLMAX].mIndex) {
+    } else if (volIdx <= curve[VOLMAX].mIndex) {
         segment = 2;
     } else {                                                               // out of bounds
         return 1.0f;
     }
 
     // linear interpolation in the attenuation table in dB
-    float decibels = streamDesc.mVolumeCurve[segment].mDBAttenuation +
-            ((float)(volIdx - streamDesc.mVolumeCurve[segment].mIndex)) *
-                ( (streamDesc.mVolumeCurve[segment+1].mDBAttenuation -
-                        streamDesc.mVolumeCurve[segment].mDBAttenuation) /
-                    ((float)(streamDesc.mVolumeCurve[segment+1].mIndex -
-                            streamDesc.mVolumeCurve[segment].mIndex)) );
+    float decibels = curve[segment].mDBAttenuation +
+            ((float)(volIdx - curve[segment].mIndex)) *
+                ( (curve[segment+1].mDBAttenuation -
+                        curve[segment].mDBAttenuation) /
+                    ((float)(curve[segment+1].mIndex -
+                            curve[segment].mIndex)) );
 
     float amplification = exp( decibels * 0.115129f); // exp( dB * ln(10) / 20 )
 
     LOGV("VOLUME vol index=[%d %d %d], dB=[%.1f %.1f %.1f] ampl=%.5f",
-            streamDesc.mVolumeCurve[segment].mIndex, volIdx,
-            streamDesc.mVolumeCurve[segment+1].mIndex,
-            streamDesc.mVolumeCurve[segment].mDBAttenuation,
+            curve[segment].mIndex, volIdx,
+            curve[segment+1].mIndex,
+            curve[segment].mDBAttenuation,
             decibels,
-            streamDesc.mVolumeCurve[segment+1].mDBAttenuation,
+            curve[segment+1].mDBAttenuation,
             amplification);
 
     return amplification;
 }
 
 const AudioPolicyManagerBase::VolumeCurvePoint
-            AudioPolicyManagerBase::sVolumeProfiles[AudioPolicyManagerBase::NUM_STRATEGIES]
-                                                   [AudioPolicyManagerBase::VOLCNT] = {
-    { {1, -58.0f}, {20, -40.0f}, {60, -17.0f}, {100, 0.0f}}, // STRATEGY_MEDIA
-    { {1, -49.5f}, {33, -33.5f}, {66, -17.0f}, {100, 0.0f}}, // STRATEGY_PHONE
-    { {1, -29.7f}, {33, -20.1f}, {66, -10.2f}, {100, 0.0f}}, // STRATEGY_SONIFICATION
-    { {1, -49.5f}, {33, -33.5f}, {66, -17.0f}, {100, 0.0f}}  // STRATEGY_DTMF
+    AudioPolicyManagerBase::sDefaultVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {1, -49.5f}, {33, -33.5f}, {66, -17.0f}, {100, 0.0f}
 };
 
-void AudioPolicyManagerBase::initializeVolumeCurves() {
-    for (int i=0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
-        for (int j=0; j < VOLCNT; j++) {
+const AudioPolicyManagerBase::VolumeCurvePoint
+    AudioPolicyManagerBase::sDefaultMediaVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {1, -58.0f}, {20, -40.0f}, {60, -17.0f}, {100, 0.0f}
+};
+
+const AudioPolicyManagerBase::VolumeCurvePoint
+    AudioPolicyManagerBase::sSpeakerMediaVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {1, -56.0f}, {20, -34.0f}, {60, -11.0f}, {100, 0.0f}
+};
+
+const AudioPolicyManagerBase::VolumeCurvePoint
+    AudioPolicyManagerBase::sSpeakerSonificationVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {1, -29.7f}, {33, -20.1f}, {66, -10.2f}, {100, 0.0f}
+};
+
+
+const AudioPolicyManagerBase::VolumeCurvePoint
+            *AudioPolicyManagerBase::sVolumeProfiles[AudioPolicyManagerBase::NUM_STRATEGIES]
+                                                   [AudioPolicyManagerBase::DEVICE_CATEGORY_CNT] = {
+    { // STRATEGY_MEDIA
+        sDefaultMediaVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerMediaVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultMediaVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // STRATEGY_PHONE
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // STRATEGY_SONIFICATION
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    {  // STRATEGY_DTMF
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    }
+};
+
+void AudioPolicyManagerBase::initializeVolumeCurves()
+{
+    for (int i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
+        for (int j = 0; j < DEVICE_CATEGORY_CNT; j++) {
             mStreams[i].mVolumeCurve[j] =
                     sVolumeProfiles[getStrategy((AudioSystem::stream_type)i)][j];
         }
