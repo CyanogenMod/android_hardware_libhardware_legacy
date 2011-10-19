@@ -146,7 +146,24 @@ protected:
             float mDBAttenuation;
         };
 
-        static const VolumeCurvePoint sVolumeProfiles[NUM_STRATEGIES][VOLCNT];
+        // device categories used for volume curve management.
+        enum device_category {
+            DEVICE_CATEGORY_HEADSET,
+            DEVICE_CATEGORY_SPEAKER,
+            DEVICE_CATEGORY_EARPIECE,
+            DEVICE_CATEGORY_CNT
+        };
+
+        // default volume curve
+        static const VolumeCurvePoint sDefaultVolumeCurve[AudioPolicyManagerBase::VOLCNT];
+        // default volume curve for media strategy
+        static const VolumeCurvePoint sDefaultMediaVolumeCurve[AudioPolicyManagerBase::VOLCNT];
+        // volume curve for media strategy on speakers
+        static const VolumeCurvePoint sSpeakerMediaVolumeCurve[AudioPolicyManagerBase::VOLCNT];
+        // volume curve for sonification strategy on speakers
+        static const VolumeCurvePoint sSpeakerSonificationVolumeCurve[AudioPolicyManagerBase::VOLCNT];
+        // default volume curves per strategy and device category. See initializeVolumeCurves()
+        static const VolumeCurvePoint *sVolumeProfiles[NUM_STRATEGIES][DEVICE_CATEGORY_CNT];
 
         // descriptor for audio outputs. Used to maintain current configuration of each opened audio output
         // and keep track of the usage of this output by each audio stream type.
@@ -211,7 +228,7 @@ protected:
             int mIndexCur;      // current volume index
             bool mCanBeMuted;   // true is the stream can be muted
 
-            VolumeCurvePoint mVolumeCurve[VOLCNT];
+            const VolumeCurvePoint *mVolumeCurve[DEVICE_CATEGORY_CNT];
         };
 
         // stream descriptor used for volume control
@@ -249,7 +266,8 @@ protected:
         virtual uint32_t getDeviceForInputSource(int inputSource);
         // return io handle of active input or 0 if no input is active
         audio_io_handle_t getActiveInput();
-        virtual void initializeVolumeCurves();
+        // initialize volume curves for each strategy and device category
+        void initializeVolumeCurves();
         // compute the actual volume for a given stream according to the requested index and a particular
         // device
         virtual float computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device);
@@ -318,6 +336,9 @@ protected:
 #endif //AUDIO_POLICY_TEST
 
         status_t setEffectEnabled(EffectDescriptor *pDesc, bool enabled);
+
+        // returns the category the device belongs to with regard to volume curve management
+        static device_category getDeviceCategory(uint32_t device);
 
         AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
         audio_io_handle_t mHardwareOutput;              // hardware output handler
