@@ -38,7 +38,7 @@ AudioDumpInterface::AudioDumpInterface(AudioHardwareInterface* hw)
         LOGE("Dump construct hw = 0");
     }
     mFinalInterface = hw;
-    LOGV("Constructor %p, mFinalInterface %p", this, mFinalInterface);
+    ALOGV("Constructor %p, mFinalInterface %p", this, mFinalInterface);
 }
 
 
@@ -94,7 +94,7 @@ AudioStreamOut* AudioDumpInterface::openOutputStream(
         }
         if (status) *status = NO_ERROR;
     }
-    LOGV("openOutputStream(), outFinal %p", outFinal);
+    ALOGV("openOutputStream(), outFinal %p", outFinal);
 
     AudioStreamOutDump *dumOutput = new AudioStreamOutDump(this, mOutputs.size(), outFinal,
             devices, lFormat, lChannels, lRate);
@@ -112,7 +112,7 @@ void AudioDumpInterface::closeOutputStream(AudioStreamOut* out)
         return;
     }
 
-    LOGV("closeOutputStream() output %p", out);
+    ALOGV("closeOutputStream() output %p", out);
 
     dumpOut->standby();
     if (dumpOut->finalStream() != NULL) {
@@ -160,7 +160,7 @@ AudioStreamIn* AudioDumpInterface::openInputStream(uint32_t devices, int *format
         }
         if (status) *status = NO_ERROR;
     }
-    LOGV("openInputStream(), inFinal %p", inFinal);
+    ALOGV("openInputStream(), inFinal %p", inFinal);
 
     AudioStreamInDump *dumInput = new AudioStreamInDump(this, mInputs.size(), inFinal,
             devices, lFormat, lChannels, lRate);
@@ -191,7 +191,7 @@ status_t AudioDumpInterface::setParameters(const String8& keyValuePairs)
     AudioParameter param = AudioParameter(keyValuePairs);
     String8 value;
     int valueInt;
-    LOGV("setParameters %s", keyValuePairs.string());
+    ALOGV("setParameters %s", keyValuePairs.string());
 
     if (param.get(String8("test_cmd_file_name"), value) == NO_ERROR) {
         mFileName = value;
@@ -201,7 +201,7 @@ status_t AudioDumpInterface::setParameters(const String8& keyValuePairs)
         Mutex::Autolock _l(mLock);
         param.remove(String8("test_cmd_policy"));
         mPolicyCommands = param.toString();
-        LOGV("test_cmd_policy command %s written", mPolicyCommands.string());
+        ALOGV("test_cmd_policy command %s written", mPolicyCommands.string());
         return NO_ERROR;
     }
 
@@ -215,7 +215,7 @@ String8 AudioDumpInterface::getParameters(const String8& keys)
     AudioParameter response;
     String8 value;
 
-//    LOGV("getParameters %s", keys.string());
+//    ALOGV("getParameters %s", keys.string());
     if (param.get(String8("test_cmd_policy"), value) == NO_ERROR) {
         Mutex::Autolock _l(mLock);
         if (mPolicyCommands.length() != 0) {
@@ -225,7 +225,7 @@ String8 AudioDumpInterface::getParameters(const String8& keys)
             response.addInt(String8("test_cmd_policy"), 0);
         }
         param.remove(String8("test_cmd_policy"));
-//        LOGV("test_cmd_policy command %s read", mPolicyCommands.string());
+//        ALOGV("test_cmd_policy command %s read", mPolicyCommands.string());
     }
 
     if (param.get(String8("test_cmd_file_name"), value) == NO_ERROR) {
@@ -266,13 +266,13 @@ AudioStreamOutDump::AudioStreamOutDump(AudioDumpInterface *interface,
       mSampleRate(sampleRate), mFormat(format), mChannels(channels), mLatency(0), mDevice(devices),
       mBufferSize(1024), mFinalStream(finalStream), mFile(0), mFileCount(0)
 {
-    LOGV("AudioStreamOutDump Constructor %p, mInterface %p, mFinalStream %p", this, mInterface, mFinalStream);
+    ALOGV("AudioStreamOutDump Constructor %p, mInterface %p, mFinalStream %p", this, mInterface, mFinalStream);
 }
 
 
 AudioStreamOutDump::~AudioStreamOutDump()
 {
-    LOGV("AudioStreamOutDump destructor");
+    ALOGV("AudioStreamOutDump destructor");
     Close();
 }
 
@@ -291,7 +291,7 @@ ssize_t AudioStreamOutDump::write(const void* buffer, size_t bytes)
             char name[255];
             sprintf(name, "%s_out_%d_%d.pcm", mInterface->fileName().string(), mId, ++mFileCount);
             mFile = fopen(name, "wb");
-            LOGV("Opening dump file %s, fh %p", name, mFile);
+            ALOGV("Opening dump file %s, fh %p", name, mFile);
         }
     }
     if (mFile) {
@@ -302,7 +302,7 @@ ssize_t AudioStreamOutDump::write(const void* buffer, size_t bytes)
 
 status_t AudioStreamOutDump::standby()
 {
-    LOGV("AudioStreamOutDump standby(), mFile %p, mFinalStream %p", mFile, mFinalStream);
+    ALOGV("AudioStreamOutDump standby(), mFile %p, mFinalStream %p", mFile, mFinalStream);
 
     Close();
     if (mFinalStream != 0 ) return mFinalStream->standby();
@@ -343,7 +343,7 @@ status_t AudioStreamOutDump::setVolume(float left, float right)
 }
 status_t AudioStreamOutDump::setParameters(const String8& keyValuePairs)
 {
-    LOGV("AudioStreamOutDump::setParameters %s", keyValuePairs.string());
+    ALOGV("AudioStreamOutDump::setParameters %s", keyValuePairs.string());
 
     if (mFinalStream != 0 ) {
         return mFinalStream->setParameters(keyValuePairs);
@@ -427,7 +427,7 @@ AudioStreamInDump::AudioStreamInDump(AudioDumpInterface *interface,
       mSampleRate(sampleRate), mFormat(format), mChannels(channels), mDevice(devices),
       mBufferSize(1024), mFinalStream(finalStream), mFile(0), mFileCount(0)
 {
-    LOGV("AudioStreamInDump Constructor %p, mInterface %p, mFinalStream %p", this, mInterface, mFinalStream);
+    ALOGV("AudioStreamInDump Constructor %p, mInterface %p, mFinalStream %p", this, mInterface, mFinalStream);
 }
 
 
@@ -447,7 +447,7 @@ ssize_t AudioStreamInDump::read(void* buffer, ssize_t bytes)
                 char name[255];
                 sprintf(name, "%s_in_%d_%d.pcm", mInterface->fileName().string(), mId, ++mFileCount);
                 mFile = fopen(name, "wb");
-                LOGV("Opening input dump file %s, fh %p", name, mFile);
+                ALOGV("Opening input dump file %s, fh %p", name, mFile);
             }
         }
         if (mFile) {
@@ -480,7 +480,7 @@ ssize_t AudioStreamInDump::read(void* buffer, ssize_t bytes)
             }
             strcat(name, ".wav");
             mFile = fopen(name, "rb");
-            LOGV("Opening input read file %s, fh %p", name, mFile);
+            ALOGV("Opening input read file %s, fh %p", name, mFile);
             if (mFile) {
                 fseek(mFile, AUDIO_DUMP_WAVE_HDR_SIZE, SEEK_SET);
             }
@@ -499,7 +499,7 @@ ssize_t AudioStreamInDump::read(void* buffer, ssize_t bytes)
 
 status_t AudioStreamInDump::standby()
 {
-    LOGV("AudioStreamInDump standby(), mFile %p, mFinalStream %p", mFile, mFinalStream);
+    ALOGV("AudioStreamInDump standby(), mFile %p, mFinalStream %p", mFile, mFinalStream);
 
     Close();
     if (mFinalStream != 0 ) return mFinalStream->standby();
@@ -538,7 +538,7 @@ int AudioStreamInDump::format() const
 
 status_t AudioStreamInDump::setParameters(const String8& keyValuePairs)
 {
-    LOGV("AudioStreamInDump::setParameters()");
+    ALOGV("AudioStreamInDump::setParameters()");
     if (mFinalStream != 0 ) return mFinalStream->setParameters(keyValuePairs);
     return NO_ERROR;
 }

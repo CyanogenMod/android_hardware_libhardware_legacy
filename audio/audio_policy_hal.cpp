@@ -142,7 +142,7 @@ static audio_io_handle_t ap_get_output(struct audio_policy *pol,
 {
     struct legacy_audio_policy *lap = to_lap(pol);
 
-    LOGV("%s: tid %d", __func__, gettid());
+    ALOGV("%s: tid %d", __func__, gettid());
     return lap->apm->getOutput((AudioSystem::stream_type)stream,
                                sampling_rate, format, channels,
                                (AudioSystem::output_flags)flags);

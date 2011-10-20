@@ -630,7 +630,7 @@ int wifi_send_command(struct wpa_ctrl *ctrl, const char *cmd, char *reply, size_
     int ret;
 
     if (ctrl_conn == NULL) {
-        LOGV("Not connected to wpa_supplicant - \"%s\" command dropped.\n", cmd);
+        ALOGV("Not connected to wpa_supplicant - \"%s\" command dropped.\n", cmd);
         return -1;
     }
     ret = wpa_ctrl_request(ctrl, cmd, strlen(cmd), reply, reply_len, NULL);
