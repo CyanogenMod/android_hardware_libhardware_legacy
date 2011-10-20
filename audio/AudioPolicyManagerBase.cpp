@@ -1803,7 +1803,9 @@ void AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output, uint32_t 
     if (output == mHardwareOutput && AudioSystem::popCount(device) == 2) {
         setStrategyMute(STRATEGY_MEDIA, true, output);
         // wait for the PCM output buffers to empty before proceeding with the rest of the command
-        usleep(outputDesc->mLatency*2*1000);
+        // FIXME: increased delay due to larger buffers used for low power audio mode.
+        // remove when low power audio is controlled by policy manager.
+        usleep(outputDesc->mLatency*8*1000);
     }
 
     // do the routing
