@@ -130,6 +130,7 @@ protected:
             STRATEGY_PHONE,
             STRATEGY_SONIFICATION,
             STRATEGY_DTMF,
+            STRATEGY_ENFORCED_AUDIBLE,
             NUM_STRATEGIES
         };
 

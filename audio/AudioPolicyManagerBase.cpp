@@ -562,7 +562,8 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
     routing_strategy strategy = getStrategy((AudioSystem::stream_type)stream);
 
 #ifdef WITH_A2DP
-    if (mA2dpOutput != 0  && !a2dpUsedForSonification() && strategy == STRATEGY_SONIFICATION) {
+    if (mA2dpOutput != 0  && !a2dpUsedForSonification() &&
+            (strategy == STRATEGY_SONIFICATION || strategy == STRATEGY_ENFORCED_AUDIBLE)) {
         setStrategyMute(STRATEGY_MEDIA, true, mA2dpOutput);
     }
 #endif
@@ -572,6 +573,7 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
     // necassary for a correct control of hardware output routing by startOutput() and stopOutput()
     outputDesc->changeRefCount(stream, 1);
 
+    uint32_t prevDevice = outputDesc->mDevice;
     setOutputDevice(output, getNewDevice(output));
 
     // handle special case for sonification while in call
@@ -581,6 +583,13 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
 
     // apply volume rules for current stream and device if necessary
     checkAndSetVolume(stream, mStreams[stream].mIndexCur, output, outputDesc->device());
+
+    // FIXME: need a delay to make sure that audio path switches to speaker before sound
+    // starts. Should be platform specific?
+    if (stream == AudioSystem::ENFORCED_AUDIBLE &&
+            prevDevice != outputDesc->mDevice) {
+        usleep(outputDesc->mLatency*4*1000);
+    }
 
     return NO_ERROR;
 }
@@ -614,7 +623,7 @@ status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
 
 #ifdef WITH_A2DP
         if (mA2dpOutput != 0 && !a2dpUsedForSonification() &&
-                strategy == STRATEGY_SONIFICATION) {
+                (strategy == STRATEGY_SONIFICATION || strategy == STRATEGY_ENFORCED_AUDIBLE)) {
             setStrategyMute(STRATEGY_MEDIA,
                             false,
                             mA2dpOutput,
@@ -1363,6 +1372,7 @@ status_t AudioPolicyManagerBase::handleA2dpConnection(AudioSystem::audio_devices
     if (!a2dpUsedForSonification()) {
         // mute music on A2DP output if a notification or ringtone is playing
         uint32_t refCount = hwOutputDesc->strategyRefCount(STRATEGY_SONIFICATION);
+        refCount += hwOutputDesc->strategyRefCount(STRATEGY_ENFORCED_AUDIBLE);
         for (uint32_t i = 0; i < refCount; i++) {
             setStrategyMute(STRATEGY_MEDIA, true, mA2dpOutput);
         }
@@ -1394,6 +1404,7 @@ status_t AudioPolicyManagerBase::handleA2dpDisconnection(AudioSystem::audio_devi
     if (!a2dpUsedForSonification()) {
         // unmute music on A2DP output if a notification or ringtone is playing
         uint32_t refCount = mOutputs.valueFor(mHardwareOutput)->strategyRefCount(STRATEGY_SONIFICATION);
+        refCount += mOutputs.valueFor(mHardwareOutput)->strategyRefCount(STRATEGY_ENFORCED_AUDIBLE);
         for (uint32_t i = 0; i < refCount; i++) {
             setStrategyMute(STRATEGY_MEDIA, false, mA2dpOutput);
         }
@@ -1492,6 +1503,7 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
 
 void AudioPolicyManagerBase::checkOutputForAllStrategies()
 {
+    checkOutputForStrategy(STRATEGY_ENFORCED_AUDIBLE);
     checkOutputForStrategy(STRATEGY_PHONE);
     checkOutputForStrategy(STRATEGY_SONIFICATION);
     checkOutputForStrategy(STRATEGY_MEDIA);
@@ -1548,16 +1560,20 @@ uint32_t AudioPolicyManagerBase::getNewDevice(audio_io_handle_t output, bool fro
 
     AudioOutputDescriptor *outputDesc = mOutputs.valueFor(output);
     // check the following by order of priority to request a routing change if necessary:
-    // 1: we are in call or the strategy phone is active on the hardware output:
+    // 1: the strategy enforced audible is active on the output:
+    //      use device for strategy enforced audible
+    // 2: we are in call or the strategy phone is active on the output:
     //      use device for strategy phone
-    // 2: the strategy sonification is active on the hardware output:
+    // 3: the strategy sonification is active on the output:
     //      use device for strategy sonification
-    // 3: the strategy media is active on the hardware output:
+    // 4: the strategy media is active on the output:
     //      use device for strategy media
-    // 4: the strategy DTMF is active on the hardware output:
+    // 5: the strategy DTMF is active on the output:
     //      use device for strategy DTMF
-    if (isInCall() ||
-        outputDesc->isUsedByStrategy(STRATEGY_PHONE)) {
+    if (outputDesc->isUsedByStrategy(STRATEGY_ENFORCED_AUDIBLE)) {
+        device = getDeviceForStrategy(STRATEGY_ENFORCED_AUDIBLE, fromCache);
+    } else if (isInCall() ||
+                    outputDesc->isUsedByStrategy(STRATEGY_PHONE)) {
         device = getDeviceForStrategy(STRATEGY_PHONE, fromCache);
     } else if (outputDesc->isUsedByStrategy(STRATEGY_SONIFICATION)) {
         device = getDeviceForStrategy(STRATEGY_SONIFICATION, fromCache);
@@ -1599,7 +1615,6 @@ AudioPolicyManagerBase::routing_strategy AudioPolicyManagerBase::getStrategy(
     case AudioSystem::RING:
     case AudioSystem::NOTIFICATION:
     case AudioSystem::ALARM:
-    case AudioSystem::ENFORCED_AUDIBLE:
         return STRATEGY_SONIFICATION;
     case AudioSystem::DTMF:
         return STRATEGY_DTMF;
@@ -1611,6 +1626,8 @@ AudioPolicyManagerBase::routing_strategy AudioPolicyManagerBase::getStrategy(
     case AudioSystem::TTS:
     case AudioSystem::MUSIC:
         return STRATEGY_MEDIA;
+    case AudioSystem::ENFORCED_AUDIBLE:
+        return STRATEGY_ENFORCED_AUDIBLE;
     }
 }
 
@@ -1706,6 +1723,12 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
             device = getDeviceForStrategy(STRATEGY_PHONE, false);
             break;
         }
+        // FALL THROUGH
+
+    case STRATEGY_ENFORCED_AUDIBLE:
+        // strategy STRATEGY_ENFORCED_AUDIBLE uses same routing policy as STRATEGY_SONIFICATION
+        // except when in call where it doesn't default to STRATEGY_PHONE behavior
+
         device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
         if (device == 0) {
             LOGE("getDeviceForStrategy() speaker device not found");
@@ -1720,7 +1743,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
         }
 #ifdef WITH_A2DP
         if ((mA2dpOutput != 0) && !mA2dpSuspended &&
-                (strategy != STRATEGY_SONIFICATION || a2dpUsedForSonification())) {
+                (strategy == STRATEGY_MEDIA || a2dpUsedForSonification())) {
             if (device2 == 0) {
                 device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP;
             }
@@ -1745,7 +1768,8 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
             device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
         }
 
-        // device is DEVICE_OUT_SPEAKER if we come from case STRATEGY_SONIFICATION, 0 otherwise
+        // device is DEVICE_OUT_SPEAKER if we come from case STRATEGY_SONIFICATION or
+        // STRATEGY_ENFORCED_AUDIBLE, 0 otherwise
         device |= device2;
         if (device == 0) {
             LOGE("getDeviceForStrategy() speaker device not found");
@@ -2003,7 +2027,12 @@ const AudioPolicyManagerBase::VolumeCurvePoint
         sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
         sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
         sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
-    }
+    },
+    { // STRATEGY_ENFORCED_AUDIBLE
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
 };
 
 void AudioPolicyManagerBase::initializeVolumeCurves()
