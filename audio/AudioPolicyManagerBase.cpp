@@ -1398,8 +1398,24 @@ status_t AudioPolicyManagerBase::handleA2dpDisconnection(AudioSystem::audio_devi
 
     // mute media strategy to avoid outputting sound on hardware output while music stream
     // is switched from A2DP output and before music is paused by music application
+#ifdef QCOM_HARDWARE
+    // excluding FM stream from muting, as FM continues to play on the selected device after A2DP disconnection
+    for (int stream = 0; stream < AudioSystem::NUM_STREAM_TYPES; stream++) {
+        if ((getStrategy((AudioSystem::stream_type)stream) == STRATEGY_MEDIA) &&
+           ((AudioSystem::stream_type)stream != AudioSystem::FM)) {
+            setStreamMute(stream, true, mHardwareOutput);
+        }
+    }
+    for (int stream = 0; stream < AudioSystem::NUM_STREAM_TYPES; stream++) {
+        if ((getStrategy((AudioSystem::stream_type)stream) == STRATEGY_MEDIA) &&
+           ((AudioSystem::stream_type)stream != AudioSystem::FM)) {
+            setStreamMute(stream, false, mHardwareOutput, MUTE_TIME_MS);
+        }
+    }
+#else
     setStrategyMute(STRATEGY_MEDIA, true, mHardwareOutput);
     setStrategyMute(STRATEGY_MEDIA, false, mHardwareOutput, MUTE_TIME_MS);
+#endif
 
     if (!a2dpUsedForSonification()) {
         // unmute music on A2DP output if a notification or ringtone is playing
@@ -1625,6 +1641,9 @@ AudioPolicyManagerBase::routing_strategy AudioPolicyManagerBase::getStrategy(
         // while key clicks are played produces a poor result
     case AudioSystem::TTS:
     case AudioSystem::MUSIC:
+#ifdef QCOM_HARDWARE
+    case AudioSystem::FM:
+#endif
         return STRATEGY_MEDIA;
     case AudioSystem::ENFORCED_AUDIBLE:
         return STRATEGY_ENFORCED_AUDIBLE;
@@ -1853,7 +1872,9 @@ uint32_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
     case AUDIO_SOURCE_DEFAULT:
     case AUDIO_SOURCE_MIC:
     case AUDIO_SOURCE_VOICE_RECOGNITION:
+#ifndef QCOM_HARDWARE
     case AUDIO_SOURCE_VOICE_COMMUNICATION:
+#endif
         if (mForceUse[AudioSystem::FOR_RECORD] == AudioSystem::FORCE_BT_SCO &&
             mAvailableInputDevices & AudioSystem::DEVICE_IN_BLUETOOTH_SCO_HEADSET) {
             device = AudioSystem::DEVICE_IN_BLUETOOTH_SCO_HEADSET;
@@ -1863,6 +1884,11 @@ uint32_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
             device = AudioSystem::DEVICE_IN_BUILTIN_MIC;
         }
         break;
+#ifdef QCOM_HARDWARE
+   case AUDIO_SOURCE_VOICE_COMMUNICATION:
+        device = AudioSystem::DEVICE_IN_COMMUNICATION;
+        break;
+#endif
     case AUDIO_SOURCE_CAMCORDER:
         if (hasBackMicrophone()) {
             device = AudioSystem::DEVICE_IN_BACK_MIC;

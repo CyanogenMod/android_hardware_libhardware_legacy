@@ -140,6 +140,14 @@ status_t AudioPolicyCompatClient::setStreamVolume(
                                           volume, output, delayMs);
 }
 
+#ifdef QCOM_HARDWARE
+status_t AudioPolicyCompatClient::setFmVolume(float volume,
+                                              int delayMs)
+{
+    return mServiceOps->set_fm_volume(mService, volume, delayMs);
+}
+#endif
+
 status_t AudioPolicyCompatClient::startTone(ToneGenerator::tone_type tone,
                                        AudioSystem::stream_type stream)
 {
