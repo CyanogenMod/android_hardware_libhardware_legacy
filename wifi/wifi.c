@@ -114,6 +114,18 @@ struct genl_family *nl80211;
 #define WIFI_DRIVER_FW_PATH_P2P		NULL
 #endif
 
+#ifdef WIFI_EXT_MODULE_NAME
+static const char EXT_MODULE_NAME[] = WIFI_EXT_MODULE_NAME;
+#ifdef WIFI_EXT_MODULE_ARG
+static const char EXT_MODULE_ARG[] = WIFI_EXT_MODULE_ARG;
+#else
+static const char EXT_MODULE_ARG[] = "";
+#endif
+#endif
+#ifdef WIFI_EXT_MODULE_PATH
+static const char EXT_MODULE_PATH[] = WIFI_EXT_MODULE_PATH;
+#endif
+
 #ifndef WIFI_DRIVER_FW_PATH_PARAM
 #define WIFI_DRIVER_FW_PATH_PARAM	"/sys/module/wlan/parameters/fwpath"
 #endif
@@ -285,7 +297,6 @@ int wifi_load_driver()
     char driver_status[PROPERTY_VALUE_MAX];
     int count = 100; /* wait at most 20 seconds for completion */
     char module_arg2[256];
-
 #ifdef SAMSUNG_WIFI
     char* type = get_samsung_wifi_type();
 
@@ -297,6 +308,13 @@ int wifi_load_driver()
 
     if (insmod(DRIVER_MODULE_PATH, module_arg2) < 0) {
 #else
+
+#ifdef WIFI_EXT_MODULE_PATH
+    if (insmod(EXT_MODULE_PATH, EXT_MODULE_ARG) < 0)
+        return -1;
+    usleep(200000);
+#endif
+
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0) {
 #endif
 
@@ -347,6 +365,9 @@ int wifi_unload_driver()
         }
         usleep(500000); /* allow card removal */
         if (count) {
+#ifdef WIFI_EXT_MODULE_NAME
+            if (rmmod(EXT_MODULE_NAME) == 0)
+#endif
             return 0;
         }
         return -1;
