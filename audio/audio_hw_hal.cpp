@@ -81,7 +81,7 @@ static uint32_t out_get_channels(const struct audio_stream *stream)
 {
     const struct legacy_stream_out *out =
         reinterpret_cast<const struct legacy_stream_out *>(stream);
-    return out->legacy_out->channels();
+    return out->legacy_out->channels() >> 2;
 }
 
 static audio_format_t out_get_format(const struct audio_stream *stream)
@@ -452,6 +452,8 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->legacy_out = ladev->hwif->openOutputStream(devices, format, channels,
                                                     sample_rate, &status);
 #endif
+
+    *channels = *channels >> 2;
 
     if (!out->legacy_out) {
         ret = status;
