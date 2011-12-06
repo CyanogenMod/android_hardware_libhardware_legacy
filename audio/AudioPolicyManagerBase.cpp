@@ -691,13 +691,25 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
     // adapt channel selection to input source
     switch(inputSource) {
     case AUDIO_SOURCE_VOICE_UPLINK:
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+        channels |= AudioSystem::CHANNEL_IN_VOICE_UPLINK;
+#else
         channels = AudioSystem::CHANNEL_IN_VOICE_UPLINK;
+#endif
         break;
     case AUDIO_SOURCE_VOICE_DOWNLINK:
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+        channels |= AudioSystem::CHANNEL_IN_VOICE_DNLINK;
+#else
         channels = AudioSystem::CHANNEL_IN_VOICE_DNLINK;
+#endif
         break;
     case AUDIO_SOURCE_VOICE_CALL:
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+        channels |= (AudioSystem::CHANNEL_IN_VOICE_UPLINK | AudioSystem::CHANNEL_IN_VOICE_DNLINK);
+#else
         channels = (AudioSystem::CHANNEL_IN_VOICE_UPLINK | AudioSystem::CHANNEL_IN_VOICE_DNLINK);
+#endif
         break;
     default:
         break;
