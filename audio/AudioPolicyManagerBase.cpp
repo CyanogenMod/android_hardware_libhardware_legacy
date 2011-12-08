@@ -998,8 +998,9 @@ status_t AudioPolicyManagerBase::dump(int fd)
     result.append(buffer);
     snprintf(buffer, SIZE, " Phone state: %d\n", mPhoneState);
     result.append(buffer);
-    snprintf(buffer, SIZE, " Ringer mode: %d\n", mRingerMode);
-    result.append(buffer);
+// disable ringer mode dump until it is actually passed by AudioService when needed.
+//    snprintf(buffer, SIZE, " Ringer mode: %d\n", mRingerMode);
+//    result.append(buffer);
     snprintf(buffer, SIZE, " Force use for communications %d\n", mForceUse[AudioSystem::FOR_COMMUNICATION]);
     result.append(buffer);
     snprintf(buffer, SIZE, " Force use for media %d\n", mForceUse[AudioSystem::FOR_MEDIA]);
