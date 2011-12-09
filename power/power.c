@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +30,10 @@
 
 #define LOG_TAG "power"
 #include <utils/Log.h>
+#ifdef QCOM_HARDWARE
+#include <cutils/properties.h>
+#define DMMDEBUG 0
+#endif
 
 #include "qemu.h"
 #ifdef QEMU_POWER
@@ -189,3 +194,141 @@ set_screen_state(int on)
     }
     return 0;
 }
+
+#ifdef QCOM_HARDWARE
+/************************************
+ If 'state' equals 1
+    1. physical hotplug unstable memory
+    2. logical hotplug unstable memory
+
+ If 'state' equals 0
+    1. logical remove unstable memory
+    2. physical remove unstable memory
+************************************/
+
+static int
+logical(int state) {
+    int fd_State=0;
+    char str_movable_start_bytes[PROPERTY_VALUE_MAX], strBlock[32]="0";
+    char pDirName[128]="/sys/devices/system/memory/memory", fDirName[128], strState[7]="/state";
+
+    if(property_get("ro.dev.dmm.dpd.block", strBlock, "0") <= 0) {
+        LOGE("Failed to property_get() block number:%s\n",strBlock);
+        return -1;
+    }
+    else
+        if (DMMDEBUG) LOGW("strBlock = %s\n", strBlock);
+
+    sprintf(fDirName, "%s%s%s", pDirName, strBlock, strState);
+
+    if(DMMDEBUG) LOGW("Directory Location = %s\n", fDirName);
+
+    if((fd_State=open(fDirName, O_RDWR)) < 0) {
+        LOGE("Failed to open %s: %d", fDirName, -errno);
+        return -errno;
+    }
+
+    if(state == 0) {
+        if(write(fd_State, "offline", strlen("offline")) == -1) {
+            LOGE("Logical Remove of Unstable Memory: Failed (-%d)", errno);
+            close(fd_State);
+            return -errno;
+        }
+        if(DMMDEBUG) LOGW("Logical Remove of Unstable Memory: Succeded !");
+    }
+    else {
+        if(write(fd_State, "online", strlen("online")) == -1) {
+            LOGE("Logical Hotplug of Unstable Memory: Failed (-%d)", errno);
+            close(fd_State);
+            return -errno;
+        }
+        if(DMMDEBUG) LOGW("Logical Hotplug of Unstable Memory: Succeded !");
+    }
+    close(fd_State);
+    return 0;
+}
+
+static int
+physical(int state) {
+    int fd_Physical=0;
+    char str_movable_start_bytes[PROPERTY_VALUE_MAX];
+    char probePath[128]="/sys/devices/system/memory/probe";
+    char activePath[128]="/sys/devices/system/memory/active";
+    char removePath[128]="/sys/devices/system/memory/remove";
+
+    if(property_get("ro.dev.dmm.dpd.start_address", str_movable_start_bytes, "0") <= 0) {
+        LOGE("Failed to property_get() movable start bytes:%s\n",str_movable_start_bytes);
+        return -1;
+    }
+    else
+        if(DMMDEBUG) LOGW("str_movable_start_bytes = %s\n", str_movable_start_bytes);
+
+    if(state == 0) {
+        if((fd_Physical=open(removePath, O_WRONLY)) < 0) {
+            LOGE("Failed to open %s: %d", removePath, -errno);
+            return -errno;
+        }
+
+        if(write(fd_Physical, str_movable_start_bytes, strlen(str_movable_start_bytes)) == -1) {
+            LOGE("Physical Remove of Unstable Memory: Failed (-%d)", errno);
+            LOGE("Writing %s to %s: Failed !", str_movable_start_bytes, removePath);
+            close(fd_Physical);
+            return -errno;
+        }
+        if(DMMDEBUG) LOGW("Physical Remove of Unstable Memory: Succeded !");
+    }
+    else {
+        if((fd_Physical=open(probePath, O_WRONLY)) < 0) {
+            LOGE("Failed to open %s: %d", probePath, -errno);
+            return -errno;
+        }
+
+        if(write(fd_Physical, str_movable_start_bytes, strlen(str_movable_start_bytes)) == -1) {
+            LOGE("Physical HotPlug (Probe) of Unstable Memory: Failed (-%d)", errno);
+            LOGE("Writing %s to %s: Failed !", str_movable_start_bytes, probePath);
+            close(fd_Physical);
+            return -errno;
+        }
+
+        if((fd_Physical=open(activePath, O_WRONLY)) < 0) {
+            LOGE("Failed to open %s: %d", activePath, -errno);
+            return -errno;
+        }
+
+        if(write(fd_Physical, str_movable_start_bytes, strlen(str_movable_start_bytes)) == -1) {
+            LOGE("Physical HotPlug (Active) of Unstable Memory: Failed (-%d)", errno);
+            LOGE("Writing %s to %s: Failed !", str_movable_start_bytes, activePath);
+            close(fd_Physical);
+            return -errno;
+        }
+        if(DMMDEBUG) LOGW("Physical HotPlug of Unstable Memory: Succeded !");
+    }
+    close(fd_Physical);
+    return 0;
+}
+
+int
+set_unstable_memory_state(int state) {
+    LOGW("UnstableMemory(%d)", state);
+
+    if(state == 0) {
+        if(logical(0) != 0) {
+            return -1;
+        }
+        if(physical(0) != 0) {
+            logical(1);
+            return -1;
+        }
+    }
+    else {
+        if(physical(1) != 0) {
+            return -1;
+        }
+        if(logical(1) != 0) {
+            physical(0);
+            return -1;
+        }
+    }
+    return 0;
+}
+#endif

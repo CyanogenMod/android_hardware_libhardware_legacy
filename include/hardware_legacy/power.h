@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +40,11 @@ int set_screen_state(int on);
 // set how long to stay awake after the last user activity in seconds
 int set_last_user_activity_timeout(int64_t delay);
 
+#ifdef QCOM_HARDWARE
+// 1/true to Activate Unstable Memory Block
+// 0/false to Disable Unstable Memory Block
+int set_unstable_memory_state(int state);
+#endif
 
 #if __cplusplus
 } // extern "C"
