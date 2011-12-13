@@ -10,6 +10,10 @@ LOCAL_SRC_FILES := \
     AudioHardwareInterface.cpp \
     audio_hw_hal.cpp
 
+ifeq ($(BOARD_USES_AUDIO_LEGACY),true)
+    LOCAL_CFLAGS += -DUSES_AUDIO_LEGACY
+endif
+
 ifeq ($(BOARD_HAVE_BLUETOOTH),true)
   LOCAL_CFLAGS += -DWITH_A2DP
 endif
