@@ -101,8 +101,12 @@ public:
         virtual void initStreamVolume(AudioSystem::stream_type stream,
                                                     int indexMin,
                                                     int indexMax);
-        virtual status_t setStreamVolumeIndex(AudioSystem::stream_type stream, int index);
-        virtual status_t getStreamVolumeIndex(AudioSystem::stream_type stream, int *index);
+        virtual status_t setStreamVolumeIndex(AudioSystem::stream_type stream,
+                                              int index,
+                                              audio_devices_t device);
+        virtual status_t getStreamVolumeIndex(AudioSystem::stream_type stream,
+                                              int *index,
+                                              audio_devices_t device);
 
         // return the strategy corresponding to a given stream type
         virtual uint32_t getStrategyForStream(AudioSystem::stream_type stream);
@@ -219,14 +223,14 @@ protected:
         class StreamDescriptor
         {
         public:
-            StreamDescriptor()
-            :   mIndexMin(0), mIndexMax(1), mIndexCur(1), mCanBeMuted(true) {}
+            StreamDescriptor();
 
-            void dump(char* buffer, size_t size);
+            int getVolumeIndex(audio_devices_t device);
+            void dump(int fd);
 
             int mIndexMin;      // min volume index
             int mIndexMax;      // max volume index
-            int mIndexCur;      // current volume index
+            KeyedVector<audio_devices_t, int> mIndexCur;   // current volume index per device
             bool mCanBeMuted;   // true is the stream can be muted
 
             const VolumeCurvePoint *mVolumeCurve[DEVICE_CATEGORY_CNT];
@@ -340,6 +344,8 @@ protected:
 
         // returns the category the device belongs to with regard to volume curve management
         static device_category getDeviceCategory(uint32_t device);
+        // extract one device relevant for volume control from multiple device selection
+        static audio_devices_t getDeviceForVolume(audio_devices_t device);
 
         AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
         audio_io_handle_t mHardwareOutput;              // hardware output handler
