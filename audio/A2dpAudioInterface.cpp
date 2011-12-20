@@ -38,7 +38,7 @@ static const char *sA2dpWakeLock = "A2dpOutputStream";
 //    AudioHardwareInterface* hw = 0;
 //
 //    hw = AudioHardwareInterface::create();
-//    LOGD("new A2dpAudioInterface(hw: %p)", hw);
+//    ALOGD("new A2dpAudioInterface(hw: %p)", hw);
 //    hw = new A2dpAudioInterface(hw);
 //    return hw;
 //}
@@ -239,7 +239,7 @@ status_t A2dpAudioInterface::A2dpAudioStreamOut::set(
     uint32_t lChannels = pChannels ? *pChannels : 0;
     uint32_t lRate = pRate ? *pRate : 0;
 
-    LOGD("A2dpAudioStreamOut::set %x, %d, %d, %d\n", device, lFormat, lChannels, lRate);
+    ALOGD("A2dpAudioStreamOut::set %x, %d, %d, %d\n", device, lFormat, lChannels, lRate);
 
     // fix up defaults
     if (lFormat == 0) lFormat = format();
@@ -448,7 +448,7 @@ status_t A2dpAudioInterface::A2dpAudioStreamOut::setAddress(const char* address)
 
 status_t A2dpAudioInterface::A2dpAudioStreamOut::setBluetoothEnabled(bool enabled)
 {
-    LOGD("setBluetoothEnabled %d", enabled);
+    ALOGD("setBluetoothEnabled %d", enabled);
 
     Mutex::Autolock lock(mLock);
 

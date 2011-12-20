@@ -31,7 +31,7 @@
 #define  QEMU_DEBUG  0
 
 #if QEMU_DEBUG
-#  define  D(...)   LOGD(__VA_ARGS__)
+#  define  D(...)   ALOGD(__VA_ARGS__)
 #else
 #  define  D(...)   ((void)0)
 #endif

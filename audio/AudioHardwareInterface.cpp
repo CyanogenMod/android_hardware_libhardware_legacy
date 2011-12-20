@@ -83,7 +83,7 @@ AudioHardwareBase::AudioHardwareBase()
 status_t AudioHardwareBase::setMode(int mode)
 {
 #if LOG_ROUTING_CALLS
-    LOGD("setMode(%s)", displayMode(mode));
+    ALOGD("setMode(%s)", displayMode(mode));
 #endif
     if ((mode < 0) || (mode >= AudioSystem::NUM_MODES))
         return BAD_VALUE;

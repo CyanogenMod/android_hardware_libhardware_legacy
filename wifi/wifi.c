@@ -152,7 +152,7 @@ static int rmmod(const char *modname)
     }
 
     if (ret != 0)
-        LOGD("Unable to unload driver module \"%s\": %s\n",
+        ALOGD("Unable to unload driver module \"%s\": %s\n",
              modname, strerror(errno));
     return ret;
 }
@@ -673,7 +673,7 @@ int wifi_send_command(int index, const char *cmd, char *reply, size_t *reply_len
     }
     ret = wpa_ctrl_request(ctrl_conn[index], cmd, strlen(cmd), reply, reply_len, NULL);
     if (ret == -2) {
-        LOGD("'%s' command timed out.\n", cmd);
+        ALOGD("'%s' command timed out.\n", cmd);
         /* unblocks the monitor receive socket for termination */
         write(exit_sockets[index][0], "T", 1);
         return -2;
@@ -705,7 +705,7 @@ int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
     if (rfds[0].revents & POLLIN) {
         return wpa_ctrl_recv(monitor_conn[index], reply, reply_len);
     } else {
-        LOGD("Received on exit socket, terminate");
+        ALOGD("Received on exit socket, terminate");
         return -1;
     }
     return 0;
@@ -721,7 +721,7 @@ int wifi_wait_on_socket(int index, char *buf, size_t buflen)
     struct timeval *tptr;
 
     if (monitor_conn[index] == NULL) {
-        LOGD("Connection closed\n");
+        ALOGD("Connection closed\n");
         strncpy(buf, WPA_EVENT_TERMINATING " - connection closed", buflen-1);
         buf[buflen-1] = '\0';
         return strlen(buf);
@@ -729,17 +729,17 @@ int wifi_wait_on_socket(int index, char *buf, size_t buflen)
 
     result = wifi_ctrl_recv(index, buf, &nread);
     if (result < 0) {
-        LOGD("wifi_ctrl_recv failed: %s\n", strerror(errno));
+        ALOGD("wifi_ctrl_recv failed: %s\n", strerror(errno));
         strncpy(buf, WPA_EVENT_TERMINATING " - recv error", buflen-1);
         buf[buflen-1] = '\0';
         return strlen(buf);
     }
     buf[nread] = '\0';
-    /* LOGD("wait_for_event: result=%d nread=%d string=\"%s\"\n", result, nread, buf); */
+    /* ALOGD("wait_for_event: result=%d nread=%d string=\"%s\"\n", result, nread, buf); */
     /* Check for EOF on the socket */
     if (result == 0 && nread == 0) {
         /* Fabricate an event to pass up */
-        LOGD("Received EOF on supplicant socket\n");
+        ALOGD("Received EOF on supplicant socket\n");
         strncpy(buf, WPA_EVENT_TERMINATING " - signal 0 received", buflen-1);
         buf[buflen-1] = '\0';
         return strlen(buf);
