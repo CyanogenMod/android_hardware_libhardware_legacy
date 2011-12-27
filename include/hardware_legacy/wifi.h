@@ -65,24 +65,25 @@ int wifi_start_p2p_supplicant();
 int wifi_stop_supplicant();
 
 /**
- * Open a connection to supplicant.
+ * Open a connection to supplicant on interface
  *
  * @return 0 on success, < 0 on failure.
  */
-int wifi_connect_to_supplicant();
+int wifi_connect_to_supplicant(const char *ifname);
 
 /**
- * Close connection supplicant.
+ * Close connection to supplicant on interface
  *
  * @return 0 on success, < 0 on failure.
  */
-void wifi_close_supplicant_connection();
+void wifi_close_supplicant_connection(const char *ifname);
 
 /**
  * wifi_wait_for_event() performs a blocking call to 
  * get a Wi-Fi event and returns a string representing 
  * a Wi-Fi event when it occurs.
  *
+ * @param iface is the interface on which event is received
  * @param buf is the buffer that receives the event
  * @param len is the maximum length of the buffer
  *
@@ -90,61 +91,19 @@ void wifi_close_supplicant_connection();
  * event (for instance, no connection), and less than 0
  * if there is an error.
  */
-int wifi_wait_for_event(char *buf, size_t len);
+int wifi_wait_for_event(const char *iface, char *buf, size_t len);
 
 /**
  * wifi_command() issues a command to the Wi-Fi driver.
  *
- * Android extends the standard commands listed at 
- * /link http://hostap.epitest.fi/wpa_supplicant/devel/ctrl_iface_page.html 
+ * Android extends the standard commands listed at
+ * /link http://hostap.epitest.fi/wpa_supplicant/devel/ctrl_iface_page.html
  * to include support for sending commands to the driver:
  *
- * <table border="2" cellspacing="2" cellpadding="2">
- *   <tr>
- *     <td><strong>Command / Command summary</strong></td>
- *     <td><strong>Form of Response</strong></td>
- *     <td><strong>Processing</strong></td>
- *   </tr>
- *   <tr>
- *     <td>DRIVER START<BR>&nbsp;&nbsp;Turn on Wi-Fi Hardware</td>
- *     <td>OK if successful</td>
- *     <td>OK ? true : false</td>
- *   </tr>
- *   <tr>
- *     <td>DRIVER STOP<BR>&nbsp;&nbsp;Turn off Wi-Fi hardware</td>
- *     <td>OK if successful</td>
- *     <td>OK ? true : false</td>
- *   </tr>
- *   <tr>
- *     <td>DRIVER RSSI<BR>&nbsp;&nbsp;Return received signal strength indicator in -db for current AP</td>
- *     <td>&lt;ssid&gt; Rssi xx</td>
- *     <td>%*s %*s %d", &rssi</td>
- *   </tr>
- *   <tr>
- *     <td>DRIVER LINKSPEED<BR>&nbsp;&nbsp;Return link speed in MBPS</td>
- *     <td>LinkSpeed xx</td>
- *     <td>%*s %d", &linkspd</td>
- *   </tr>
- *   <tr>
- *     <td>DRIVER MACADDR<BR>&nbsp;&nbsp;Return mac address of the station</td>
- *     <td>Macaddr = xx.xx.xx.xx.xx.xx</td>
- *     <td>"%*s = %s", &macadr</td>
- *   </tr>
- *   <tr>
- *     <td>DRIVER SCAN-ACTIVE<BR>&nbsp;&nbsp;Set scan type to active</td>
- *     <td>"OK" if successful</td>
- *     <td>"OK" ? true : false</td>
- *   </tr>
- *   <tr>
- *     <td>DRIVER SCAN-PASSIVE<BR>&nbsp;&nbsp;Set scan type to passive</td>
- *     <td>"OK" if successful</td>
- *     <td>"OK" ? true : false</td>
- *   </tr>
- * </table>
+ * See wifi/java/android/net/wifi/WifiNative.java for the details of
+ * driver commands that are supported
  *
- * See libs/android_runtime/android_net_wifi_Wifi.cpp for more information
- * describing how these and other commands are invoked.
- *
+ * @param iface is the interface on which command is sent
  * @param command is the string command
  * @param reply is a buffer to receive a reply string
  * @param reply_len on entry, this is the maximum length of
@@ -153,7 +112,7 @@ int wifi_wait_for_event(char *buf, size_t len);
  *
  * @return 0 if successful, < 0 if an error.
  */
-int wifi_command(const char *command, char *reply, size_t *reply_len);
+int wifi_command(const char *iface, const char *command, char *reply, size_t *reply_len);
 
 /**
  * do_dhcp_request() issues a dhcp request and returns the acquired
