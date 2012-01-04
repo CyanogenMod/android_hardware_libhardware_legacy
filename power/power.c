@@ -111,7 +111,7 @@ acquire_wake_lock(int lock, const char* id)
 {
     initialize_fds();
 
-//    LOGI("acquire_wake_lock lock=%d id='%s'\n", lock, id);
+//    ALOGI("acquire_wake_lock lock=%d id='%s'\n", lock, id);
 
     if (g_error) return g_error;
 
@@ -132,7 +132,7 @@ release_wake_lock(const char* id)
 {
     initialize_fds();
 
-//    LOGI("release_wake_lock id='%s'\n", id);
+//    ALOGI("release_wake_lock id='%s'\n", id);
 
     if (g_error) return g_error;
 
@@ -143,7 +143,7 @@ release_wake_lock(const char* id)
 int
 set_last_user_activity_timeout(int64_t delay)
 {
-//    LOGI("set_last_user_activity_timeout delay=%d\n", ((int)(delay)));
+//    ALOGI("set_last_user_activity_timeout delay=%d\n", ((int)(delay)));
 
     int fd = open(AUTO_OFF_TIMEOUT_DEV, O_RDWR);
     if (fd >= 0) {
@@ -164,11 +164,11 @@ set_screen_state(int on)
 {
     QEMU_FALLBACK(set_screen_state(on));
 
-    LOGI("*** set_screen_state %d", on);
+    ALOGI("*** set_screen_state %d", on);
 
     initialize_fds();
 
-    //LOGI("go_to_sleep eventTime=%lld now=%lld g_error=%s\n", eventTime,
+    //ALOGI("go_to_sleep eventTime=%lld now=%lld g_error=%s\n", eventTime,
       //      systemTime(), strerror(g_error));
 
     if (g_error)
