@@ -198,7 +198,7 @@ int is_wifi_driver_loaded() {
      * crash.
      */
     if ((proc = fopen(MODULE_FILE, "r")) == NULL) {
-        LOGW("Could not open %s: %s", MODULE_FILE, strerror(errno));
+        ALOGW("Could not open %s: %s", MODULE_FILE, strerror(errno));
         property_set(DRIVER_PROP_NAME, "unloaded");
         return 0;
     }

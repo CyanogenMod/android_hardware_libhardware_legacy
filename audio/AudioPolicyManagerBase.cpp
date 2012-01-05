@@ -58,7 +58,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
         // handle output device connection
         case AudioSystem::DEVICE_STATE_AVAILABLE:
             if (mAvailableOutputDevices & device) {
-                LOGW("setDeviceConnectionState() device already connected: %x", device);
+                ALOGW("setDeviceConnectionState() device already connected: %x", device);
                 return INVALID_OPERATION;
             }
             ALOGV("setDeviceConnectionState() connecting device %x", device);
@@ -87,7 +87,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
         // handle output device disconnection
         case AudioSystem::DEVICE_STATE_UNAVAILABLE: {
             if (!(mAvailableOutputDevices & device)) {
-                LOGW("setDeviceConnectionState() device not connected: %x", device);
+                ALOGW("setDeviceConnectionState() device not connected: %x", device);
                 return INVALID_OPERATION;
             }
 
@@ -149,7 +149,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
         // handle input device connection
         case AudioSystem::DEVICE_STATE_AVAILABLE: {
             if (mAvailableInputDevices & device) {
-                LOGW("setDeviceConnectionState() device already connected: %d", device);
+                ALOGW("setDeviceConnectionState() device already connected: %d", device);
                 return INVALID_OPERATION;
             }
             mAvailableInputDevices |= device;
@@ -159,7 +159,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
         // handle input device disconnection
         case AudioSystem::DEVICE_STATE_UNAVAILABLE: {
             if (!(mAvailableInputDevices & device)) {
-                LOGW("setDeviceConnectionState() device not connected: %d", device);
+                ALOGW("setDeviceConnectionState() device not connected: %d", device);
                 return INVALID_OPERATION;
             }
             mAvailableInputDevices &= ~device;
@@ -187,7 +187,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
         return NO_ERROR;
     }
 
-    LOGW("setDeviceConnectionState() invalid device: %x", device);
+    ALOGW("setDeviceConnectionState() invalid device: %x", device);
     return BAD_VALUE;
 }
 
@@ -224,12 +224,12 @@ void AudioPolicyManagerBase::setPhoneState(int state)
     ALOGV("setPhoneState() state %d", state);
     uint32_t newDevice = 0;
     if (state < 0 || state >= AudioSystem::NUM_MODES) {
-        LOGW("setPhoneState() invalid state %d", state);
+        ALOGW("setPhoneState() invalid state %d", state);
         return;
     }
 
     if (state == mPhoneState ) {
-        LOGW("setPhoneState() setting same state %d", state);
+        ALOGW("setPhoneState() setting same state %d", state);
         return;
     }
 
@@ -335,7 +335,7 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
     case AudioSystem::FOR_COMMUNICATION:
         if (config != AudioSystem::FORCE_SPEAKER && config != AudioSystem::FORCE_BT_SCO &&
             config != AudioSystem::FORCE_NONE) {
-            LOGW("setForceUse() invalid config %d for FOR_COMMUNICATION", config);
+            ALOGW("setForceUse() invalid config %d for FOR_COMMUNICATION", config);
             return;
         }
         forceVolumeReeval = true;
@@ -346,7 +346,7 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
             config != AudioSystem::FORCE_WIRED_ACCESSORY &&
             config != AudioSystem::FORCE_ANALOG_DOCK &&
             config != AudioSystem::FORCE_DIGITAL_DOCK && config != AudioSystem::FORCE_NONE) {
-            LOGW("setForceUse() invalid config %d for FOR_MEDIA", config);
+            ALOGW("setForceUse() invalid config %d for FOR_MEDIA", config);
             return;
         }
         mForceUse[usage] = config;
@@ -354,7 +354,7 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
     case AudioSystem::FOR_RECORD:
         if (config != AudioSystem::FORCE_BT_SCO && config != AudioSystem::FORCE_WIRED_ACCESSORY &&
             config != AudioSystem::FORCE_NONE) {
-            LOGW("setForceUse() invalid config %d for FOR_RECORD", config);
+            ALOGW("setForceUse() invalid config %d for FOR_RECORD", config);
             return;
         }
         mForceUse[usage] = config;
@@ -365,13 +365,13 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
             config != AudioSystem::FORCE_WIRED_ACCESSORY &&
             config != AudioSystem::FORCE_ANALOG_DOCK &&
             config != AudioSystem::FORCE_DIGITAL_DOCK) {
-            LOGW("setForceUse() invalid config %d for FOR_DOCK", config);
+            ALOGW("setForceUse() invalid config %d for FOR_DOCK", config);
         }
         forceVolumeReeval = true;
         mForceUse[usage] = config;
         break;
     default:
-        LOGW("setForceUse() invalid usage %d", usage);
+        ALOGW("setForceUse() invalid usage %d", usage);
         break;
     }
 
@@ -517,7 +517,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         if (a2dpUsedForSonification() && a2dpDevice != 0) {
             // if playing on 2 devices among which one is A2DP, use duplicated output
             ALOGV("getOutput() using duplicated output");
-            LOGW_IF((mA2dpOutput == 0), "getOutput() A2DP device in multiple %x selected but A2DP output not opened", device);
+            ALOGW_IF((mA2dpOutput == 0), "getOutput() A2DP device in multiple %x selected but A2DP output not opened", device);
             output = mDuplicatedOutput;
         } else
 #endif
@@ -530,7 +530,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
 #ifdef WITH_A2DP
         if (a2dpDevice != 0) {
             // if playing on A2DP device, use a2dp output
-            LOGW_IF((mA2dpOutput == 0), "getOutput() A2DP device %x selected but A2DP output not opened", device);
+            ALOGW_IF((mA2dpOutput == 0), "getOutput() A2DP device %x selected but A2DP output not opened", device);
             output = mA2dpOutput;
         } else
 #endif
@@ -541,7 +541,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
     }
 
 
-    LOGW_IF((output ==0), "getOutput() could not find output for stream %d, samplingRate %d, format %d, channels %x, flags %x",
+    ALOGW_IF((output ==0), "getOutput() could not find output for stream %d, samplingRate %d, format %d, channels %x, flags %x",
                 stream, samplingRate, format, channels, flags);
 
     return output;
@@ -554,7 +554,7 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
     ALOGV("startOutput() output %d, stream %d, session %d", output, stream, session);
     ssize_t index = mOutputs.indexOfKey(output);
     if (index < 0) {
-        LOGW("startOutput() unknow output %d", output);
+        ALOGW("startOutput() unknow output %d", output);
         return BAD_VALUE;
     }
 
@@ -601,7 +601,7 @@ status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
     ALOGV("stopOutput() output %d, stream %d, session %d", output, stream, session);
     ssize_t index = mOutputs.indexOfKey(output);
     if (index < 0) {
-        LOGW("stopOutput() unknow output %d", output);
+        ALOGW("stopOutput() unknow output %d", output);
         return BAD_VALUE;
     }
 
@@ -635,7 +635,7 @@ status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
         }
         return NO_ERROR;
     } else {
-        LOGW("stopOutput() refcount is already 0 for output %d", output);
+        ALOGW("stopOutput() refcount is already 0 for output %d", output);
         return INVALID_OPERATION;
     }
 }
@@ -645,7 +645,7 @@ void AudioPolicyManagerBase::releaseOutput(audio_io_handle_t output)
     ALOGV("releaseOutput() %d", output);
     ssize_t index = mOutputs.indexOfKey(output);
     if (index < 0) {
-        LOGW("releaseOutput() releasing unknown output %d", output);
+        ALOGW("releaseOutput() releasing unknown output %d", output);
         return;
     }
 
@@ -737,7 +737,7 @@ status_t AudioPolicyManagerBase::startInput(audio_io_handle_t input)
     ALOGV("startInput() input %d", input);
     ssize_t index = mInputs.indexOfKey(input);
     if (index < 0) {
-        LOGW("startInput() unknow input %d", input);
+        ALOGW("startInput() unknow input %d", input);
         return BAD_VALUE;
     }
     AudioInputDescriptor *inputDesc = mInputs.valueAt(index);
@@ -748,7 +748,7 @@ status_t AudioPolicyManagerBase::startInput(audio_io_handle_t input)
     {
         // refuse 2 active AudioRecord clients at the same time
         if (getActiveInput() != 0) {
-            LOGW("startInput() input %d failed: other input already started", input);
+            ALOGW("startInput() input %d failed: other input already started", input);
             return INVALID_OPERATION;
         }
     }
@@ -770,13 +770,13 @@ status_t AudioPolicyManagerBase::stopInput(audio_io_handle_t input)
     ALOGV("stopInput() input %d", input);
     ssize_t index = mInputs.indexOfKey(input);
     if (index < 0) {
-        LOGW("stopInput() unknow input %d", input);
+        ALOGW("stopInput() unknow input %d", input);
         return BAD_VALUE;
     }
     AudioInputDescriptor *inputDesc = mInputs.valueAt(index);
 
     if (inputDesc->mRefCount == 0) {
-        LOGW("stopInput() input %d already stopped", input);
+        ALOGW("stopInput() input %d already stopped", input);
         return INVALID_OPERATION;
     } else {
         AudioParameter param = AudioParameter();
@@ -792,7 +792,7 @@ void AudioPolicyManagerBase::releaseInput(audio_io_handle_t input)
     ALOGV("releaseInput() %d", input);
     ssize_t index = mInputs.indexOfKey(input);
     if (index < 0) {
-        LOGW("releaseInput() releasing unknown input %d", input);
+        ALOGW("releaseInput() releasing unknown input %d", input);
         return;
     }
     mpClientInterface->closeInput(input);
@@ -807,7 +807,7 @@ void AudioPolicyManagerBase::initStreamVolume(AudioSystem::stream_type stream,
 {
     ALOGV("initStreamVolume() stream %d, min %d, max %d", stream , indexMin, indexMax);
     if (indexMin < 0 || indexMin >= indexMax) {
-        LOGW("initStreamVolume() invalid index limits for stream %d, min %d, max %d", stream , indexMin, indexMax);
+        ALOGW("initStreamVolume() invalid index limits for stream %d, min %d, max %d", stream , indexMin, indexMax);
         return;
     }
     mStreams[stream].mIndexMin = indexMin;
@@ -865,13 +865,13 @@ status_t AudioPolicyManagerBase::registerEffect(effect_descriptor_t *desc,
     if (index < 0) {
         index = mInputs.indexOfKey(io);
         if (index < 0) {
-            LOGW("registerEffect() unknown io %d", io);
+            ALOGW("registerEffect() unknown io %d", io);
             return INVALID_OPERATION;
         }
     }
 
     if (mTotalEffectsMemory + desc->memoryUsage > getMaxEffectsMemory()) {
-        LOGW("registerEffect() memory limit exceeded for Fx %s, Memory %d KB",
+        ALOGW("registerEffect() memory limit exceeded for Fx %s, Memory %d KB",
                 desc->name, desc->memoryUsage);
         return INVALID_OPERATION;
     }
@@ -896,7 +896,7 @@ status_t AudioPolicyManagerBase::unregisterEffect(int id)
 {
     ssize_t index = mEffects.indexOfKey(id);
     if (index < 0) {
-        LOGW("unregisterEffect() unknown effect ID %d", id);
+        ALOGW("unregisterEffect() unknown effect ID %d", id);
         return INVALID_OPERATION;
     }
 
@@ -905,7 +905,7 @@ status_t AudioPolicyManagerBase::unregisterEffect(int id)
     setEffectEnabled(pDesc, false);
 
     if (mTotalEffectsMemory < pDesc->mDesc.memoryUsage) {
-        LOGW("unregisterEffect() memory %d too big for total %d",
+        ALOGW("unregisterEffect() memory %d too big for total %d",
                 pDesc->mDesc.memoryUsage, mTotalEffectsMemory);
         pDesc->mDesc.memoryUsage = mTotalEffectsMemory;
     }
@@ -923,7 +923,7 @@ status_t AudioPolicyManagerBase::setEffectEnabled(int id, bool enabled)
 {
     ssize_t index = mEffects.indexOfKey(id);
     if (index < 0) {
-        LOGW("unregisterEffect() unknown effect ID %d", id);
+        ALOGW("unregisterEffect() unknown effect ID %d", id);
         return INVALID_OPERATION;
     }
 
@@ -940,7 +940,7 @@ status_t AudioPolicyManagerBase::setEffectEnabled(EffectDescriptor *pDesc, bool 
 
     if (enabled) {
         if (mTotalEffectsCpuLoad + pDesc->mDesc.cpuLoad > getMaxEffectsCpuLoad()) {
-            LOGW("setEffectEnabled(true) CPU Load limit exceeded for Fx %s, CPU %f MIPS",
+            ALOGW("setEffectEnabled(true) CPU Load limit exceeded for Fx %s, CPU %f MIPS",
                  pDesc->mDesc.name, (float)pDesc->mDesc.cpuLoad/10);
             return INVALID_OPERATION;
         }
@@ -948,7 +948,7 @@ status_t AudioPolicyManagerBase::setEffectEnabled(EffectDescriptor *pDesc, bool 
         ALOGV("setEffectEnabled(true) total CPU %d", mTotalEffectsCpuLoad);
     } else {
         if (mTotalEffectsCpuLoad < pDesc->mDesc.cpuLoad) {
-            LOGW("setEffectEnabled(false) CPU load %d too high for total %d",
+            ALOGW("setEffectEnabled(false) CPU load %d too high for total %d",
                     pDesc->mDesc.cpuLoad, mTotalEffectsCpuLoad);
             pDesc->mDesc.cpuLoad = mTotalEffectsCpuLoad;
         }
@@ -1355,7 +1355,7 @@ status_t AudioPolicyManagerBase::handleA2dpConnection(AudioSystem::audio_devices
                 applyStreamVolumes(mDuplicatedOutput, device);
             }
         } else {
-            LOGW("getOutput() could not open duplicated output for %d and %d",
+            ALOGW("getOutput() could not open duplicated output for %d and %d",
                     mHardwareOutput, mA2dpOutput);
             mpClientInterface->closeOutput(mA2dpOutput);
             mOutputs.removeItem(mA2dpOutput);
@@ -1364,7 +1364,7 @@ status_t AudioPolicyManagerBase::handleA2dpConnection(AudioSystem::audio_devices
             return NO_INIT;
         }
     } else {
-        LOGW("setDeviceConnectionState() could not open A2DP output for device %x", device);
+        ALOGW("setDeviceConnectionState() could not open A2DP output for device %x", device);
         delete outputDesc;
         return NO_INIT;
     }
@@ -1388,12 +1388,12 @@ status_t AudioPolicyManagerBase::handleA2dpDisconnection(AudioSystem::audio_devi
                                                     const char *device_address)
 {
     if (mA2dpOutput == 0) {
-        LOGW("setDeviceConnectionState() disconnecting A2DP and no A2DP output!");
+        ALOGW("setDeviceConnectionState() disconnecting A2DP and no A2DP output!");
         return INVALID_OPERATION;
     }
 
     if (mA2dpDeviceAddress != device_address) {
-        LOGW("setDeviceConnectionState() disconnecting unknow A2DP sink address %s", device_address);
+        ALOGW("setDeviceConnectionState() disconnecting unknow A2DP sink address %s", device_address);
         return INVALID_OPERATION;
     }
 
@@ -1778,7 +1778,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
         } break;
 
     default:
-        LOGW("getDeviceForStrategy() unknown strategy: %d", strategy);
+        ALOGW("getDeviceForStrategy() unknown strategy: %d", strategy);
         break;
     }
 
@@ -1877,7 +1877,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
         device = AudioSystem::DEVICE_IN_VOICE_CALL;
         break;
     default:
-        LOGW("getDeviceForInputSource() invalid input source %d", inputSource);
+        ALOGW("getDeviceForInputSource() invalid input source %d", inputSource);
         device = 0;
         break;
     }
@@ -1916,7 +1916,7 @@ AudioPolicyManagerBase::device_category AudioPolicyManagerBase::getDeviceCategor
         device &= AUDIO_DEVICE_OUT_ALL_A2DP;
     }
 
-    LOGW_IF(AudioSystem::popCount(device) != 1,
+    ALOGW_IF(AudioSystem::popCount(device) != 1,
             "getDeviceCategory() invalid device combination: %08x",
             device);
 
@@ -2192,7 +2192,7 @@ void AudioPolicyManagerBase::setStreamMute(int stream, bool on, audio_io_handle_
         outputDesc->mMuteCount[stream]++;
     } else {
         if (outputDesc->mMuteCount[stream] == 0) {
-            LOGW("setStreamMute() unmuting non muted stream!");
+            ALOGW("setStreamMute() unmuting non muted stream!");
             return;
         }
         if (--outputDesc->mMuteCount[stream] == 0) {
@@ -2307,7 +2307,7 @@ void AudioPolicyManagerBase::AudioOutputDescriptor::changeRefCount(AudioSystem::
         mOutput2->changeRefCount(stream, delta);
     }
     if ((delta + (int)mRefCount[stream]) < 0) {
-        LOGW("changeRefCount() invalid delta %d for stream %d, refCount %d", delta, stream, mRefCount[stream]);
+        ALOGW("changeRefCount() invalid delta %d for stream %d, refCount %d", delta, stream, mRefCount[stream]);
         mRefCount[stream] = 0;
         return;
     }

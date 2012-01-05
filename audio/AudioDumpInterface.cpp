@@ -108,7 +108,7 @@ void AudioDumpInterface::closeOutputStream(AudioStreamOut* out)
     AudioStreamOutDump *dumpOut = (AudioStreamOutDump *)out;
 
     if (mOutputs.indexOf(dumpOut) < 0) {
-        LOGW("Attempt to close invalid output stream");
+        ALOGW("Attempt to close invalid output stream");
         return;
     }
 
@@ -173,7 +173,7 @@ void AudioDumpInterface::closeInputStream(AudioStreamIn* in)
     AudioStreamInDump *dumpIn = (AudioStreamInDump *)in;
 
     if (mInputs.indexOf(dumpIn) < 0) {
-        LOGW("Attempt to close invalid input stream");
+        ALOGW("Attempt to close invalid input stream");
         return;
     }
     dumpIn->standby();
