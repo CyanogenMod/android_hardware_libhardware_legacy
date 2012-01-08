@@ -323,7 +323,7 @@ status_t AudioStreamInGeneric::set(
     if ((*pFormat != format()) ||
         (*pChannels != channels()) ||
         (*pRate != sampleRate())) {
-        LOGE("Error opening input channel");
+        ALOGE("Error opening input channel");
         *pFormat = format();
         *pChannels = channels();
         *pRate = sampleRate();
@@ -344,7 +344,7 @@ ssize_t AudioStreamInGeneric::read(void* buffer, ssize_t bytes)
 {
     AutoMutex lock(mLock);
     if (mFd < 0) {
-        LOGE("Attempt to read from unopened device");
+        ALOGE("Attempt to read from unopened device");
         return NO_INIT;
     }
     return ::read(mFd, buffer, bytes);

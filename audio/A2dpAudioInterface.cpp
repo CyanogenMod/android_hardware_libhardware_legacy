@@ -301,7 +301,7 @@ ssize_t A2dpAudioInterface::A2dpAudioStreamOut::write(const void* buffer, size_t
         while (remaining > 0 && retries) {
             status = a2dp_write(mData, buffer, remaining);
             if (status < 0) {
-                LOGE("a2dp_write failed err: %d\n", status);
+                ALOGE("a2dp_write failed err: %d\n", status);
                 goto Error;
             }
             if (status == 0) {
@@ -338,7 +338,7 @@ status_t A2dpAudioInterface::A2dpAudioStreamOut::init()
     if (!mData) {
         status_t status = a2dp_init(44100, 2, &mData);
         if (status < 0) {
-            LOGE("a2dp_init failed err: %d\n", status);
+            ALOGE("a2dp_init failed err: %d\n", status);
             mData = NULL;
             return status;
         }

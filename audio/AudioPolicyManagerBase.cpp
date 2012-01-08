@@ -39,7 +39,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
     if (AudioSystem::popCount(device) != 1) return BAD_VALUE;
 
     if (strlen(device_address) >= MAX_DEVICE_ADDRESS_LEN) {
-        LOGE("setDeviceConnectionState() invalid address: %s", device_address);
+        ALOGE("setDeviceConnectionState() invalid address: %s", device_address);
         return BAD_VALUE;
     }
 
@@ -48,7 +48,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
 
 #ifndef WITH_A2DP
         if (AudioSystem::isA2dpDevice(device)) {
-            LOGE("setDeviceConnectionState() invalid device: %x", device);
+            ALOGE("setDeviceConnectionState() invalid device: %x", device);
             return BAD_VALUE;
         }
 #endif
@@ -114,7 +114,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
             } break;
 
         default:
-            LOGE("setDeviceConnectionState() invalid state: %x", state);
+            ALOGE("setDeviceConnectionState() invalid state: %x", state);
             return BAD_VALUE;
         }
 
@@ -166,7 +166,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
             } break;
 
         default:
-            LOGE("setDeviceConnectionState() invalid state: %x", state);
+            ALOGE("setDeviceConnectionState() invalid state: %x", state);
             return BAD_VALUE;
         }
 
@@ -1098,7 +1098,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
                                     outputDesc->mFlags);
 
     if (mHardwareOutput == 0) {
-        LOGE("Failed to initialize hardware output stream, samplingRate: %d, format %d, channels %d",
+        ALOGE("Failed to initialize hardware output stream, samplingRate: %d, format %d, channels %d",
                 outputDesc->mSamplingRate, outputDesc->mFormat, outputDesc->mChannels);
     } else {
         addOutput(mHardwareOutput, outputDesc);
@@ -1263,7 +1263,7 @@ bool AudioPolicyManagerBase::threadLoop()
                                                 &outputDesc->mLatency,
                                                 outputDesc->mFlags);
                 if (mHardwareOutput == 0) {
-                    LOGE("Failed to reopen hardware output stream, samplingRate: %d, format %d, channels %d",
+                    ALOGE("Failed to reopen hardware output stream, samplingRate: %d, format %d, channels %d",
                             outputDesc->mSamplingRate, outputDesc->mFormat, outputDesc->mChannels);
                 } else {
                     AudioParameter outputCmd = AudioParameter();
@@ -1595,7 +1595,7 @@ uint32_t AudioPolicyManagerBase::getStrategyForStream(AudioSystem::stream_type s
 uint32_t AudioPolicyManagerBase::getDevicesForStream(AudioSystem::stream_type stream) {
     uint32_t devices;
     // By checking the range of stream before calling getStrategy, we avoid
-    // getStrategy's behavior for invalid streams.  getStrategy would do a LOGE
+    // getStrategy's behavior for invalid streams.  getStrategy would do a ALOGE
     // and then return STRATEGY_MEDIA, but we want to return the empty set.
     if (stream < (AudioSystem::stream_type) 0 || stream >= AudioSystem::NUM_STREAM_TYPES) {
         devices = 0;
@@ -1620,7 +1620,7 @@ AudioPolicyManagerBase::routing_strategy AudioPolicyManagerBase::getStrategy(
     case AudioSystem::DTMF:
         return STRATEGY_DTMF;
     default:
-        LOGE("unknown stream type");
+        ALOGE("unknown stream type");
     case AudioSystem::SYSTEM:
         // NOTE: SYSTEM stream uses MEDIA strategy because muting music and switching outputs
         // while key clicks are played produces a poor result
@@ -1689,7 +1689,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
             if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_EARPIECE;
             if (device == 0) {
-                LOGE("getDeviceForStrategy() earpiece device not found");
+                ALOGE("getDeviceForStrategy() earpiece device not found");
             }
             break;
 
@@ -1710,7 +1710,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
             if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
             if (device == 0) {
-                LOGE("getDeviceForStrategy() speaker device not found");
+                ALOGE("getDeviceForStrategy() speaker device not found");
             }
             break;
         }
@@ -1732,7 +1732,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
 
         device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
         if (device == 0) {
-            LOGE("getDeviceForStrategy() speaker device not found");
+            ALOGE("getDeviceForStrategy() speaker device not found");
         }
         // The second device used for sonification is the same as the device used by media strategy
         // FALL THROUGH
@@ -1773,7 +1773,7 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
         // STRATEGY_ENFORCED_AUDIBLE, 0 otherwise
         device |= device2;
         if (device == 0) {
-            LOGE("getDeviceForStrategy() speaker device not found");
+            ALOGE("getDeviceForStrategy() speaker device not found");
         }
         } break;
 

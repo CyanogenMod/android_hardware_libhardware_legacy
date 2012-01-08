@@ -290,19 +290,19 @@ int ensure_entropy_file_exists()
     if ((ret == 0) || (errno == EACCES)) {
         if ((ret != 0) &&
             (chmod(SUPP_ENTROPY_FILE, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP) != 0)) {
-            LOGE("Cannot set RW to \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
+            ALOGE("Cannot set RW to \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
             return -1;
         }
         return 0;
     }
     destfd = open(SUPP_ENTROPY_FILE, O_CREAT|O_RDWR, 0660);
     if (destfd < 0) {
-        LOGE("Cannot create \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
+        ALOGE("Cannot create \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
         return -1;
     }
 
     if (write(destfd, dummy_key, sizeof(dummy_key)) != sizeof(dummy_key)) {
-        LOGE("Error writing \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
+        ALOGE("Error writing \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
         close(destfd);
         return -1;
     }
@@ -310,14 +310,14 @@ int ensure_entropy_file_exists()
 
     /* chmod is needed because open() didn't set permisions properly */
     if (chmod(SUPP_ENTROPY_FILE, 0660) < 0) {
-        LOGE("Error changing permissions of %s to 0660: %s",
+        ALOGE("Error changing permissions of %s to 0660: %s",
              SUPP_ENTROPY_FILE, strerror(errno));
         unlink(SUPP_ENTROPY_FILE);
         return -1;
     }
 
     if (chown(SUPP_ENTROPY_FILE, AID_SYSTEM, AID_WIFI) < 0) {
-        LOGE("Error changing group ownership of %s to %d: %s",
+        ALOGE("Error changing group ownership of %s to %d: %s",
              SUPP_ENTROPY_FILE, AID_WIFI, strerror(errno));
         unlink(SUPP_ENTROPY_FILE);
         return -1;
@@ -342,14 +342,14 @@ int update_ctrl_interface(const char *config_file) {
         return 0;
     srcfd = open(config_file, O_RDONLY);
     if (srcfd < 0) {
-        LOGE("Cannot open \"%s\": %s", config_file, strerror(errno));
+        ALOGE("Cannot open \"%s\": %s", config_file, strerror(errno));
         free(pbuf);
         return 0;
     }
     nread = read(srcfd, pbuf, sb.st_size);
     close(srcfd);
     if (nread < 0) {
-        LOGE("Cannot read \"%s\": %s", config_file, strerror(errno));
+        ALOGE("Cannot read \"%s\": %s", config_file, strerror(errno));
         free(pbuf);
         return 0;
     }
@@ -365,7 +365,7 @@ int update_ctrl_interface(const char *config_file) {
         int mlen = strlen(ifc);
         int nwrite;
         if (strncmp(ifc, iptr, mlen) != 0) {
-            LOGE("ctrl_interface != %s", ifc);
+            ALOGE("ctrl_interface != %s", ifc);
             while (((ilen + (iptr - pbuf)) < nread) && (iptr[ilen] != '\n'))
                 ilen++;
             mlen = ((ilen >= mlen) ? ilen : mlen) + 1;
@@ -374,7 +374,7 @@ int update_ctrl_interface(const char *config_file) {
             memcpy(iptr, ifc, strlen(ifc));
             destfd = open(config_file, O_RDWR, 0660);
             if (destfd < 0) {
-                LOGE("Cannot update \"%s\": %s", config_file, strerror(errno));
+                ALOGE("Cannot update \"%s\": %s", config_file, strerror(errno));
                 free(pbuf);
                 return -1;
             }
@@ -398,7 +398,7 @@ int ensure_config_file_exists(const char *config_file)
     if ((ret == 0) || (errno == EACCES)) {
         if ((ret != 0) &&
             (chmod(config_file, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP) != 0)) {
-            LOGE("Cannot set RW to \"%s\": %s", config_file, strerror(errno));
+            ALOGE("Cannot set RW to \"%s\": %s", config_file, strerror(errno));
             return -1;
         }
         /* return if filesize is at least 10 bytes */
@@ -406,26 +406,26 @@ int ensure_config_file_exists(const char *config_file)
             return update_ctrl_interface(config_file);
         }
     } else if (errno != ENOENT) {
-        LOGE("Cannot access \"%s\": %s", config_file, strerror(errno));
+        ALOGE("Cannot access \"%s\": %s", config_file, strerror(errno));
         return -1;
     }
 
     srcfd = open(SUPP_CONFIG_TEMPLATE, O_RDONLY);
     if (srcfd < 0) {
-        LOGE("Cannot open \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
+        ALOGE("Cannot open \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
         return -1;
     }
 
     destfd = open(config_file, O_CREAT|O_RDWR, 0660);
     if (destfd < 0) {
         close(srcfd);
-        LOGE("Cannot create \"%s\": %s", config_file, strerror(errno));
+        ALOGE("Cannot create \"%s\": %s", config_file, strerror(errno));
         return -1;
     }
 
     while ((nread = read(srcfd, buf, sizeof(buf))) != 0) {
         if (nread < 0) {
-            LOGE("Error reading \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
+            ALOGE("Error reading \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
             close(srcfd);
             close(destfd);
             unlink(config_file);
@@ -439,14 +439,14 @@ int ensure_config_file_exists(const char *config_file)
 
     /* chmod is needed because open() didn't set permisions properly */
     if (chmod(config_file, 0660) < 0) {
-        LOGE("Error changing permissions of %s to 0660: %s",
+        ALOGE("Error changing permissions of %s to 0660: %s",
              config_file, strerror(errno));
         unlink(config_file);
         return -1;
     }
 
     if (chown(config_file, AID_SYSTEM, AID_WIFI) < 0) {
-        LOGE("Error changing group ownership of %s to %d: %s",
+        ALOGE("Error changing group ownership of %s to %d: %s",
              config_file, AID_WIFI, strerror(errno));
         unlink(config_file);
         return -1;
@@ -511,12 +511,12 @@ int wifi_start_supplicant_common(const char *config_file)
 
     /* Before starting the daemon, make sure its config file exists */
     if (ensure_config_file_exists(config_file) < 0) {
-        LOGE("Wi-Fi will not be enabled");
+        ALOGE("Wi-Fi will not be enabled");
         return -1;
     }
 
     if (ensure_entropy_file_exists() < 0) {
-        LOGE("Wi-Fi entropy file was not created");
+        ALOGE("Wi-Fi entropy file was not created");
     }
 
     /* Clear out any stale socket files that might be left over. */
@@ -612,13 +612,13 @@ int wifi_connect_on_socket_path(int index, const char *path)
     /* Make sure supplicant is running */
     if (!property_get(SUPP_PROP_NAME, supp_status, NULL)
             || strcmp(supp_status, "running") != 0) {
-        LOGE("Supplicant not running, cannot connect");
+        ALOGE("Supplicant not running, cannot connect");
         return -1;
     }
 
     ctrl_conn[index] = wpa_ctrl_open(path);
     if (ctrl_conn[index] == NULL) {
-        LOGE("Unable to open connection to supplicant on \"%s\": %s",
+        ALOGE("Unable to open connection to supplicant on \"%s\": %s",
              path, strerror(errno));
         return -1;
     }
@@ -699,7 +699,7 @@ int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
     rfds[1].events |= POLLIN;
     res = poll(rfds, 2, -1);
     if (res < 0) {
-        LOGE("Error poll = %d", res);
+        ALOGE("Error poll = %d", res);
         return res;
     }
     if (rfds[0].revents & POLLIN) {
@@ -851,12 +851,12 @@ int wifi_change_fw_path(const char *fwpath)
         return ret;
     fd = open(WIFI_DRIVER_FW_PATH_PARAM, O_WRONLY);
     if (fd < 0) {
-        LOGE("Failed to open wlan fw path param (%s)", strerror(errno));
+        ALOGE("Failed to open wlan fw path param (%s)", strerror(errno));
         return -1;
     }
     len = strlen(fwpath) + 1;
     if (write(fd, fwpath, len) != len) {
-        LOGE("Failed to write wlan fw path param (%s)", strerror(errno));
+        ALOGE("Failed to write wlan fw path param (%s)", strerror(errno));
         ret = -1;
     }
     close(fd);

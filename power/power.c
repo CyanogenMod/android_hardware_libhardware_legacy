@@ -185,7 +185,7 @@ set_screen_state(int on)
     len = write(g_fds[REQUEST_STATE], buf, len);
     if(len < 0) {
     failure:
-        LOGE("Failed setting last user activity: g_error=%d\n", g_error);
+        ALOGE("Failed setting last user activity: g_error=%d\n", g_error);
     }
     return 0;
 }

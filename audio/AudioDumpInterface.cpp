@@ -35,7 +35,7 @@ AudioDumpInterface::AudioDumpInterface(AudioHardwareInterface* hw)
     : mPolicyCommands(String8("")), mFileName(String8(""))
 {
     if(hw == 0) {
-        LOGE("Dump construct hw = 0");
+        ALOGE("Dump construct hw = 0");
     }
     mFinalInterface = hw;
     ALOGV("Constructor %p, mFinalInterface %p", this, mFinalInterface);
