@@ -99,10 +99,12 @@ static const char FIRMWARE_LOADER[]     = WIFI_FIRMWARE_LOADER;
 static const char DRIVER_PROP_NAME[]    = "wlan.driver.status";
 static const char SUPPLICANT_NAME[]     = "wpa_supplicant";
 static const char SUPP_PROP_NAME[]      = "init.svc.wpa_supplicant";
+static const char P2P_SUPPLICANT_NAME[] = "p2p_supplicant";
+static const char P2P_PROP_NAME[]       = "init.svc.p2p_supplicant";
 static const char SUPP_CONFIG_TEMPLATE[]= "/system/etc/wifi/wpa_supplicant.conf";
 static const char SUPP_CONFIG_FILE[]    = "/data/misc/wifi/wpa_supplicant.conf";
 static const char P2P_CONFIG_FILE[]     = "/data/misc/wifi/p2p_supplicant.conf";
-static const char CONTROL_IFACE_PATH[]  = "/data/misc/wifi";
+static const char CONTROL_IFACE_PATH[]  = "/data/misc/wifi/sockets";
 static const char MODULE_FILE[]         = "/proc/modules";
 
 static const char SUPP_ENTROPY_FILE[]   = WIFI_ENTROPY_FILE;
@@ -110,6 +112,11 @@ static unsigned char dummy_key[21] = { 0x02, 0x11, 0xbe, 0x33, 0x43, 0x35,
                                        0x68, 0x47, 0x84, 0x99, 0xa9, 0x2b,
                                        0x1c, 0xd3, 0xee, 0xff, 0xf1, 0xe2,
                                        0xf3, 0xf4, 0xf5 };
+
+/* Is either SUPPLICANT_NAME or P2P_SUPPLICANT_NAME */
+static char supplicant_name[PROPERTY_VALUE_MAX];
+/* Is either SUPP_PROP_NAME or P2P_PROP_NAME */
+static char supplicant_prop_name[PROPERTY_KEY_MAX];
 
 static int is_primary_interface(const char *ifname)
 {
@@ -493,9 +500,8 @@ void wifi_wpa_ctrl_cleanup(void)
     closedir(dir);
 }
 
-int wifi_start_supplicant_common(const char *config_file)
+int wifi_start_supplicant(int p2p_supported)
 {
-    char daemon_cmd[PROPERTY_VALUE_MAX];
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 200; /* wait at most 20 seconds for completion */
 #ifdef HAVE_LIBC_SYSTEM_PROPERTIES
@@ -503,14 +509,29 @@ int wifi_start_supplicant_common(const char *config_file)
     unsigned serial = 0, i;
 #endif
 
+    if (p2p_supported) {
+        strcpy(supplicant_name, P2P_SUPPLICANT_NAME);
+        strcpy(supplicant_prop_name, P2P_PROP_NAME);
+
+        /* Ensure p2p config file is created */
+        if (ensure_config_file_exists(P2P_CONFIG_FILE) < 0) {
+            ALOGE("Failed to create a p2p config file");
+            return -1;
+        }
+
+    } else {
+        strcpy(supplicant_name, SUPPLICANT_NAME);
+        strcpy(supplicant_prop_name, SUPP_PROP_NAME);
+    }
+
     /* Check whether already running */
-    if (property_get(SUPP_PROP_NAME, supp_status, NULL)
+    if (property_get(supplicant_name, supp_status, NULL)
             && strcmp(supp_status, "running") == 0) {
         return 0;
     }
 
     /* Before starting the daemon, make sure its config file exists */
-    if (ensure_config_file_exists(config_file) < 0) {
+    if (ensure_config_file_exists(SUPP_CONFIG_FILE) < 0) {
         ALOGE("Wi-Fi will not be enabled");
         return -1;
     }
@@ -535,21 +556,20 @@ int wifi_start_supplicant_common(const char *config_file)
      * it starts in the stopped state and never manages to start
      * running at all.
      */
-    pi = __system_property_find(SUPP_PROP_NAME);
+    pi = __system_property_find(supplicant_prop_name);
     if (pi != NULL) {
         serial = pi->serial;
     }
 #endif
     property_get("wifi.interface", primary_iface, WIFI_TEST_INTERFACE);
-    snprintf(daemon_cmd, PROPERTY_VALUE_MAX, "%s:-i%s -c%s", SUPPLICANT_NAME, primary_iface,
-            config_file);
-    property_set("ctl.start", daemon_cmd);
+
+    property_set("ctl.start", supplicant_name);
     sched_yield();
 
     while (count-- > 0) {
 #ifdef HAVE_LIBC_SYSTEM_PROPERTIES
         if (pi == NULL) {
-            pi = __system_property_find(SUPP_PROP_NAME);
+            pi = __system_property_find(supplicant_prop_name);
         }
         if (pi != NULL) {
             __system_property_read(pi, NULL, supp_status);
@@ -561,7 +581,7 @@ int wifi_start_supplicant_common(const char *config_file)
             }
         }
 #else
-        if (property_get(SUPP_PROP_NAME, supp_status, NULL)) {
+        if (property_get(supplicant_prop_name, supp_status, NULL)) {
             if (strcmp(supp_status, "running") == 0)
                 return 0;
         }
@@ -571,32 +591,22 @@ int wifi_start_supplicant_common(const char *config_file)
     return -1;
 }
 
-int wifi_start_supplicant()
-{
-    return wifi_start_supplicant_common(SUPP_CONFIG_FILE);
-}
-
-int wifi_start_p2p_supplicant()
-{
-    return wifi_start_supplicant_common(P2P_CONFIG_FILE);
-}
-
 int wifi_stop_supplicant()
 {
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 50; /* wait at most 5 seconds for completion */
 
     /* Check whether supplicant already stopped */
-    if (property_get(SUPP_PROP_NAME, supp_status, NULL)
+    if (property_get(supplicant_prop_name, supp_status, NULL)
         && strcmp(supp_status, "stopped") == 0) {
         return 0;
     }
 
-    property_set("ctl.stop", SUPPLICANT_NAME);
+    property_set("ctl.stop", supplicant_name);
     sched_yield();
 
     while (count-- > 0) {
-        if (property_get(SUPP_PROP_NAME, supp_status, NULL)) {
+        if (property_get(supplicant_prop_name, supp_status, NULL)) {
             if (strcmp(supp_status, "stopped") == 0)
                 return 0;
         }
@@ -610,7 +620,7 @@ int wifi_connect_on_socket_path(int index, const char *path)
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
 
     /* Make sure supplicant is running */
-    if (!property_get(SUPP_PROP_NAME, supp_status, NULL)
+    if (!property_get(supplicant_prop_name, supp_status, NULL)
             || strcmp(supp_status, "running") != 0) {
         ALOGE("Supplicant not running, cannot connect");
         return -1;
@@ -705,8 +715,7 @@ int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
     if (rfds[0].revents & POLLIN) {
         return wpa_ctrl_recv(monitor_conn[index], reply, reply_len);
     } else {
-        ALOGD("Received on exit socket, terminate");
-        return -1;
+        return -2;
     }
     return 0;
 }
@@ -728,6 +737,14 @@ int wifi_wait_on_socket(int index, char *buf, size_t buflen)
     }
 
     result = wifi_ctrl_recv(index, buf, &nread);
+
+    /* Terminate reception on exit socket */
+    if (result == -2) {
+        strncpy(buf, WPA_EVENT_TERMINATING " - connection closed", buflen-1);
+        buf[buflen-1] = '\0';
+        return strlen(buf);
+    }
+
     if (result < 0) {
         ALOGD("wifi_ctrl_recv failed: %s\n", strerror(errno));
         strncpy(buf, WPA_EVENT_TERMINATING " - recv error", buflen-1);
@@ -735,7 +752,6 @@ int wifi_wait_on_socket(int index, char *buf, size_t buflen)
         return strlen(buf);
     }
     buf[nread] = '\0';
-    /* ALOGD("wait_for_event: result=%d nread=%d string=\"%s\"\n", result, nread, buf); */
     /* Check for EOF on the socket */
     if (result == 0 && nread == 0) {
         /* Fabricate an event to pass up */
@@ -760,6 +776,7 @@ int wifi_wait_on_socket(int index, char *buf, size_t buflen)
             memmove(buf, match+1, nread+1);
         }
     }
+
     return nread;
 }
 
@@ -800,10 +817,13 @@ void wifi_close_supplicant_connection(const char *ifname)
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 50; /* wait at most 5 seconds to ensure init has stopped stupplicant */
 
-
     if (is_primary_interface(ifname)) {
         wifi_close_sockets(PRIMARY);
     } else {
+        /* p2p socket termination needs unblocking the monitor socket
+         * STA connection does not need it since supplicant gets shutdown
+         */
+        write(exit_sockets[SECONDARY][0], "T", 1);
         wifi_close_sockets(SECONDARY);
         //closing p2p connection does not need a wait on
         //supplicant stop
@@ -811,7 +831,7 @@ void wifi_close_supplicant_connection(const char *ifname)
     }
 
     while (count-- > 0) {
-        if (property_get(SUPP_PROP_NAME, supp_status, NULL)) {
+        if (property_get(supplicant_prop_name, supp_status, NULL)) {
             if (strcmp(supp_status, "stopped") == 0)
                 return;
         }

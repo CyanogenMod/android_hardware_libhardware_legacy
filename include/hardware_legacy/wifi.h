@@ -48,14 +48,7 @@ int is_wifi_driver_loaded();
  *
  * @return 0 on success, < 0 on failure.
  */
-int wifi_start_supplicant();
-
-/**
- * Start supplicant for p2p operation.
- *
- * @return 0 on success, < 0 on failure.
- */
-int wifi_start_p2p_supplicant();
+int wifi_start_supplicant(int p2pSupported);
 
 /**
  * Stop supplicant.
