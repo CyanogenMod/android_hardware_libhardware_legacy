@@ -689,7 +689,7 @@ int wifi_send_command(int index, const char *cmd, char *reply, size_t *reply_len
 int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
 {
     int res;
-    int ctrlfd = wpa_ctrl_get_fd(ctrl_conn[index]);
+    int ctrlfd = wpa_ctrl_get_fd(monitor_conn[index]);
     struct pollfd rfds[2];
 
     memset(rfds, 0, 2 * sizeof(struct pollfd));
