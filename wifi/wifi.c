@@ -309,6 +309,8 @@ int wifi_load_driver()
     if (insmod(DRIVER_MODULE_PATH, module_arg2) < 0) {
 #else
 
+    property_set(DRIVER_PROP_NAME, "loading");
+
 #ifdef WIFI_EXT_MODULE_PATH
     if (insmod(EXT_MODULE_PATH, EXT_MODULE_ARG) < 0)
         return -1;
