@@ -346,10 +346,11 @@ static int adev_set_master_volume(struct audio_hw_device *dev, float volume)
     return ladev->hwif->setMasterVolume(volume);
 }
 
-static int adev_set_mode(struct audio_hw_device *dev, int mode)
+static int adev_set_mode(struct audio_hw_device *dev, audio_mode_t mode)
 {
     struct legacy_audio_device *ladev = to_ladev(dev);
-    return ladev->hwif->setMode(mode);
+    // as this is the legacy API, don't change it to use audio_mode_t instead of int
+    return ladev->hwif->setMode((int) mode);
 }
 
 static int adev_set_mic_mute(struct audio_hw_device *dev, bool state)

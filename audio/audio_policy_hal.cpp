@@ -84,10 +84,11 @@ static audio_policy_dev_state_t ap_get_device_connection_state(
                     device_address);
 }
 
-static void ap_set_phone_state(struct audio_policy *pol, int state)
+static void ap_set_phone_state(struct audio_policy *pol, audio_mode_t state)
 {
     struct legacy_audio_policy *lap = to_lap(pol);
-    lap->apm->setPhoneState(state);
+    // as this is the legacy API, don't change it to use audio_mode_t instead of int
+    lap->apm->setPhoneState((int) state);
 }
 
     /* indicate a change in ringer mode */
