@@ -573,8 +573,9 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
     // necassary for a correct control of hardware output routing by startOutput() and stopOutput()
     outputDesc->changeRefCount(stream, 1);
 
-    uint32_t prevDevice = outputDesc->mDevice;
+    uint32_t prevDevice = outputDesc->device();
     setOutputDevice(output, getNewDevice(output));
+    uint32_t newDevice = outputDesc->device();
 
     // handle special case for sonification while in call
     if (isInCall()) {
@@ -582,12 +583,15 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
     }
 
     // apply volume rules for current stream and device if necessary
-    checkAndSetVolume(stream, mStreams[stream].mIndexCur, output, outputDesc->device());
+    checkAndSetVolume(stream,
+                      mStreams[stream].getVolumeIndex((audio_devices_t)newDevice),
+                      output,
+                      newDevice);
 
     // FIXME: need a delay to make sure that audio path switches to speaker before sound
     // starts. Should be platform specific?
     if (stream == AudioSystem::ENFORCED_AUDIBLE &&
-            prevDevice != outputDesc->mDevice) {
+            prevDevice != newDevice) {
         usleep(outputDesc->mLatency*4*1000);
     }
 
@@ -814,18 +818,30 @@ void AudioPolicyManagerBase::initStreamVolume(AudioSystem::stream_type stream,
     mStreams[stream].mIndexMax = indexMax;
 }
 
-status_t AudioPolicyManagerBase::setStreamVolumeIndex(AudioSystem::stream_type stream, int index)
+status_t AudioPolicyManagerBase::setStreamVolumeIndex(AudioSystem::stream_type stream,
+                                                      int index,
+                                                      audio_devices_t device)
 {
 
     if ((index < mStreams[stream].mIndexMin) || (index > mStreams[stream].mIndexMax)) {
+        return BAD_VALUE;
+    }
+    if (!audio_is_output_device(device)) {
         return BAD_VALUE;
     }
 
     // Force max volume if stream cannot be muted
     if (!mStreams[stream].mCanBeMuted) index = mStreams[stream].mIndexMax;
 
-    ALOGV("setStreamVolumeIndex() stream %d, index %d", stream, index);
-    mStreams[stream].mIndexCur = index;
+    ALOGV("setStreamVolumeIndex() stream %d, device %08x, index %d",
+          stream, device, index);
+
+    // if device is AUDIO_DEVICE_OUT_DEFAULT set default value and
+    // clear all device specific values
+    if (device == AUDIO_DEVICE_OUT_DEFAULT) {
+        mStreams[stream].mIndexCur.clear();
+    }
+    mStreams[stream].mIndexCur.add(device, index);
 
     // compute and apply stream volume on all outputs according to connected device
     status_t status = NO_ERROR;
@@ -838,13 +854,25 @@ status_t AudioPolicyManagerBase::setStreamVolumeIndex(AudioSystem::stream_type s
     return status;
 }
 
-status_t AudioPolicyManagerBase::getStreamVolumeIndex(AudioSystem::stream_type stream, int *index)
+status_t AudioPolicyManagerBase::getStreamVolumeIndex(AudioSystem::stream_type stream,
+                                                      int *index,
+                                                      audio_devices_t device)
 {
-    if (index == 0) {
+    if (index == NULL) {
         return BAD_VALUE;
     }
-    ALOGV("getStreamVolumeIndex() stream %d", stream);
-    *index =  mStreams[stream].mIndexCur;
+    if (!audio_is_output_device(device)) {
+        return BAD_VALUE;
+    }
+    // if device is AUDIO_DEVICE_OUT_DEFAULT, return volume for device corresponding to
+    // the strategy the stream belongs to.
+    if (device == AUDIO_DEVICE_OUT_DEFAULT) {
+        device = (audio_devices_t)getDeviceForStrategy(getStrategy(stream), true);
+    }
+    device = getDeviceForVolume(device);
+
+    *index =  mStreams[stream].getVolumeIndex(device);
+    ALOGV("getStreamVolumeIndex() stream %d device %08x index %d", stream, device, *index);
     return NO_ERROR;
 }
 
@@ -1029,12 +1057,13 @@ status_t AudioPolicyManagerBase::dump(int fd)
 
     snprintf(buffer, SIZE, "\nStreams dump:\n");
     write(fd, buffer, strlen(buffer));
-    snprintf(buffer, SIZE, " Stream  Index Min  Index Max  Index Cur  Can be muted\n");
+    snprintf(buffer, SIZE,
+             " Stream  Can be muted  Index Min  Index Max  Index Cur [device : index]...\n");
     write(fd, buffer, strlen(buffer));
     for (size_t i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
-        snprintf(buffer, SIZE, " %02d", i);
-        mStreams[i].dump(buffer + 3, SIZE);
+        snprintf(buffer, SIZE, " %02d      ", i);
         write(fd, buffer, strlen(buffer));
+        mStreams[i].dump(fd);
     }
 
     snprintf(buffer, SIZE, "\nTotal Effects CPU: %f MIPS, Total Effects memory: %d KB\n",
@@ -1896,31 +1925,35 @@ audio_io_handle_t AudioPolicyManagerBase::getActiveInput()
 }
 
 
-AudioPolicyManagerBase::device_category AudioPolicyManagerBase::getDeviceCategory(uint32_t device)
+audio_devices_t AudioPolicyManagerBase::getDeviceForVolume(audio_devices_t device)
 {
     if (device == 0) {
         // this happens when forcing a route update and no track is active on an output.
         // In this case the returned category is not important.
-        return DEVICE_CATEGORY_SPEAKER;
-    }
-
-    if (AudioSystem::popCount(device) > 1) {
+        device =  AUDIO_DEVICE_OUT_SPEAKER;
+    } else if (AudioSystem::popCount(device) > 1) {
         // Multiple device selection is either:
         //  - speaker + one other device: give priority to speaker in this case.
         //  - one A2DP device + another device: happens with duplicated output. In this case
         // retain the device on the A2DP output as the other must not correspond to an active
         // selection if not the speaker.
-        if (device & AUDIO_DEVICE_OUT_SPEAKER)
-            return DEVICE_CATEGORY_SPEAKER;
-
-        device &= AUDIO_DEVICE_OUT_ALL_A2DP;
+        if (device & AUDIO_DEVICE_OUT_SPEAKER) {
+            device = AUDIO_DEVICE_OUT_SPEAKER;
+        } else {
+            device = (audio_devices_t)(device & AUDIO_DEVICE_OUT_ALL_A2DP);
+        }
     }
 
     ALOGW_IF(AudioSystem::popCount(device) != 1,
-            "getDeviceCategory() invalid device combination: %08x",
+            "getDeviceForVolume() invalid device combination: %08x",
             device);
 
-    switch(device) {
+    return device;
+}
+
+AudioPolicyManagerBase::device_category AudioPolicyManagerBase::getDeviceCategory(uint32_t device)
+{
+    switch(getDeviceForVolume((audio_devices_t)device)) {
         case AUDIO_DEVICE_OUT_EARPIECE:
             return DEVICE_CATEGORY_EARPIECE;
         case AUDIO_DEVICE_OUT_WIRED_HEADSET:
@@ -1933,6 +1966,7 @@ AudioPolicyManagerBase::device_category AudioPolicyManagerBase::getDeviceCategor
         case AUDIO_DEVICE_OUT_SPEAKER:
         case AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
         case AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER:
+        case AUDIO_DEVICE_OUT_AUX_DIGITAL:
         default:
             return DEVICE_CATEGORY_SPEAKER;
     }
@@ -2046,7 +2080,10 @@ void AudioPolicyManagerBase::initializeVolumeCurves()
     }
 }
 
-float AudioPolicyManagerBase::computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device)
+float AudioPolicyManagerBase::computeVolume(int stream,
+                                            int index,
+                                            audio_io_handle_t output,
+                                            uint32_t device)
 {
     float volume = 1.0;
     AudioOutputDescriptor *outputDesc = mOutputs.valueFor(output);
@@ -2084,8 +2121,12 @@ float AudioPolicyManagerBase::computeVolume(int stream, int index, audio_io_hand
         // by the music application and behave as if music was active if the last music track was
         // just stopped
         if (outputDesc->mRefCount[AudioSystem::MUSIC] || mLimitRingtoneVolume) {
-            float musicVol = computeVolume(AudioSystem::MUSIC, mStreams[AudioSystem::MUSIC].mIndexCur, output, device);
-            float minVol = (musicVol > SONIFICATION_HEADSET_VOLUME_MIN) ? musicVol : SONIFICATION_HEADSET_VOLUME_MIN;
+            float musicVol = computeVolume(AudioSystem::MUSIC,
+                               mStreams[AudioSystem::MUSIC].getVolumeIndex((audio_devices_t)device),
+                               output,
+                               (uint32_t)device);
+            float minVol = (musicVol > SONIFICATION_HEADSET_VOLUME_MIN) ?
+                                musicVol : SONIFICATION_HEADSET_VOLUME_MIN;
             if (volume > minVol) {
                 volume = minVol;
                 ALOGV("computeVolume limiting volume to %f musicVol %f", minVol, musicVol);
@@ -2096,7 +2137,12 @@ float AudioPolicyManagerBase::computeVolume(int stream, int index, audio_io_hand
     return volume;
 }
 
-status_t AudioPolicyManagerBase::checkAndSetVolume(int stream, int index, audio_io_handle_t output, uint32_t device, int delayMs, bool force)
+status_t AudioPolicyManagerBase::checkAndSetVolume(int stream,
+                                                   int index,
+                                                   audio_io_handle_t output,
+                                                   uint32_t device,
+                                                   int delayMs,
+                                                   bool force)
 {
 
     // do not change actual stream volume if the stream is muted
@@ -2156,12 +2202,20 @@ status_t AudioPolicyManagerBase::checkAndSetVolume(int stream, int index, audio_
     return NO_ERROR;
 }
 
-void AudioPolicyManagerBase::applyStreamVolumes(audio_io_handle_t output, uint32_t device, int delayMs, bool force)
+void AudioPolicyManagerBase::applyStreamVolumes(audio_io_handle_t output,
+                                                uint32_t device,
+                                                int delayMs,
+                                                bool force)
 {
     ALOGV("applyStreamVolumes() for output %d and device %x", output, device);
 
     for (int stream = 0; stream < AudioSystem::NUM_STREAM_TYPES; stream++) {
-        checkAndSetVolume(stream, mStreams[stream].mIndexCur, output, device, delayMs, force);
+        checkAndSetVolume(stream,
+                          mStreams[stream].getVolumeIndex((audio_devices_t)device),
+                          output,
+                          device,
+                          delayMs,
+                          force);
     }
 }
 
@@ -2179,13 +2233,14 @@ void AudioPolicyManagerBase::setStreamMute(int stream, bool on, audio_io_handle_
 {
     StreamDescriptor &streamDesc = mStreams[stream];
     AudioOutputDescriptor *outputDesc = mOutputs.valueFor(output);
+    uint32_t device = outputDesc->device();
 
     ALOGV("setStreamMute() stream %d, mute %d, output %d, mMuteCount %d", stream, on, output, outputDesc->mMuteCount[stream]);
 
     if (on) {
         if (outputDesc->mMuteCount[stream] == 0) {
             if (streamDesc.mCanBeMuted) {
-                checkAndSetVolume(stream, 0, output, outputDesc->device(), delayMs);
+                checkAndSetVolume(stream, 0, output, device, delayMs);
             }
         }
         // increment mMuteCount after calling checkAndSetVolume() so that volume change is not ignored
@@ -2196,7 +2251,11 @@ void AudioPolicyManagerBase::setStreamMute(int stream, bool on, audio_io_handle_
             return;
         }
         if (--outputDesc->mMuteCount[stream] == 0) {
-            checkAndSetVolume(stream, streamDesc.mIndexCur, output, outputDesc->device(), delayMs);
+            checkAndSetVolume(stream,
+                              streamDesc.getVolumeIndex((audio_devices_t)device),
+                              output,
+                              device,
+                              delayMs);
         }
     }
 }
@@ -2398,13 +2457,40 @@ status_t AudioPolicyManagerBase::AudioInputDescriptor::dump(int fd)
 
 // --- StreamDescriptor class implementation
 
-void AudioPolicyManagerBase::StreamDescriptor::dump(char* buffer, size_t size)
+AudioPolicyManagerBase::StreamDescriptor::StreamDescriptor()
+    :   mIndexMin(0), mIndexMax(1), mCanBeMuted(true)
 {
-    snprintf(buffer, size, "      %02d         %02d         %02d         %d\n",
-            mIndexMin,
-            mIndexMax,
-            mIndexCur,
-            mCanBeMuted);
+    mIndexCur.add(AUDIO_DEVICE_OUT_DEFAULT, 0);
+}
+
+int AudioPolicyManagerBase::StreamDescriptor::getVolumeIndex(audio_devices_t device)
+{
+    device = AudioPolicyManagerBase::getDeviceForVolume(device);
+    // there is always a valid entry for AUDIO_DEVICE_OUT_DEFAULT
+    if (mIndexCur.indexOfKey(device) < 0) {
+        device = AUDIO_DEVICE_OUT_DEFAULT;
+    }
+    return mIndexCur.valueFor(device);
+}
+
+void AudioPolicyManagerBase::StreamDescriptor::dump(int fd)
+{
+    const size_t SIZE = 256;
+    char buffer[SIZE];
+    String8 result;
+
+    snprintf(buffer, SIZE, "%s         %02d         %02d         ",
+             mCanBeMuted ? "true " : "false", mIndexMin, mIndexMax);
+    result.append(buffer);
+    for (size_t i = 0; i < mIndexCur.size(); i++) {
+        snprintf(buffer, SIZE, "%04x : %02d, ",
+                 mIndexCur.keyAt(i),
+                 mIndexCur.valueAt(i));
+        result.append(buffer);
+    }
+    result.append("\n");
+
+    write(fd, result.string(), result.size());
 }
 
 // --- EffectDescriptor class implementation

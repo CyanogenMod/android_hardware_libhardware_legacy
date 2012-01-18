@@ -128,10 +128,19 @@ public:
                                       int indexMin,
                                       int indexMax) = 0;
 
-    // sets the new stream volume at a level corresponding to the supplied index
-    virtual status_t setStreamVolumeIndex(AudioSystem::stream_type stream, int index) = 0;
-    // retreive current volume index for the specified stream
-    virtual status_t getStreamVolumeIndex(AudioSystem::stream_type stream, int *index) = 0;
+    // sets the new stream volume at a level corresponding to the supplied index for the
+    // supplied device. By convention, specifying AUDIO_DEVICE_OUT_DEFAULT means
+    // setting volume for all devices
+    virtual status_t setStreamVolumeIndex(AudioSystem::stream_type stream,
+                                          int index,
+                                          audio_devices_t device) = 0;
+
+    // retrieve current volume index for the specified stream and the
+    // specified device. By convention, specifying AUDIO_DEVICE_OUT_DEFAULT means
+    // querying the volume of the active device.
+    virtual status_t getStreamVolumeIndex(AudioSystem::stream_type stream,
+                                          int *index,
+                                          audio_devices_t device) = 0;
 
     // return the strategy corresponding to a given stream type
     virtual uint32_t getStrategyForStream(AudioSystem::stream_type stream) = 0;
