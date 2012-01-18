@@ -95,8 +95,7 @@ static void ap_set_phone_state(struct audio_policy *pol, audio_mode_t state)
 static void ap_set_ringer_mode(struct audio_policy *pol, uint32_t mode,
                                uint32_t mask)
 {
-    struct legacy_audio_policy *lap = to_lap(pol);
-    lap->apm->setRingerMode(mode, mask);
+    // deprecated, never called
 }
 
     /* force using a specific device category for the specified usage */
