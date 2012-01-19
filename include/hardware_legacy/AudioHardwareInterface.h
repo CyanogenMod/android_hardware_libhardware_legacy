@@ -56,7 +56,7 @@ public:
     virtual size_t      bufferSize() const = 0;
 
     /**
-     * returns the output channel nask
+     * returns the output channel mask
      */
     virtual uint32_t    channels() const = 0;
 
@@ -166,7 +166,7 @@ public:
     virtual String8     getParameters(const String8& keys) = 0;
 
 
-    // Return the amount of input frames lost in the audio driver since the last call of this function.
+    // Return the number of input frames lost in the audio driver since the last call of this function.
     // Audio driver is expected to reset the value to 0 and restart counting upon returning the current value by this function call.
     // Such loss typically occurs when the user space process is blocked longer than the capacity of audio driver buffers.
     // Unit: the number of input audio frames
@@ -236,6 +236,7 @@ public:
                                 uint32_t *sampleRate=0,
                                 status_t *status=0) = 0;
     virtual    void        closeOutputStream(AudioStreamOut* out) = 0;
+
     /** This method creates and opens the audio hardware input stream */
     virtual AudioStreamIn* openInputStream(
                                 uint32_t devices,

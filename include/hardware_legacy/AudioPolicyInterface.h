@@ -69,7 +69,7 @@ public:
     virtual status_t setDeviceConnectionState(AudioSystem::audio_devices device,
                                           AudioSystem::device_connection_state state,
                                           const char *device_address) = 0;
-    // retreive a device connection status
+    // retrieve a device connection status
     virtual AudioSystem::device_connection_state getDeviceConnectionState(AudioSystem::audio_devices device,
                                                                           const char *device_address) = 0;
     // indicate a change in phone state. Valid phones states are defined by AudioSystem::audio_mode
@@ -78,7 +78,7 @@ public:
     virtual void setRingerMode(uint32_t mode, uint32_t mask) = 0;
     // force using a specific device category for the specified usage
     virtual void setForceUse(AudioSystem::force_use usage, AudioSystem::forced_config config) = 0;
-    // retreive current device category forced for a given usage
+    // retrieve current device category forced for a given usage
     virtual AudioSystem::forced_config getForceUse(AudioSystem::force_use usage) = 0;
     // set a system property (e.g. camera sound always audible)
     virtual void setSystemProperty(const char* property, const char* value) = 0;
@@ -89,7 +89,7 @@ public:
     // Audio routing query functions
     //
 
-    // request an output appriate for playback of the supplied stream type and parameters
+    // request an output appropriate for playback of the supplied stream type and parameters
     virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
                                         uint32_t samplingRate = 0,
                                         uint32_t format = AudioSystem::FORMAT_DEFAULT,
@@ -106,7 +106,7 @@ public:
     // releases the output.
     virtual void releaseOutput(audio_io_handle_t output) = 0;
 
-    // request an input appriate for record from the supplied device with supplied parameters.
+    // request an input appropriate for record from the supplied device with supplied parameters.
     virtual audio_io_handle_t getInput(int inputSource,
                                     uint32_t samplingRate = 0,
                                     uint32_t Format = AudioSystem::FORMAT_DEFAULT,
