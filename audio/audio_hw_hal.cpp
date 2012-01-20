@@ -84,14 +84,15 @@ static uint32_t out_get_channels(const struct audio_stream *stream)
     return out->legacy_out->channels();
 }
 
-static int out_get_format(const struct audio_stream *stream)
+static audio_format_t out_get_format(const struct audio_stream *stream)
 {
     const struct legacy_stream_out *out =
         reinterpret_cast<const struct legacy_stream_out *>(stream);
-    return out->legacy_out->format();
+    // legacy API, don't change return type
+    return (audio_format_t) out->legacy_out->format();
 }
 
-static int out_set_format(struct audio_stream *stream, int format)
+static int out_set_format(struct audio_stream *stream, audio_format_t format)
 {
     struct legacy_stream_out *out =
         reinterpret_cast<struct legacy_stream_out *>(stream);
@@ -204,14 +205,15 @@ static uint32_t in_get_channels(const struct audio_stream *stream)
     return in->legacy_in->channels();
 }
 
-static int in_get_format(const struct audio_stream *stream)
+static audio_format_t in_get_format(const struct audio_stream *stream)
 {
     const struct legacy_stream_in *in =
         reinterpret_cast<const struct legacy_stream_in *>(stream);
-    return in->legacy_in->format();
+    // legacy API, don't change return type
+    return (audio_format_t) in->legacy_in->format();
 }
 
-static int in_set_format(struct audio_stream *stream, int format)
+static int in_set_format(struct audio_stream *stream, audio_format_t format)
 {
     struct legacy_stream_in *in =
         reinterpret_cast<struct legacy_stream_in *>(stream);
@@ -382,16 +384,16 @@ static char * adev_get_parameters(const struct audio_hw_device *dev,
 }
 
 static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
-                                         uint32_t sample_rate, int format,
+                                         uint32_t sample_rate, audio_format_t format,
                                          int channel_count)
 {
     const struct legacy_audio_device *ladev = to_cladev(dev);
-    return ladev->hwif->getInputBufferSize(sample_rate, format, channel_count);
+    return ladev->hwif->getInputBufferSize(sample_rate, (int) format, channel_count);
 }
 
 static int adev_open_output_stream(struct audio_hw_device *dev,
                                    uint32_t devices,
-                                   int *format,
+                                   audio_format_t *format,
                                    uint32_t *channels,
                                    uint32_t *sample_rate,
                                    struct audio_stream_out **stream_out)
@@ -405,7 +407,7 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     if (!out)
         return -ENOMEM;
 
-    out->legacy_out = ladev->hwif->openOutputStream(devices, format, channels,
+    out->legacy_out = ladev->hwif->openOutputStream(devices, (int *) format, channels,
                                                     sample_rate, &status);
     if (!out->legacy_out) {
         ret = status;
@@ -450,7 +452,7 @@ static void adev_close_output_stream(struct audio_hw_device *dev,
 
 /** This method creates and opens the audio hardware input stream */
 static int adev_open_input_stream(struct audio_hw_device *dev,
-                                  uint32_t devices, int *format,
+                                  uint32_t devices, audio_format_t *format,
                                   uint32_t *channels, uint32_t *sample_rate,
                                   audio_in_acoustics_t acoustics,
                                   struct audio_stream_in **stream_in)
@@ -464,7 +466,7 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     if (!in)
         return -ENOMEM;
 
-    in->legacy_in = ladev->hwif->openInputStream(devices, format, channels,
+    in->legacy_in = ladev->hwif->openInputStream(devices, (int *) format, channels,
                                     sample_rate, &status,
                                     (AudioSystem::audio_in_acoustics)acoustics);
     if (!in->legacy_in) {

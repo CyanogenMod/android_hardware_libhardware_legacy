@@ -332,10 +332,10 @@ public:
         return audio_is_low_visibility((audio_stream_type_t)stream);
     }
     static bool isValidFormat(uint32_t format) {
-        return audio_is_valid_format(format);
+        return audio_is_valid_format((audio_format_t) format);
     }
     static bool isLinearPCM(uint32_t format) {
-        return audio_is_linear_pcm(format);
+        return audio_is_linear_pcm((audio_format_t) format);
     }
     static bool isOutputChannel(uint32_t channel) {
         return audio_is_output_channel(channel);

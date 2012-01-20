@@ -37,7 +37,7 @@ audio_io_handle_t AudioPolicyCompatClient::openOutput(uint32_t *pDevices,
                                 uint32_t *pLatencyMs,
                                 AudioSystem::output_flags flags)
 {
-    return mServiceOps->open_output(mService, pDevices, pSamplingRate, pFormat,
+    return mServiceOps->open_output(mService, pDevices, pSamplingRate, (audio_format_t *) pFormat,
                                     pChannels, pLatencyMs,
                                     (audio_policy_output_flags_t)flags);
 }
@@ -69,7 +69,7 @@ audio_io_handle_t AudioPolicyCompatClient::openInput(uint32_t *pDevices,
                                 uint32_t *pChannels,
                                 uint32_t acoustics)
 {
-    return mServiceOps->open_input(mService, pDevices, pSamplingRate, pFormat,
+    return mServiceOps->open_input(mService, pDevices, pSamplingRate, (audio_format_t *) pFormat,
                                    pChannels, acoustics);
 }
 
