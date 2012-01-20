@@ -319,13 +319,6 @@ void AudioPolicyManagerBase::setPhoneState(int state)
     }
 }
 
-void AudioPolicyManagerBase::setRingerMode(uint32_t mode, uint32_t mask)
-{
-    ALOGV("setRingerMode() mode %x, mask %x", mode, mask);
-
-    mRingerMode = mode;
-}
-
 void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSystem::forced_config config)
 {
     ALOGV("setForceUse() usage %d, config %d, mPhoneState %d", usage, config, mPhoneState);
@@ -1026,9 +1019,6 @@ status_t AudioPolicyManagerBase::dump(int fd)
     result.append(buffer);
     snprintf(buffer, SIZE, " Phone state: %d\n", mPhoneState);
     result.append(buffer);
-// disable ringer mode dump until it is actually passed by AudioService when needed.
-//    snprintf(buffer, SIZE, " Ringer mode: %d\n", mRingerMode);
-//    result.append(buffer);
     snprintf(buffer, SIZE, " Force use for communications %d\n", mForceUse[AudioSystem::FOR_COMMUNICATION]);
     result.append(buffer);
     snprintf(buffer, SIZE, " Force use for media %d\n", mForceUse[AudioSystem::FOR_MEDIA]);
@@ -1091,7 +1081,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
 #ifdef AUDIO_POLICY_TEST
     Thread(false),
 #endif //AUDIO_POLICY_TEST
-    mPhoneState(AudioSystem::MODE_NORMAL), mRingerMode(0),
+    mPhoneState(AudioSystem::MODE_NORMAL),
     mLimitRingtoneVolume(false), mLastVoiceVolume(-1.0f),
     mTotalEffectsCpuLoad(0), mTotalEffectsMemory(0),
     mA2dpSuspended(false)

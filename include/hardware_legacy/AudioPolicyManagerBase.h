@@ -70,7 +70,6 @@ public:
         virtual AudioSystem::device_connection_state getDeviceConnectionState(AudioSystem::audio_devices device,
                                                                               const char *device_address);
         virtual void setPhoneState(int state);
-        virtual void setRingerMode(uint32_t mode, uint32_t mask);
         virtual void setForceUse(AudioSystem::force_use usage, AudioSystem::forced_config config);
         virtual AudioSystem::forced_config getForceUse(AudioSystem::force_use usage);
         virtual void setSystemProperty(const char* property, const char* value);
@@ -357,7 +356,6 @@ protected:
         uint32_t mAvailableOutputDevices;                                   // bit field of all available output devices
         uint32_t mAvailableInputDevices;                                    // bit field of all available input devices
         int mPhoneState;                                                    // current phone state
-        uint32_t                 mRingerMode;                               // current ringer mode
         AudioSystem::forced_config mForceUse[AudioSystem::NUM_FORCE_USE];   // current forced use configuration
 
         StreamDescriptor mStreams[AudioSystem::NUM_STREAM_TYPES];           // stream descriptors for volume control
