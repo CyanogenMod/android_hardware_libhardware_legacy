@@ -171,14 +171,14 @@ static void ap_release_output(struct audio_policy *pol,
     lap->apm->releaseOutput(output);
 }
 
-static audio_io_handle_t ap_get_input(struct audio_policy *pol, int inputSource,
+static audio_io_handle_t ap_get_input(struct audio_policy *pol, audio_source_t inputSource,
                                       uint32_t sampling_rate,
                                       audio_format_t format,
                                       uint32_t channels,
                                       audio_in_acoustics_t acoustics)
 {
     struct legacy_audio_policy *lap = to_lap(pol);
-    return lap->apm->getInput(inputSource, sampling_rate, (int) format, channels,
+    return lap->apm->getInput((int) inputSource, sampling_rate, (int) format, channels,
                               (AudioSystem::audio_in_acoustics)acoustics);
 }
 
