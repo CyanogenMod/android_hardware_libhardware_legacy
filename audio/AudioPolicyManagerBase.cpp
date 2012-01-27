@@ -710,7 +710,7 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
                                     &inputDesc->mSamplingRate,
                                     &inputDesc->mFormat,
                                     &inputDesc->mChannels,
-                                    inputDesc->mAcoustics);
+                                    (audio_in_acoustics_t) inputDesc->mAcoustics);
 
     // only accept input with the exact requested set of parameters
     if (input == 0 ||
