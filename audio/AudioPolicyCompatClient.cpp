@@ -67,7 +67,7 @@ audio_io_handle_t AudioPolicyCompatClient::openInput(uint32_t *pDevices,
                                 uint32_t *pSamplingRate,
                                 uint32_t *pFormat,
                                 uint32_t *pChannels,
-                                uint32_t acoustics)
+                                audio_in_acoustics_t acoustics)
 {
     return mServiceOps->open_input(mService, pDevices, pSamplingRate, (audio_format_t *) pFormat,
                                    pChannels, acoustics);

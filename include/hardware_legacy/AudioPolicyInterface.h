@@ -203,7 +203,7 @@ public:
                                     uint32_t *pSamplingRate,
                                     uint32_t *pFormat,
                                     uint32_t *pChannels,
-                                    uint32_t acoustics) = 0;
+                                    audio_in_acoustics_t acoustics) = 0;
     // closes an audio input
     virtual status_t closeInput(audio_io_handle_t input) = 0;
     //

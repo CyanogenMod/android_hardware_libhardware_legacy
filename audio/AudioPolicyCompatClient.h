@@ -50,7 +50,7 @@ public:
                                         uint32_t *pSamplingRate,
                                         uint32_t *pFormat,
                                         uint32_t *pChannels,
-                                        uint32_t acoustics);
+                                        audio_in_acoustics_t acoustics);
     virtual status_t closeInput(audio_io_handle_t input);
     virtual status_t setStreamOutput(AudioSystem::stream_type stream, audio_io_handle_t output);
     virtual status_t moveEffects(int session,
