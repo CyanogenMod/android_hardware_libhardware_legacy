@@ -33,9 +33,6 @@ enum {
 int acquire_wake_lock(int lock, const char* id);
 int release_wake_lock(const char* id);
 
-// true if you want the screen on, false if you want it off
-int set_screen_state(int on);
-
 // set how long to stay awake after the last user activity in seconds
 int set_last_user_activity_timeout(int64_t delay);
 

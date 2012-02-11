@@ -30,28 +30,20 @@
 #define LOG_TAG "power"
 #include <utils/Log.h>
 
-#include "qemu.h"
-#ifdef QEMU_POWER
-#include "power_qemu.h"
-#endif
-
 enum {
     ACQUIRE_PARTIAL_WAKE_LOCK = 0,
     RELEASE_WAKE_LOCK,
-    REQUEST_STATE,
     OUR_FD_COUNT
 };
 
 const char * const OLD_PATHS[] = {
     "/sys/android_power/acquire_partial_wake_lock",
     "/sys/android_power/release_wake_lock",
-    "/sys/android_power/request_state"
 };
 
 const char * const NEW_PATHS[] = {
     "/sys/power/wake_lock",
     "/sys/power/wake_unlock",
-    "/sys/power/state"
 };
 
 const char * const AUTO_OFF_TIMEOUT_DEV = "/sys/android_power/auto_off_timeout";
@@ -60,9 +52,6 @@ const char * const AUTO_OFF_TIMEOUT_DEV = "/sys/android_power/auto_off_timeout";
 static int g_initialized = 0;
 static int g_fds[OUR_FD_COUNT];
 static int g_error = 1;
-
-static const char *off_state = "mem";
-static const char *on_state = "on";
 
 static int64_t systemTime()
 {
@@ -97,11 +86,8 @@ initialize_fds(void)
     //pthread_once(&g_initialized, open_file_descriptors);
     // XXX: not this:
     if (g_initialized == 0) {
-        if(open_file_descriptors(NEW_PATHS) < 0) {
+        if(open_file_descriptors(NEW_PATHS) < 0)
             open_file_descriptors(OLD_PATHS);
-            on_state = "wake";
-            off_state = "standby";
-        }
         g_initialized = 1;
     }
 }
@@ -157,35 +143,4 @@ set_last_user_activity_timeout(int64_t delay)
     } else {
         return errno;
     }
-}
-
-int
-set_screen_state(int on)
-{
-    QEMU_FALLBACK(set_screen_state(on));
-
-    ALOGI("*** set_screen_state %d", on);
-
-    initialize_fds();
-
-    //ALOGI("go_to_sleep eventTime=%lld now=%lld g_error=%s\n", eventTime,
-      //      systemTime(), strerror(g_error));
-
-    if (g_error)
-        goto failure;
-
-    char buf[32];
-    int len;
-    if(on)
-        len = snprintf(buf, sizeof(buf), "%s", on_state);
-    else
-        len = snprintf(buf, sizeof(buf), "%s", off_state);
-
-    buf[sizeof(buf) - 1] = '\0';
-    len = write(g_fds[REQUEST_STATE], buf, len);
-    if(len < 0) {
-    failure:
-        ALOGE("Failed setting last user activity: g_error=%d\n", g_error);
-    }
-    return 0;
 }
