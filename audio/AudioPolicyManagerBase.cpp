@@ -839,9 +839,13 @@ status_t AudioPolicyManagerBase::setStreamVolumeIndex(AudioSystem::stream_type s
     // compute and apply stream volume on all outputs according to connected device
     status_t status = NO_ERROR;
     for (size_t i = 0; i < mOutputs.size(); i++) {
-        status_t volStatus = checkAndSetVolume(stream, index, mOutputs.keyAt(i), mOutputs.valueAt(i)->device());
-        if (volStatus != NO_ERROR) {
-            status = volStatus;
+        audio_devices_t curDevice =
+                getDeviceForVolume((audio_devices_t)mOutputs.valueAt(i)->device());
+        if (device == curDevice) {
+            status_t volStatus = checkAndSetVolume(stream, index, mOutputs.keyAt(i), curDevice);
+            if (volStatus != NO_ERROR) {
+                status = volStatus;
+            }
         }
     }
     return status;
