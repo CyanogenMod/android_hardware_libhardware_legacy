@@ -20,11 +20,14 @@
 #include <utils/Timers.h>
 #include <utils/Errors.h>
 #include <utils/KeyedVector.h>
+#include <utils/SortedVector.h>
 #include <hardware_legacy/AudioPolicyInterface.h>
 
 
 namespace android_audio_legacy {
     using android::KeyedVector;
+    using android::DefaultKeyedVector;
+    using android::SortedVector;
 
 // ----------------------------------------------------------------------------
 
@@ -52,6 +55,20 @@ namespace android_audio_legacy {
 // class must be implemented as well as the class factory function createAudioPolicyManager()
 // and provided in a shared library libaudiopolicy.so.
 // ----------------------------------------------------------------------------
+
+// the output_profile_s structure describes the capabilities of an output stream.
+// It is currently assumed that all combination of listed parameters are supported.
+// It is used by the policy manager to determine if an output is suitable for a given use case,
+// open/close it accordingly and connect/disconnect audio tracks to/from it.
+typedef struct output_profile_s {
+    uint32_t*                   mSamplingRates;     // supported sampling rates (terminated by 0)
+    audio_channel_mask_t*       mChannelMasks;      // supported channel masks (terminated by 0)
+    audio_format_t*             mFormats;           // supported audio formats (terminated by 0)
+    audio_devices_t             mSupportedDevices;  // supported devices (devices this output can be
+                                                    // routed to)
+    audio_policy_output_flags_t mFlags;             // attribute flags (e.g primary output,
+                                                    // direct output...)
+} output_profile_t;
 
 class AudioPolicyManagerBase: public AudioPolicyInterface
 #ifdef AUDIO_POLICY_TEST
@@ -174,7 +191,7 @@ protected:
         class AudioOutputDescriptor
         {
         public:
-            AudioOutputDescriptor();
+            AudioOutputDescriptor(const output_profile_t *profile);
 
             status_t    dump(int fd);
 
@@ -184,6 +201,7 @@ protected:
             uint32_t strategyRefCount(routing_strategy strategy);
             bool isUsedByStrategy(routing_strategy strategy) { return (strategyRefCount(strategy) != 0);}
             bool isDuplicated() { return (mOutput1 != NULL && mOutput2 != NULL); }
+            uint32_t supportedDevices();
 
             audio_io_handle_t mId;              // output handle
             uint32_t mSamplingRate;             //
@@ -198,6 +216,7 @@ protected:
             AudioOutputDescriptor *mOutput2;    // used by duplicated outputs: second output
             float mCurVolume[AudioSystem::NUM_STREAM_TYPES];   // current stream volume
             int mMuteCount[AudioSystem::NUM_STREAM_TYPES];     // mute request counter
+            const output_profile_t *mProfile;
         };
 
         // descriptor for audio inputs. Used to maintain current configuration of each opened audio input
@@ -292,25 +311,27 @@ protected:
         virtual bool isInCall();
         // true if given state represents a device in a telephony or VoIP call
         virtual bool isStateInCall(int state);
-
-#ifdef WITH_A2DP
-        // true is current platform supports suplication of notifications and ringtones over A2DP output
-        virtual bool a2dpUsedForSonification() const { return true; }
-        status_t handleA2dpConnection(AudioSystem::audio_devices device,
-                                                            const char *device_address);
-        status_t handleA2dpDisconnection(AudioSystem::audio_devices device,
-                                                            const char *device_address);
-        void closeA2dpOutputs();
-        // checks and if necessary changes output (a2dp, duplicated or hardware) used for all strategies.
-        // must be called every time a condition that affects the output choice for a given strategy is
-        // changed: connected device, phone state, force use...
+        // when a device is connected, checks if an open output can be routed
+        // to this device. If none is open, tries to open one of the available outputs.
+        // Returns an output suitable to this device or 0.
+        // when a device is disconnected, checks if an output is not used any more and
+        // returns its handle if any.
+        // transfers the audio tracks and effects from one output thread to another accordingly.
+        audio_io_handle_t checkOutputForDevice(AudioSystem::audio_devices device,
+                                               AudioSystem::device_connection_state state);
+        // close an output and its companion duplicating output.
+        void closeOutput(audio_io_handle_t output);
+        // checks and if necessary changes outputs used for all strategies.
+        // must be called every time a condition that affects the output choice for a given strategy
+        // changes: connected device, phone state, force use...
         // Must be called before updateDeviceForStrategy()
         void checkOutputForStrategy(routing_strategy strategy);
         // Same as checkOutputForStrategy() but for a all strategies in order of priority
         void checkOutputForAllStrategies();
         // manages A2DP output suspend/restore according to phone state and BT SCO usage
         void checkA2dpSuspend();
-#endif
+        // returns the A2DP output handle if it is open or 0 otherwise
+        audio_io_handle_t getA2dpOutput();
         // selects the most appropriate device on output for current state
         // must be called every time a condition that affects the device choice for a given output is
         // changed: connected device, phone state, force use, output start, output stop..
@@ -346,13 +367,15 @@ protected:
         // extract one device relevant for volume control from multiple device selection
         static audio_devices_t getDeviceForVolume(audio_devices_t device);
 
-        AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
-        audio_io_handle_t mHardwareOutput;              // hardware output handler
-        audio_io_handle_t mA2dpOutput;                  // A2DP output handler
-        audio_io_handle_t mDuplicatedOutput;            // duplicated output handler: outputs to hardware and A2DP.
+        audio_io_handle_t getOutputForDevice(uint32_t device);
+        SortedVector<audio_io_handle_t> getOutputsForDevice(uint32_t device);
+        bool vectorsEqual(SortedVector<audio_io_handle_t>& outputs1,
+                                           SortedVector<audio_io_handle_t>& outputs2);
 
-        KeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mOutputs;   // list of output descriptors
-        KeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of input descriptors
+        AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
+        audio_io_handle_t mPrimaryOutput;              // primary output handle
+        DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mOutputs;   // list of output descriptors
+        DefaultKeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of input descriptors
         uint32_t mAvailableOutputDevices;                                   // bit field of all available output devices
         uint32_t mAvailableInputDevices;                                    // bit field of all available input devices
         int mPhoneState;                                                    // current phone state

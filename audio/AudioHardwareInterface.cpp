@@ -26,9 +26,6 @@
 
 #include "AudioHardwareStub.h"
 #include "AudioHardwareGeneric.h"
-#ifdef WITH_A2DP
-#include "A2dpAudioInterface.h"
-#endif
 
 #ifdef ENABLE_AUDIO_DUMP
 #include "AudioDumpInterface.h"
