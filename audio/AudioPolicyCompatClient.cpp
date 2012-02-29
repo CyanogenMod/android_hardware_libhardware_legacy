@@ -42,6 +42,25 @@ audio_io_handle_t AudioPolicyCompatClient::openOutput(uint32_t *pDevices,
                                     (audio_policy_output_flags_t)flags);
 }
 
+
+#ifdef WITH_QCOM_LPA
+audio_io_handle_t AudioPolicyCompatClient::openSession(uint32_t *pDevices,
+                                uint32_t *pFormat,
+                                AudioSystem::output_flags flags,
+                                int32_t  streamType,
+                                int32_t  sessionId)
+{
+    return mServiceOps->open_session(mService,pDevices,pFormat,
+                                     (audio_policy_output_flags_t)flags,
+                                     streamType,sessionId);
+}
+
+audio_io_handle_t AudioPolicyCompatClient::closeSession(audio_io_handle_t output)
+{
+    return mServiceOps->close_session(mService,output);
+}
+#endif
+
 audio_io_handle_t AudioPolicyCompatClient::openDuplicateOutput(audio_io_handle_t output1,
                                                           audio_io_handle_t output2)
 {
