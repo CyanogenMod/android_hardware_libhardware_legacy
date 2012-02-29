@@ -95,6 +95,19 @@ public:
                                         uint32_t format = AudioSystem::FORMAT_DEFAULT,
                                         uint32_t channels = 0,
                                         AudioSystem::output_flags flags = AudioSystem::OUTPUT_FLAG_INDIRECT) = 0;
+#ifdef WITH_QCOM_LPA
+    // request a session appriate for tunnel mode/batch decoding session of the supplied stream type and parameters
+    virtual audio_io_handle_t getSession(AudioSystem::stream_type stream,
+                                        uint32_t format = AudioSystem::FORMAT_DEFAULT,
+                                        AudioSystem::output_flags flags = AudioSystem::OUTPUT_FLAG_DIRECT,
+                                        int32_t  sessionId=-1) {return 0;};
+    // requests to pause an ongoing tunnel mode/ batch decode session.
+    virtual void pauseSession(audio_io_handle_t output, AudioSystem::stream_type stream) {return;};
+    // requests to resume an ongoing tunnel mode/ batch decode session.
+    virtual void resumeSession(audio_io_handle_t output, AudioSystem::stream_type stream) {return;};
+    // requests to release an ongoing tunnel mode/ batch decode session.
+    virtual void releaseSession(audio_io_handle_t output) {return;};
+#endif
     // indicates to the audio policy manager that the output starts being used by corresponding stream.
     virtual status_t startOutput(audio_io_handle_t output,
                                  AudioSystem::stream_type stream,
@@ -176,6 +189,19 @@ public:
                                     uint32_t *pChannels,
                                     uint32_t *pLatencyMs,
                                     AudioSystem::output_flags flags) = 0;
+#ifdef WITH_QCOM_LPA
+    // opens an audio session with the requested parameters. The parameter values can indicate to use the default values
+    // in case the audio policy manager has no specific requirements for the output being opened.
+    // When the function returns, the parameter values reflect the actual values used by the audio hardware output stream.
+    // The audio policy manager can check if the proposed parameters are suitable or not and act accordingly.
+    virtual audio_io_handle_t openSession(uint32_t *pDevices,
+                                    uint32_t *pFormat,
+                                    AudioSystem::output_flags flags,
+                                    int32_t  streamType,
+                                    int32_t  sessionId) {return 0;};
+    // closes the output audio session. 
+    virtual status_t closeSession(audio_io_handle_t output) {return 0;};
+#endif
     // creates a special output that is duplicated to the two outputs passed as arguments. The duplication is performed by
     // a special mixer thread in the AudioFlinger.
     virtual audio_io_handle_t openDuplicateOutput(audio_io_handle_t output1, audio_io_handle_t output2) = 0;
@@ -228,6 +254,10 @@ public:
                                      audio_io_handle_t srcOutput,
                                      audio_io_handle_t dstOutput) = 0;
 
+#ifdef QCOM_HARDWARE
+    // set FM volume.
+    virtual status_t setFmVolume(float volume, int delayMs = 0) { return 0; }
+#endif
 };
 
 extern "C" AudioPolicyInterface* createAudioPolicyManager(AudioPolicyClientInterface *clientInterface);

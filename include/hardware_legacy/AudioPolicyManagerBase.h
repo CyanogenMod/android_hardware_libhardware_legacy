@@ -273,13 +273,21 @@ protected:
         // device
         virtual float computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device);
         // check that volume change is permitted, compute and send new volume to audio hardware
+#ifdef WITH_QCOM_LPA
+        virtual status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
+#else
         status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
+#endif
         // apply all stream volumes to the specified output and device
         void applyStreamVolumes(audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
         // Mute or unmute all streams handled by the specified strategy on the specified output
         void setStrategyMute(routing_strategy strategy, bool on, audio_io_handle_t output, int delayMs = 0);
         // Mute or unmute the stream on the specified output
+#ifdef WITH_QCOM_LPA
+        virtual void setStreamMute(int stream, bool on, audio_io_handle_t output, int delayMs = 0);
+#else
         void setStreamMute(int stream, bool on, audio_io_handle_t output, int delayMs = 0);
+#endif
         // handle special cases for sonification strategy while in call: mute streams or replace by
         // a special tone in the device used for communication
         void handleIncallSonification(int stream, bool starting, bool stateChange);
