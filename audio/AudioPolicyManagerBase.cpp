@@ -19,6 +19,7 @@
 #include <utils/Log.h>
 #include <hardware_legacy/AudioPolicyManagerBase.h>
 #include <hardware/audio_effect.h>
+#include <hardware/audio.h>
 #include <math.h>
 
 namespace android_audio_legacy {
@@ -125,7 +126,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
             // handle A2DP device connection
             if (sHasA2dp && AudioSystem::isA2dpDevice(device)) {
                 AudioParameter param;
-                param.add(String8("a2dp_sink_address"), String8(device_address));
+                param.add(String8(AUDIO_PARAMETER_A2DP_SINK_ADDRESS), String8(device_address));
                 mpClientInterface->setParameters(output, param.toString());
                 mA2dpDeviceAddress = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
                 mA2dpSuspended = false;
