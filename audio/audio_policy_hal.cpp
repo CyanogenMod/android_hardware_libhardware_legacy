@@ -258,7 +258,7 @@ static uint32_t ap_get_strategy_for_stream(const struct audio_policy *pol,
     return lap->apm->getStrategyForStream((AudioSystem::stream_type)stream);
 }
 
-static uint32_t ap_get_devices_for_stream(const struct audio_policy *pol,
+static audio_devices_t ap_get_devices_for_stream(const struct audio_policy *pol,
                                        audio_stream_type_t stream)
 {
     const struct legacy_audio_policy *lap = to_clap(pol);

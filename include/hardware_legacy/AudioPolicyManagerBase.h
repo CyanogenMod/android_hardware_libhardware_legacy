@@ -130,7 +130,7 @@ public:
         virtual uint32_t getStrategyForStream(AudioSystem::stream_type stream);
 
         // return the enabled output devices for the given stream type
-        virtual uint32_t getDevicesForStream(AudioSystem::stream_type stream);
+        virtual audio_devices_t getDevicesForStream(AudioSystem::stream_type stream);
 
         virtual audio_io_handle_t getOutputForEffect(effect_descriptor_t *desc);
         virtual status_t registerEffect(effect_descriptor_t *desc,
@@ -197,13 +197,13 @@ protected:
 
             status_t    dump(int fd);
 
-            uint32_t device();
+            audio_devices_t device();
             void changeRefCount(AudioSystem::stream_type, int delta);
             uint32_t refCount();
             uint32_t strategyRefCount(routing_strategy strategy);
             bool isUsedByStrategy(routing_strategy strategy) { return (strategyRefCount(strategy) != 0);}
             bool isDuplicated() { return (mOutput1 != NULL && mOutput2 != NULL); }
-            uint32_t supportedDevices();
+            audio_devices_t supportedDevices();
 
             audio_io_handle_t mId;              // output handle
             uint32_t mSamplingRate;             //
@@ -211,7 +211,7 @@ protected:
             uint32_t mChannels;                 // output configuration
             uint32_t mLatency;                  //
             AudioSystem::output_flags mFlags;   //
-            uint32_t mDevice;                   // current device this output is routed to
+            audio_devices_t mDevice;                   // current device this output is routed to
             uint32_t mRefCount[AudioSystem::NUM_STREAM_TYPES]; // number of streams of each type using this output
             nsecs_t mStopTime[AudioSystem::NUM_STREAM_TYPES];
             AudioOutputDescriptor *mOutput1;    // used by duplicated outputs: first output
@@ -234,9 +234,9 @@ protected:
             uint32_t mFormat;                           // input configuration
             uint32_t mChannels;                         //
             AudioSystem::audio_in_acoustics mAcoustics; //
-            uint32_t mDevice;                           // current device this input is routed to
+            audio_devices_t mDevice;                    // current device this input is routed to
             uint32_t mRefCount;                         // number of AudioRecord clients using this output
-            int      mInputSource;                     // input source selected by application (mediarecorder.h)
+            int      mInputSource;                      // input source selected by application (mediarecorder.h)
         };
 
         // stream descriptor used for volume control
@@ -285,13 +285,16 @@ protected:
         // "future" device selection (fromCache == false) when called from a context
         //  where conditions are changing (setDeviceConnectionState(), setPhoneState()...) AND
         //  before updateDeviceForStrategy() is called.
-        virtual uint32_t getDeviceForStrategy(routing_strategy strategy, bool fromCache = true);
+        virtual audio_devices_t getDeviceForStrategy(routing_strategy strategy, bool fromCache = true);
 
         // change the route of the specified output
-        void setOutputDevice(audio_io_handle_t output, uint32_t device, bool force = false, int delayMs = 0);
+        void setOutputDevice(audio_io_handle_t output,
+                             audio_devices_t device,
+                             bool force = false,
+                             int delayMs = 0);
 
         // select input device corresponding to requested audio source
-        virtual uint32_t getDeviceForInputSource(int inputSource);
+        virtual audio_devices_t getDeviceForInputSource(int inputSource);
 
         // return io handle of active input or 0 if no input is active
         audio_io_handle_t getActiveInput();
@@ -301,13 +304,13 @@ protected:
 
         // compute the actual volume for a given stream according to the requested index and a particular
         // device
-        virtual float computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device);
+        virtual float computeVolume(int stream, int index, audio_io_handle_t output, audio_devices_t device);
 
         // check that volume change is permitted, compute and send new volume to audio hardware
-        status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
+        status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, audio_devices_t device, int delayMs = 0, bool force = false);
 
         // apply all stream volumes to the specified output and device
-        void applyStreamVolumes(audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
+        void applyStreamVolumes(audio_io_handle_t output, audio_devices_t device, int delayMs = 0, bool force = false);
 
         // Mute or unmute all streams handled by the specified strategy on the specified output
         void setStrategyMute(routing_strategy strategy, bool on, audio_io_handle_t output, int delayMs = 0);
@@ -334,7 +337,7 @@ protected:
         // when a device is disconnected, checks if an output is not used any more and
         // returns its handle if any.
         // transfers the audio tracks and effects from one output thread to another accordingly.
-        audio_io_handle_t checkOutputForDevice(AudioSystem::audio_devices device,
+        audio_io_handle_t checkOutputForDevice(audio_devices_t device,
                                                AudioSystem::device_connection_state state);
 
         // close an output and its companion duplicating output.
@@ -360,7 +363,7 @@ protected:
         // changed: connected device, phone state, force use, output start, output stop..
         // see getDeviceForStrategy() for the use of fromCache parameter
 
-        uint32_t getNewDevice(audio_io_handle_t output, bool fromCache = true);
+        audio_devices_t getNewDevice(audio_io_handle_t output, bool fromCache = true);
         // updates cache of device used by all strategies (mDeviceForStrategy[])
         // must be called every time a condition that affects the device choice for a given strategy is
         // changed: connected device, phone state, force use...
@@ -390,13 +393,12 @@ protected:
         status_t setEffectEnabled(EffectDescriptor *pDesc, bool enabled);
 
         // returns the category the device belongs to with regard to volume curve management
-        static device_category getDeviceCategory(uint32_t device);
+        static device_category getDeviceCategory(audio_devices_t device);
 
         // extract one device relevant for volume control from multiple device selection
         static audio_devices_t getDeviceForVolume(audio_devices_t device);
 
-        audio_io_handle_t getOutputForDevice(uint32_t device);
-        SortedVector<audio_io_handle_t> getOutputsForDevice(uint32_t device);
+        SortedVector<audio_io_handle_t> getOutputsForDevice(audio_devices_t device);
         bool vectorsEqual(SortedVector<audio_io_handle_t>& outputs1,
                                            SortedVector<audio_io_handle_t>& outputs2);
 
@@ -404,7 +406,7 @@ protected:
         audio_io_handle_t mPrimaryOutput;              // primary output handle
         DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mOutputs;   // list of output descriptors
         DefaultKeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of input descriptors
-        uint32_t mAvailableOutputDevices;                                   // bit field of all available output devices
+        audio_devices_t mAvailableOutputDevices;                            // bit field of all available output devices
         uint32_t mAvailableInputDevices;                                    // bit field of all available input devices
         int mPhoneState;                                                    // current phone state
         AudioSystem::forced_config mForceUse[AudioSystem::NUM_FORCE_USE];   // current forced use configuration
@@ -413,7 +415,7 @@ protected:
         String8 mA2dpDeviceAddress;                                         // A2DP device MAC address
         String8 mScoDeviceAddress;                                          // SCO device MAC address
         bool    mLimitRingtoneVolume;                                       // limit ringtone volume to music volume if headset connected
-        uint32_t mDeviceForStrategy[NUM_STRATEGIES];
+        audio_devices_t mDeviceForStrategy[NUM_STRATEGIES];
         float   mLastVoiceVolume;                                           // last voice volume value sent to audio HAL
 
         // Maximum CPU load allocated to audio effects in 0.1 MIPS (ARMv5TE, 0 WS memory) units
@@ -441,7 +443,7 @@ protected:
 #endif //AUDIO_POLICY_TEST
 
 private:
-        static float volIndexToAmpl(uint32_t device, const StreamDescriptor& streamDesc,
+        static float volIndexToAmpl(audio_devices_t device, const StreamDescriptor& streamDesc,
                 int indexInUi);
 };
 
