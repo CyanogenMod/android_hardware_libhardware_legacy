@@ -109,8 +109,10 @@ public:
                                             uint32_t format,
                                             uint32_t channels,
                                             AudioSystem::audio_in_acoustics acoustics);
+
         // indicates to the audio policy manager that the input starts being used.
         virtual status_t startInput(audio_io_handle_t input);
+
         // indicates to the audio policy manager that the input stops being used.
         virtual status_t stopInput(audio_io_handle_t input);
         virtual void releaseInput(audio_io_handle_t input);
@@ -272,6 +274,7 @@ protected:
 
         // return the strategy corresponding to a given stream type
         static routing_strategy getStrategy(AudioSystem::stream_type stream);
+
         // return appropriate device for streams handled by the specified strategy according to current
         // phone state, connected devices...
         // if fromCache is true, the device is returned from mDeviceForStrategy[], otherwise it is determined
@@ -283,34 +286,48 @@ protected:
         //  where conditions are changing (setDeviceConnectionState(), setPhoneState()...) AND
         //  before updateDeviceForStrategy() is called.
         virtual uint32_t getDeviceForStrategy(routing_strategy strategy, bool fromCache = true);
+
         // change the route of the specified output
         void setOutputDevice(audio_io_handle_t output, uint32_t device, bool force = false, int delayMs = 0);
+
         // select input device corresponding to requested audio source
         virtual uint32_t getDeviceForInputSource(int inputSource);
+
         // return io handle of active input or 0 if no input is active
         audio_io_handle_t getActiveInput();
+
         // initialize volume curves for each strategy and device category
         void initializeVolumeCurves();
+
         // compute the actual volume for a given stream according to the requested index and a particular
         // device
         virtual float computeVolume(int stream, int index, audio_io_handle_t output, uint32_t device);
+
         // check that volume change is permitted, compute and send new volume to audio hardware
         status_t checkAndSetVolume(int stream, int index, audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
+
         // apply all stream volumes to the specified output and device
         void applyStreamVolumes(audio_io_handle_t output, uint32_t device, int delayMs = 0, bool force = false);
+
         // Mute or unmute all streams handled by the specified strategy on the specified output
         void setStrategyMute(routing_strategy strategy, bool on, audio_io_handle_t output, int delayMs = 0);
+
         // Mute or unmute the stream on the specified output
         void setStreamMute(int stream, bool on, audio_io_handle_t output, int delayMs = 0);
+
         // handle special cases for sonification strategy while in call: mute streams or replace by
         // a special tone in the device used for communication
         void handleIncallSonification(int stream, bool starting, bool stateChange);
+
         // true is current platform implements a back microphone
         virtual bool hasBackMicrophone() const { return false; }
+
         // true if device is in a telephony or VoIP call
         virtual bool isInCall();
+
         // true if given state represents a device in a telephony or VoIP call
         virtual bool isStateInCall(int state);
+
         // when a device is connected, checks if an open output can be routed
         // to this device. If none is open, tries to open one of the available outputs.
         // Returns an output suitable to this device or 0.
@@ -319,30 +336,39 @@ protected:
         // transfers the audio tracks and effects from one output thread to another accordingly.
         audio_io_handle_t checkOutputForDevice(AudioSystem::audio_devices device,
                                                AudioSystem::device_connection_state state);
+
         // close an output and its companion duplicating output.
         void closeOutput(audio_io_handle_t output);
+
         // checks and if necessary changes outputs used for all strategies.
         // must be called every time a condition that affects the output choice for a given strategy
         // changes: connected device, phone state, force use...
         // Must be called before updateDeviceForStrategy()
         void checkOutputForStrategy(routing_strategy strategy);
+
         // Same as checkOutputForStrategy() but for a all strategies in order of priority
         void checkOutputForAllStrategies();
+
         // manages A2DP output suspend/restore according to phone state and BT SCO usage
         void checkA2dpSuspend();
+
         // returns the A2DP output handle if it is open or 0 otherwise
         audio_io_handle_t getA2dpOutput();
+
         // selects the most appropriate device on output for current state
         // must be called every time a condition that affects the device choice for a given output is
         // changed: connected device, phone state, force use, output start, output stop..
         // see getDeviceForStrategy() for the use of fromCache parameter
+
         uint32_t getNewDevice(audio_io_handle_t output, bool fromCache = true);
         // updates cache of device used by all strategies (mDeviceForStrategy[])
         // must be called every time a condition that affects the device choice for a given strategy is
         // changed: connected device, phone state, force use...
         // cached values are used by getDeviceForStrategy() if parameter fromCache is true.
          // Must be called after checkOutputForAllStrategies()
+
         void updateDeviceForStrategy();
+
         // true if current platform requires a specific output to be opened for this particular
         // set of parameters. This function is called by getOutput() and is implemented by platform
         // specific audio policy manager.
@@ -352,6 +378,7 @@ protected:
                                     uint32_t channels,
                                     AudioSystem::output_flags flags,
                                     uint32_t device);
+
         virtual uint32_t getMaxEffectsCpuLoad();
         virtual uint32_t getMaxEffectsMemory();
 #ifdef AUDIO_POLICY_TEST
@@ -364,6 +391,7 @@ protected:
 
         // returns the category the device belongs to with regard to volume curve management
         static device_category getDeviceCategory(uint32_t device);
+
         // extract one device relevant for volume control from multiple device selection
         static audio_devices_t getDeviceForVolume(audio_devices_t device);
 
