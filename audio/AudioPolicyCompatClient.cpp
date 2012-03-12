@@ -140,7 +140,7 @@ status_t AudioPolicyCompatClient::setStreamVolume(
                                           volume, output, delayMs);
 }
 
-#ifdef QCOM_HARDWARE
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
 status_t AudioPolicyCompatClient::setFmVolume(float volume,
                                               int delayMs)
 {

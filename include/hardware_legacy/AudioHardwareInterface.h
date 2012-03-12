@@ -202,7 +202,7 @@ public:
     /** set the audio volume of a voice call. Range is between 0.0 and 1.0 */
     virtual status_t    setVoiceVolume(float volume) = 0;
 
-#ifdef QCOM_HARDWARE
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
     /** set the fm volume. Range is between 0.0 and 1.0 */
     virtual status_t    setFmVolume(float volume) { return 0; }
 #endif
