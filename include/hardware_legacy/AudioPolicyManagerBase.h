@@ -39,6 +39,9 @@ namespace android_audio_legacy {
 // Time in milliseconds during which we consider that music is still active after a music
 // track was stopped - see computeVolume()
 #define SONIFICATION_HEADSET_MUSIC_DELAY  5000
+// Time in milliseconds after media stopped playing during which we consider that the
+// sonification should be as unobtrusive as during the time media was playing.
+#define SONIFICATION_RESPECTFUL_AFTER_MUSIC_DELAY 5000
 // Time in milliseconds during witch some streams are muted while the audio path
 // is switched
 #define MUTE_TIME_MS 2000
@@ -151,6 +154,7 @@ protected:
             STRATEGY_MEDIA,
             STRATEGY_PHONE,
             STRATEGY_SONIFICATION,
+            STRATEGY_SONIFICATION_RESPECTFUL,
             STRATEGY_DTMF,
             STRATEGY_ENFORCED_AUDIBLE,
             NUM_STRATEGIES
@@ -445,6 +449,9 @@ protected:
 private:
         static float volIndexToAmpl(audio_devices_t device, const StreamDescriptor& streamDesc,
                 int indexInUi);
+        // updates device caching and output for streams that can influence the
+        //    routing of notifications
+        void handleNotificationRoutingForStream(AudioSystem::stream_type stream);
 };
 
 };
