@@ -20,6 +20,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <poll.h>
 
 #include "hardware_legacy/wifi.h"
@@ -302,13 +303,13 @@ int ensure_entropy_file_exists()
         }
         return 0;
     }
-    destfd = open(SUPP_ENTROPY_FILE, O_CREAT|O_RDWR, 0660);
+    destfd = TEMP_FAILURE_RETRY(open(SUPP_ENTROPY_FILE, O_CREAT|O_RDWR, 0660));
     if (destfd < 0) {
         ALOGE("Cannot create \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
         return -1;
     }
 
-    if (write(destfd, dummy_key, sizeof(dummy_key)) != sizeof(dummy_key)) {
+    if (TEMP_FAILURE_RETRY(write(destfd, dummy_key, sizeof(dummy_key))) != sizeof(dummy_key)) {
         ALOGE("Error writing \"%s\": %s", SUPP_ENTROPY_FILE, strerror(errno));
         close(destfd);
         return -1;
@@ -347,13 +348,13 @@ int update_ctrl_interface(const char *config_file) {
     pbuf = malloc(sb.st_size + PROPERTY_VALUE_MAX);
     if (!pbuf)
         return 0;
-    srcfd = open(config_file, O_RDONLY);
+    srcfd = TEMP_FAILURE_RETRY(open(config_file, O_RDONLY));
     if (srcfd < 0) {
         ALOGE("Cannot open \"%s\": %s", config_file, strerror(errno));
         free(pbuf);
         return 0;
     }
-    nread = read(srcfd, pbuf, sb.st_size);
+    nread = TEMP_FAILURE_RETRY(read(srcfd, pbuf, sb.st_size));
     close(srcfd);
     if (nread < 0) {
         ALOGE("Cannot read \"%s\": %s", config_file, strerror(errno));
@@ -379,13 +380,13 @@ int update_ctrl_interface(const char *config_file) {
             memmove(iptr + mlen, iptr + ilen + 1, nread - (iptr + ilen + 1 - pbuf));
             memset(iptr, '\n', mlen);
             memcpy(iptr, ifc, strlen(ifc));
-            destfd = open(config_file, O_RDWR, 0660);
+            destfd = TEMP_FAILURE_RETRY(open(config_file, O_RDWR, 0660));
             if (destfd < 0) {
                 ALOGE("Cannot update \"%s\": %s", config_file, strerror(errno));
                 free(pbuf);
                 return -1;
             }
-            write(destfd, pbuf, nread + mlen - ilen -1);
+            TEMP_FAILURE_RETRY(write(destfd, pbuf, nread + mlen - ilen -1));
             close(destfd);
         }
     }
@@ -417,20 +418,20 @@ int ensure_config_file_exists(const char *config_file)
         return -1;
     }
 
-    srcfd = open(SUPP_CONFIG_TEMPLATE, O_RDONLY);
+    srcfd = TEMP_FAILURE_RETRY(open(SUPP_CONFIG_TEMPLATE, O_RDONLY));
     if (srcfd < 0) {
         ALOGE("Cannot open \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
         return -1;
     }
 
-    destfd = open(config_file, O_CREAT|O_RDWR, 0660);
+    destfd = TEMP_FAILURE_RETRY(open(config_file, O_CREAT|O_RDWR, 0660));
     if (destfd < 0) {
         close(srcfd);
         ALOGE("Cannot create \"%s\": %s", config_file, strerror(errno));
         return -1;
     }
 
-    while ((nread = read(srcfd, buf, sizeof(buf))) != 0) {
+    while ((nread = TEMP_FAILURE_RETRY(read(srcfd, buf, sizeof(buf)))) != 0) {
         if (nread < 0) {
             ALOGE("Error reading \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
             close(srcfd);
@@ -438,7 +439,7 @@ int ensure_config_file_exists(const char *config_file)
             unlink(config_file);
             return -1;
         }
-        write(destfd, buf, nread);
+        TEMP_FAILURE_RETRY(write(destfd, buf, nread));
     }
 
     close(destfd);
@@ -685,7 +686,7 @@ int wifi_send_command(int index, const char *cmd, char *reply, size_t *reply_len
     if (ret == -2) {
         ALOGD("'%s' command timed out.\n", cmd);
         /* unblocks the monitor receive socket for termination */
-        write(exit_sockets[index][0], "T", 1);
+        TEMP_FAILURE_RETRY(write(exit_sockets[index][0], "T", 1));
         return -2;
     } else if (ret < 0 || strncmp(reply, "FAIL", 4) == 0) {
         return -1;
@@ -707,7 +708,7 @@ int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
     rfds[0].events |= POLLIN;
     rfds[1].fd = exit_sockets[index][1];
     rfds[1].events |= POLLIN;
-    res = poll(rfds, 2, -1);
+    res = TEMP_FAILURE_RETRY(poll(rfds, 2, -1));
     if (res < 0) {
         ALOGE("Error poll = %d", res);
         return res;
@@ -823,7 +824,7 @@ void wifi_close_supplicant_connection(const char *ifname)
         /* p2p socket termination needs unblocking the monitor socket
          * STA connection does not need it since supplicant gets shutdown
          */
-        write(exit_sockets[SECONDARY][0], "T", 1);
+        TEMP_FAILURE_RETRY(write(exit_sockets[SECONDARY][0], "T", 1));
         wifi_close_sockets(SECONDARY);
         //closing p2p connection does not need a wait on
         //supplicant stop
@@ -869,13 +870,13 @@ int wifi_change_fw_path(const char *fwpath)
 
     if (!fwpath)
         return ret;
-    fd = open(WIFI_DRIVER_FW_PATH_PARAM, O_WRONLY);
+    fd = TEMP_FAILURE_RETRY(open(WIFI_DRIVER_FW_PATH_PARAM, O_WRONLY));
     if (fd < 0) {
         ALOGE("Failed to open wlan fw path param (%s)", strerror(errno));
         return -1;
     }
     len = strlen(fwpath) + 1;
-    if (write(fd, fwpath, len) != len) {
+    if (TEMP_FAILURE_RETRY(write(fd, fwpath, len)) != len) {
         ALOGE("Failed to write wlan fw path param (%s)", strerror(errno));
         ret = -1;
     }
