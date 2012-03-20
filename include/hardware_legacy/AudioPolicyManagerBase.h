@@ -17,6 +17,8 @@
 
 #include <stdint.h>
 #include <sys/types.h>
+#include <cutils/config_utils.h>
+#include <cutils/misc.h>
 #include <utils/Timers.h>
 #include <utils/Errors.h>
 #include <utils/KeyedVector.h>
@@ -58,20 +60,6 @@ namespace android_audio_legacy {
 // class must be implemented as well as the class factory function createAudioPolicyManager()
 // and provided in a shared library libaudiopolicy.so.
 // ----------------------------------------------------------------------------
-
-// the output_profile_s structure describes the capabilities of an output stream.
-// It is currently assumed that all combination of listed parameters are supported.
-// It is used by the policy manager to determine if an output is suitable for a given use case,
-// open/close it accordingly and connect/disconnect audio tracks to/from it.
-typedef struct output_profile_s {
-    uint32_t*                   mSamplingRates;     // supported sampling rates (terminated by 0)
-    audio_channel_mask_t*       mChannelMasks;      // supported channel masks (terminated by 0)
-    audio_format_t*             mFormats;           // supported audio formats (terminated by 0)
-    audio_devices_t             mSupportedDevices;  // supported devices (devices this output can be
-                                                    // routed to)
-    audio_policy_output_flags_t mFlags;             // attribute flags (e.g primary output,
-                                                    // direct output...)
-} output_profile_t;
 
 class AudioPolicyManagerBase: public AudioPolicyInterface
 #ifdef AUDIO_POLICY_TEST
@@ -181,6 +169,30 @@ protected:
             DEVICE_CATEGORY_CNT
         };
 
+        // the IOProfile class describes the capabilities of an output or input stream.
+        // It is currently assumed that all combination of listed parameters are supported.
+        // It is used by the policy manager to determine if an output or input is suitable for
+        // a given use case,  open/close it accordingly and connect/disconnect audio tracks
+        // to/from it.
+        class IOProfile
+        {
+         public:
+            IOProfile(const char *module);
+            ~IOProfile();
+
+            void dump(int fd);
+
+            Vector <uint32_t> mSamplingRates; // supported sampling rates
+            Vector <audio_channel_mask_t> mChannelMasks; // supported channel masks
+            Vector <audio_format_t> mFormats; // supported audio formats
+            audio_devices_t mSupportedDevices; // supported devices (devices this output can be
+                                               // routed to)
+            audio_policy_output_flags_t mFlags; // attribute flags (e.g primary output,
+                                                // direct output...). For outputs only.
+            char *mModuleName; // base name of the audio HW module exposing this I/O stream
+                               // (primary, a2dp ...)
+        };
+
         // default volume curve
         static const VolumeCurvePoint sDefaultVolumeCurve[AudioPolicyManagerBase::VOLCNT];
         // default volume curve for media strategy
@@ -197,7 +209,7 @@ protected:
         class AudioOutputDescriptor
         {
         public:
-            AudioOutputDescriptor(const output_profile_t *profile);
+            AudioOutputDescriptor(const IOProfile *profile);
 
             status_t    dump(int fd);
 
@@ -206,8 +218,10 @@ protected:
             uint32_t refCount();
             uint32_t strategyRefCount(routing_strategy strategy);
             bool isUsedByStrategy(routing_strategy strategy) { return (strategyRefCount(strategy) != 0);}
-            bool isDuplicated() { return (mOutput1 != NULL && mOutput2 != NULL); }
+            bool isDuplicated() const { return (mOutput1 != NULL && mOutput2 != NULL); }
             audio_devices_t supportedDevices();
+            uint32_t latency();
+            bool sharesHwModuleWith(const AudioOutputDescriptor *outputDesc);
 
             audio_io_handle_t mId;              // output handle
             uint32_t mSamplingRate;             //
@@ -222,7 +236,9 @@ protected:
             AudioOutputDescriptor *mOutput2;    // used by duplicated outputs: second output
             float mCurVolume[AudioSystem::NUM_STREAM_TYPES];   // current stream volume
             int mMuteCount[AudioSystem::NUM_STREAM_TYPES];     // mute request counter
-            const output_profile_t *mProfile;
+            const IOProfile *mProfile;          // I/O profile this output derives from
+            bool mStrategyMutedByDevice[NUM_STRATEGIES]; // strategies muted because of incompatible
+                                                // device selection. See checkDeviceMuteStrategies()
         };
 
         // descriptor for audio inputs. Used to maintain current configuration of each opened audio input
@@ -230,7 +246,7 @@ protected:
         class AudioInputDescriptor
         {
         public:
-            AudioInputDescriptor();
+            AudioInputDescriptor(const IOProfile *profile);
 
             status_t    dump(int fd);
 
@@ -241,6 +257,7 @@ protected:
             audio_devices_t mDevice;                    // current device this input is routed to
             uint32_t mRefCount;                         // number of AudioRecord clients using this output
             int      mInputSource;                      // input source selected by application (mediarecorder.h)
+            const IOProfile *mProfile;                  // I/O profile this output derives from
         };
 
         // stream descriptor used for volume control
@@ -281,15 +298,17 @@ protected:
 
         // return appropriate device for streams handled by the specified strategy according to current
         // phone state, connected devices...
-        // if fromCache is true, the device is returned from mDeviceForStrategy[], otherwise it is determined
-        // by current state (device connected, phone state, force use, a2dp output...)
+        // if fromCache is true, the device is returned from mDeviceForStrategy[],
+        // otherwise it is determine by current state
+        // (device connected,phone state, force use, a2dp output...)
         // This allows to:
         //  1 speed up process when the state is stable (when starting or stopping an output)
         //  2 access to either current device selection (fromCache == true) or
         // "future" device selection (fromCache == false) when called from a context
         //  where conditions are changing (setDeviceConnectionState(), setPhoneState()...) AND
         //  before updateDeviceForStrategy() is called.
-        virtual audio_devices_t getDeviceForStrategy(routing_strategy strategy, bool fromCache = true);
+        virtual audio_devices_t getDeviceForStrategy(routing_strategy strategy,
+                                                     bool fromCache);
 
         // change the route of the specified output
         void setOutputDevice(audio_io_handle_t output,
@@ -325,9 +344,6 @@ protected:
         // handle special cases for sonification strategy while in call: mute streams or replace by
         // a special tone in the device used for communication
         void handleIncallSonification(int stream, bool starting, bool stateChange);
-
-        // true is current platform implements a back microphone
-        virtual bool hasBackMicrophone() const { return false; }
 
         // true if device is in a telephony or VoIP call
         virtual bool isInCall();
@@ -367,7 +383,7 @@ protected:
         // changed: connected device, phone state, force use, output start, output stop..
         // see getDeviceForStrategy() for the use of fromCache parameter
 
-        audio_devices_t getNewDevice(audio_io_handle_t output, bool fromCache = true);
+        audio_devices_t getNewDevice(audio_io_handle_t output, bool fromCache);
         // updates cache of device used by all strategies (mDeviceForStrategy[])
         // must be called every time a condition that affects the device choice for a given strategy is
         // changed: connected device, phone state, force use...
@@ -406,12 +422,42 @@ protected:
         bool vectorsEqual(SortedVector<audio_io_handle_t>& outputs1,
                                            SortedVector<audio_io_handle_t>& outputs2);
 
+        void checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,
+                                       uint32_t delayMs);
+
+        audio_io_handle_t selectOutput(const SortedVector<audio_io_handle_t>& outputs,
+                                       AudioSystem::output_flags flags);
+        IOProfile *getInputProfile(audio_devices_t device,
+                                   uint32_t samplingRate,
+                                   uint32_t format,
+                                   uint32_t channelMask);
+
+        //
+        // Audio policy configuration file parsing (audio_policy.conf)
+        //
+        static uint32_t stringToEnum(const struct StringToEnum *table,
+                                     size_t size,
+                                     const char *name);
+        static audio_policy_output_flags_t parseFlagNames(char *name);
+        static audio_devices_t parseDeviceNames(char *name);
+        void loadSamplingRates(char *name, IOProfile *profile);
+        void loadFormats(char *name, IOProfile *profile);
+        void loadOutChannels(char *name, IOProfile *profile);
+        void loadInChannels(char *name, IOProfile *profile);
+        status_t loadOutput(cnode *root, const char *module);
+        status_t loadInput(cnode *root, const char *module);
+        void loadHwModule(cnode *root);
+        void loadHwModules(cnode *root);
+        void loadGlobalConfig(cnode *root);
+        status_t loadAudioPolicyConfig(const char *path);
+
+
         AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
         audio_io_handle_t mPrimaryOutput;              // primary output handle
         DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mOutputs;   // list of output descriptors
         DefaultKeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of input descriptors
-        audio_devices_t mAvailableOutputDevices;                            // bit field of all available output devices
-        uint32_t mAvailableInputDevices;                                    // bit field of all available input devices
+        audio_devices_t mAvailableOutputDevices; // bit field of all available output devices
+        audio_devices_t mAvailableInputDevices; // bit field of all available input devices
         int mPhoneState;                                                    // current phone state
         AudioSystem::forced_config mForceUse[AudioSystem::NUM_FORCE_USE];   // current forced use configuration
 
@@ -430,6 +476,13 @@ protected:
         uint32_t mTotalEffectsMemory;  // current memory used by effects
         KeyedVector<int, EffectDescriptor *> mEffects;  // list of registered audio effects
         bool    mA2dpSuspended;  // true if A2DP output is suspended
+        bool mHasA2dp; // true on platforms with support for bluetooth A2DP
+        audio_devices_t mAttachedOutputDevices; // output devices always available on the platform
+        audio_devices_t mDefaultOutputDevice; // output device selected by default at boot time
+                                              // (must be in mAttachedOutputDevices)
+
+        Vector <IOProfile *> mOutputProfiles; // output profiles loaded from audio_policy.conf
+        Vector <IOProfile *> mInputProfiles;  // input profiles loaded from audio_policy.conf
 
 #ifdef AUDIO_POLICY_TEST
         Mutex   mLock;

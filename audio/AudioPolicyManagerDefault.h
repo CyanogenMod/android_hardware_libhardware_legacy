@@ -31,9 +31,5 @@ public:
 
         virtual ~AudioPolicyManagerDefault() {}
 
-protected:
-        // true is current platform implements a back microphone
-        virtual bool hasBackMicrophone() const { return false; }
-
 };
 };
