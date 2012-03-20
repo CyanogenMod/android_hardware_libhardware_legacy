@@ -42,9 +42,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_SHARED_LIBRARIES := \
     libcutils \
-    libutils \
-    libmedia \
-    libmedia_native
+    libutils
 
 LOCAL_STATIC_LIBRARIES := \
     libmedia_helper
