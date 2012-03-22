@@ -70,6 +70,12 @@ AudioStreamOut::~AudioStreamOut()
 {
 }
 
+// default implementation is unsupported
+status_t AudioStreamOut::getNextWriteTimestamp(int64_t *timestamp)
+{
+    return INVALID_OPERATION;
+}
+
 AudioStreamIn::~AudioStreamIn() {}
 
 AudioHardwareBase::AudioHardwareBase()
@@ -122,6 +128,7 @@ size_t AudioHardwareBase::getInputBufferSize(uint32_t sampleRate, int format, in
     return 320;
 }
 
+// default implementation is unsupported
 status_t AudioHardwareBase::getMasterVolume(float *volume)
 {
     return INVALID_OPERATION;
