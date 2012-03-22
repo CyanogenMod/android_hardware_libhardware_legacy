@@ -348,6 +348,12 @@ static int adev_set_master_volume(struct audio_hw_device *dev, float volume)
     return ladev->hwif->setMasterVolume(volume);
 }
 
+static int adev_get_master_volume(struct audio_hw_device *dev, float* volume)
+{
+    struct legacy_audio_device *ladev = to_ladev(dev);
+    return ladev->hwif->getMasterVolume(volume);
+}
+
 static int adev_set_mode(struct audio_hw_device *dev, audio_mode_t mode)
 {
     struct legacy_audio_device *ladev = to_ladev(dev);
@@ -556,6 +562,7 @@ static int legacy_adev_open(const hw_module_t* module, const char* name,
     ladev->device.init_check = adev_init_check;
     ladev->device.set_voice_volume = adev_set_voice_volume;
     ladev->device.set_master_volume = adev_set_master_volume;
+    ladev->device.get_master_volume = adev_get_master_volume;
     ladev->device.set_mode = adev_set_mode;
     ladev->device.set_mic_mute = adev_set_mic_mute;
     ladev->device.get_mic_mute = adev_get_mic_mute;

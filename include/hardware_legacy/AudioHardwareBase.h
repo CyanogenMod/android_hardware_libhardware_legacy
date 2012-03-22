@@ -46,6 +46,7 @@ public:
     virtual String8     getParameters(const String8& keys);
 
     virtual  size_t     getInputBufferSize(uint32_t sampleRate, int format, int channelCount);
+    virtual status_t    getMasterVolume(float *volume);
 
     /**This method dumps the state of the audio hardware */
     virtual status_t dumpState(int fd, const Vector<String16>& args);

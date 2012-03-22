@@ -210,6 +210,14 @@ public:
     virtual status_t    setMasterVolume(float volume) = 0;
 
     /**
+     * Get the current master volume value for the HAL, if the HAL supports
+     * master volume control.  AudioFlinger will query this value from the
+     * primary audio HAL when the service starts and use the value for setting
+     * the initial master volume across all HALs.
+     */
+    virtual status_t    getMasterVolume(float *volume) = 0;
+
+    /**
      * setMode is called when the audio mode changes. NORMAL mode is for
      * standard audio playback, RINGTONE when a ringtone is playing, and IN_CALL
      * when a call is in progress.
