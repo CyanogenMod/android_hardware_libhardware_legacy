@@ -169,6 +169,21 @@ protected:
             DEVICE_CATEGORY_CNT
         };
 
+        class IOProfile;
+
+        class HwModule {
+        public:
+                    HwModule(const char *name);
+                    ~HwModule();
+
+            void dump(int fd);
+
+            const char *const mName; // base name of the audio HW module (primary, a2dp ...)
+            audio_module_handle_t mHandle;
+            Vector <IOProfile *> mOutputProfiles; // output profiles exposed by this module
+            Vector <IOProfile *> mInputProfiles;  // input profiles exposed by this module
+        };
+
         // the IOProfile class describes the capabilities of an output or input stream.
         // It is currently assumed that all combination of listed parameters are supported.
         // It is used by the policy manager to determine if an output or input is suitable for
@@ -176,9 +191,15 @@ protected:
         // to/from it.
         class IOProfile
         {
-         public:
-            IOProfile(const char *module);
+        public:
+            IOProfile(HwModule *module);
             ~IOProfile();
+
+            bool isCompatibleProfile(audio_devices_t device,
+                                     uint32_t samplingRate,
+                                     uint32_t format,
+                                     uint32_t channelMask,
+                                     audio_policy_output_flags_t flags) const;
 
             void dump(int fd);
 
@@ -189,8 +210,7 @@ protected:
                                                // routed to)
             audio_policy_output_flags_t mFlags; // attribute flags (e.g primary output,
                                                 // direct output...). For outputs only.
-            char *mModuleName; // base name of the audio HW module exposing this I/O stream
-                               // (primary, a2dp ...)
+            HwModule *mModule;                     // audio HW module exposing this I/O stream
         };
 
         // default volume curve
@@ -225,10 +245,10 @@ protected:
 
             audio_io_handle_t mId;              // output handle
             uint32_t mSamplingRate;             //
-            uint32_t mFormat;                   //
-            uint32_t mChannels;                 // output configuration
+            audio_format_t mFormat;             //
+            audio_channel_mask_t mChannelMask;     // output configuration
             uint32_t mLatency;                  //
-            AudioSystem::output_flags mFlags;   //
+            audio_policy_output_flags_t mFlags;   //
             audio_devices_t mDevice;                   // current device this output is routed to
             uint32_t mRefCount[AudioSystem::NUM_STREAM_TYPES]; // number of streams of each type using this output
             nsecs_t mStopTime[AudioSystem::NUM_STREAM_TYPES];
@@ -251,9 +271,8 @@ protected:
             status_t    dump(int fd);
 
             uint32_t mSamplingRate;                     //
-            uint32_t mFormat;                           // input configuration
-            uint32_t mChannels;                         //
-            AudioSystem::audio_in_acoustics mAcoustics; //
+            audio_format_t mFormat;                     // input configuration
+            audio_channel_mask_t mChannelMask;             //
             audio_devices_t mDevice;                    // current device this input is routed to
             uint32_t mRefCount;                         // number of AudioRecord clients using this output
             int      mInputSource;                      // input source selected by application (mediarecorder.h)
@@ -395,12 +414,12 @@ protected:
         // true if current platform requires a specific output to be opened for this particular
         // set of parameters. This function is called by getOutput() and is implemented by platform
         // specific audio policy manager.
-        virtual bool needsDirectOuput(AudioSystem::stream_type stream,
-                                    uint32_t samplingRate,
-                                    uint32_t format,
-                                    uint32_t channels,
-                                    AudioSystem::output_flags flags,
-                                    uint32_t device);
+        virtual bool needsDirectOuput(audio_stream_type_t stream,
+                                      uint32_t samplingRate,
+                                      audio_format_t format,
+                                      audio_channel_mask_t channelMask,
+                                      audio_policy_output_flags_t flags,
+                                      audio_devices_t device);
 
         virtual uint32_t getMaxEffectsCpuLoad();
         virtual uint32_t getMaxEffectsMemory();
@@ -431,7 +450,11 @@ protected:
                                    uint32_t samplingRate,
                                    uint32_t format,
                                    uint32_t channelMask);
-
+        audio_module_handle_t getModuleForDirectoutput(audio_devices_t device,
+                                                       uint32_t samplingRate,
+                                                       uint32_t format,
+                                                       uint32_t channelMask,
+                                                       audio_policy_output_flags_t flags);
         //
         // Audio policy configuration file parsing (audio_policy.conf)
         //
@@ -444,8 +467,8 @@ protected:
         void loadFormats(char *name, IOProfile *profile);
         void loadOutChannels(char *name, IOProfile *profile);
         void loadInChannels(char *name, IOProfile *profile);
-        status_t loadOutput(cnode *root, const char *module);
-        status_t loadInput(cnode *root, const char *module);
+        status_t loadOutput(cnode *root,  HwModule *module);
+        status_t loadInput(cnode *root,  HwModule *module);
         void loadHwModule(cnode *root);
         void loadHwModules(cnode *root);
         void loadGlobalConfig(cnode *root);
@@ -481,6 +504,7 @@ protected:
         audio_devices_t mDefaultOutputDevice; // output device selected by default at boot time
                                               // (must be in mAttachedOutputDevices)
 
+        Vector <HwModule *> mHwModules;
         Vector <IOProfile *> mOutputProfiles; // output profiles loaded from audio_policy.conf
         Vector <IOProfile *> mInputProfiles;  // input profiles loaded from audio_policy.conf
 

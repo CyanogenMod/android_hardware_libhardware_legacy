@@ -170,6 +170,13 @@ public:
     virtual ~AudioPolicyClientInterface() {}
 
     //
+    // Audio HW module functions
+    //
+
+    // loads a HW module.
+    virtual audio_module_handle_t loadHwModule(const char *name) = 0;
+
+    //
     // Audio output Control functions
     //
 
@@ -177,12 +184,13 @@ public:
     // in case the audio policy manager has no specific requirements for the output being opened.
     // When the function returns, the parameter values reflect the actual values used by the audio hardware output stream.
     // The audio policy manager can check if the proposed parameters are suitable or not and act accordingly.
-    virtual audio_io_handle_t openOutput(uint32_t *pDevices,
-                                    uint32_t *pSamplingRate,
-                                    uint32_t *pFormat,
-                                    uint32_t *pChannels,
-                                    uint32_t *pLatencyMs,
-                                    AudioSystem::output_flags flags) = 0;
+    virtual audio_io_handle_t openOutput(audio_module_handle_t module,
+                                         audio_devices_t *pDevices,
+                                         uint32_t *pSamplingRate,
+                                         audio_format_t *pFormat,
+                                         audio_channel_mask_t *pChannelMask,
+                                         uint32_t *pLatencyMs,
+                                         audio_policy_output_flags_t flags) = 0;
     // creates a special output that is duplicated to the two outputs passed as arguments. The duplication is performed by
     // a special mixer thread in the AudioFlinger.
     virtual audio_io_handle_t openDuplicateOutput(audio_io_handle_t output1, audio_io_handle_t output2) = 0;
@@ -199,11 +207,11 @@ public:
     //
 
     // opens an audio input
-    virtual audio_io_handle_t openInput(uint32_t *pDevices,
-                                    uint32_t *pSamplingRate,
-                                    uint32_t *pFormat,
-                                    uint32_t *pChannels,
-                                    audio_in_acoustics_t acoustics) = 0;
+    virtual audio_io_handle_t openInput(audio_module_handle_t module,
+                                        audio_devices_t *pDevices,
+                                        uint32_t *pSamplingRate,
+                                        audio_format_t *pFormat,
+                                        audio_channel_mask_t *pChannelMask) = 0;
     // closes an audio input
     virtual status_t closeInput(audio_io_handle_t input) = 0;
     //
