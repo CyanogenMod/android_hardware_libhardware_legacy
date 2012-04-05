@@ -505,7 +505,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
                                         &outputDesc->mLatency,
                                         outputDesc->mFlags);
 
-        // only accept an output with the requeted parameters
+        // only accept an output with the requested parameters
         if (output == 0 ||
             (samplingRate != 0 && samplingRate != outputDesc->mSamplingRate) ||
             (format != 0 && format != outputDesc->mFormat) ||
@@ -522,10 +522,8 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         return output;
     }
 
-    if (channelMask != 0 && channelMask != AudioSystem::CHANNEL_OUT_MONO &&
-        channelMask != AudioSystem::CHANNEL_OUT_STEREO) {
-        return 0;
-    }
+    // ignoring channel mask due to downmix capability in mixer
+
     // open a non direct output
 
     // get which output is suitable for the specified stream. The actual routing change will happen
