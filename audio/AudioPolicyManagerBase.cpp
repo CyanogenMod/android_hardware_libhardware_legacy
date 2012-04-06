@@ -53,6 +53,10 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
             ALOGE("setDeviceConnectionState() invalid device: %x", device);
             return BAD_VALUE;
         }
+        if (!mHasUsb && audio_is_usb_device((audio_devices_t)device)) {
+            ALOGE("setDeviceConnectionState() invalid device: %x", device);
+            return BAD_VALUE;
+        }
 
         switch (state)
         {
@@ -83,6 +87,9 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
                 ALOGV("setDeviceConnectionState() BT SCO  device, address %s", device_address);
                 // keep track of SCO device address
                 mScoDeviceAddress = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
+            } else if (mHasUsb && audio_is_usb_device((audio_devices_t)device)) {
+                mUsbCardAndDevice = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
+                mpClientInterface->setParameters(output, mUsbCardAndDevice);
             }
             break;
         // handle output device disconnection
@@ -104,6 +111,8 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
                 mA2dpSuspended = false;
             } else if (AudioSystem::isBluetoothScoDevice(device)) {
                 mScoDeviceAddress = "";
+            } else if (mHasUsb && audio_is_usb_device((audio_devices_t)device)) {
+                mUsbCardAndDevice = "";
             }
             } break;
 
@@ -197,6 +206,11 @@ AudioSystem::device_connection_state AudioPolicyManagerBase::getDeviceConnection
             }
             if (AudioSystem::isBluetoothScoDevice(device) &&
                 address != "" && mScoDeviceAddress != address) {
+                return state;
+            }
+            if (audio_is_usb_device((audio_devices_t)device) &&
+                (!mHasUsb || (address != "" && mUsbCardAndDevice != address))) {
+                ALOGE("setDeviceConnectionState() invalid device: %x", device);
                 return state;
             }
             state = AudioSystem::DEVICE_STATE_AVAILABLE;
@@ -1095,6 +1109,8 @@ status_t AudioPolicyManagerBase::dump(int fd)
     result.append(buffer);
     snprintf(buffer, SIZE, " SCO device address: %s\n", mScoDeviceAddress.string());
     result.append(buffer);
+    snprintf(buffer, SIZE, " USB audio ALSA %s\n", mUsbCardAndDevice.string());
+    result.append(buffer);
     snprintf(buffer, SIZE, " Output devices: %08x\n", mAvailableOutputDevices);
     result.append(buffer);
     snprintf(buffer, SIZE, " Input devices: %08x\n", mAvailableInputDevices);
@@ -1177,7 +1193,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
     mPhoneState(AudioSystem::MODE_NORMAL),
     mLimitRingtoneVolume(false), mLastVoiceVolume(-1.0f),
     mTotalEffectsCpuLoad(0), mTotalEffectsMemory(0),
-    mA2dpSuspended(false), mHasA2dp(false)
+    mA2dpSuspended(false), mHasA2dp(false), mHasUsb(false)
 {
     mpClientInterface = clientInterface;
 
@@ -1189,6 +1205,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
 
     mA2dpDeviceAddress = String8("");
     mScoDeviceAddress = String8("");
+    mUsbCardAndDevice = String8("");
 
     if (loadAudioPolicyConfig(AUDIO_POLICY_CONFIG_FILE) != NO_ERROR) {
         ALOGE("could not load audio policy configuration file");
@@ -1911,6 +1928,10 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
                 device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES;
                 if (device) break;
             }
+            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_ACCESSORY;
+            if (device) break;
+            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
+            if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_DGTL_DOCK_HEADSET;
             if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_AUX_DIGITAL;
@@ -1932,6 +1953,10 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
                 device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER;
                 if (device) break;
             }
+            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_ACCESSORY;
+            if (device) break;
+            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
+            if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_DGTL_DOCK_HEADSET;
             if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_AUX_DIGITAL;
@@ -1984,6 +2009,12 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
             if (device2 == 0) {
                 device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER;
             }
+        }
+        if (device2 == 0) {
+            device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_ACCESSORY;
+        }
+        if (device2 == 0) {
+            device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
         }
         if (device2 == 0) {
             device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_DGTL_DOCK_HEADSET;
@@ -2244,6 +2275,8 @@ AudioPolicyManagerBase::device_category AudioPolicyManagerBase::getDeviceCategor
         case AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT:
         case AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER:
         case AUDIO_DEVICE_OUT_AUX_DIGITAL:
+        case AUDIO_DEVICE_OUT_USB_ACCESSORY:
+        case AUDIO_DEVICE_OUT_USB_DEVICE:
         default:
             return DEVICE_CATEGORY_SPEAKER;
     }
@@ -2379,7 +2412,9 @@ float AudioPolicyManagerBase::computeVolume(int stream,
     if (stream == AudioSystem::MUSIC &&
         index != mStreams[stream].mIndexMin &&
         (device == AUDIO_DEVICE_OUT_AUX_DIGITAL ||
-        device == AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET)) {
+         device == AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET ||
+         device == AUDIO_DEVICE_OUT_USB_ACCESSORY ||
+         device == AUDIO_DEVICE_OUT_USB_DEVICE)) {
         return 1.0;
     }
 
@@ -2863,12 +2898,16 @@ void AudioPolicyManagerBase::HwModule::dump(int fd)
     if (mOutputProfiles.size()) {
         write(fd, "  - outputs:\n", sizeof("  - outputs:\n"));
         for (size_t i = 0; i < mOutputProfiles.size(); i++) {
+            snprintf(buffer, SIZE, "    output %d:\n", i);
+            write(fd, buffer, strlen(buffer));
             mOutputProfiles[i]->dump(fd);
         }
     }
     if (mInputProfiles.size()) {
         write(fd, "  - inputs:\n", sizeof("  - inputs:\n"));
         for (size_t i = 0; i < mInputProfiles.size(); i++) {
+            snprintf(buffer, SIZE, "    input %d:\n", i);
+            write(fd, buffer, strlen(buffer));
             mInputProfiles[i]->dump(fd);
         }
     }
@@ -2993,6 +3032,10 @@ const struct StringToEnum sDeviceNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_DEVICE_OUT_ALL_A2DP),
     STRING_TO_ENUM(AUDIO_DEVICE_OUT_AUX_DIGITAL),
     STRING_TO_ENUM(AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET),
+    STRING_TO_ENUM(AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET),
+    STRING_TO_ENUM(AUDIO_DEVICE_OUT_USB_DEVICE),
+    STRING_TO_ENUM(AUDIO_DEVICE_OUT_USB_ACCESSORY),
+    STRING_TO_ENUM(AUDIO_DEVICE_OUT_ALL_USB),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_BUILTIN_MIC),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_WIRED_HEADSET),
@@ -3236,7 +3279,10 @@ void AudioPolicyManagerBase::loadHwModule(cnode *root)
     if (node != NULL) {
         if (strcmp(root->name, AUDIO_HARDWARE_MODULE_ID_A2DP) == 0) {
             mHasA2dp = true;
+        } else if (strcmp(root->name, AUDIO_HARDWARE_MODULE_ID_USB) == 0) {
+            mHasUsb = true;
         }
+
         node = node->first_child;
         while (node) {
             ALOGV("loadHwModule() loading output %s", node->name);

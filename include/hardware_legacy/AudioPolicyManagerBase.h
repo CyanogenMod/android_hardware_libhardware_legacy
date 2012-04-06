@@ -487,6 +487,8 @@ protected:
         StreamDescriptor mStreams[AudioSystem::NUM_STREAM_TYPES];           // stream descriptors for volume control
         String8 mA2dpDeviceAddress;                                         // A2DP device MAC address
         String8 mScoDeviceAddress;                                          // SCO device MAC address
+        String8 mUsbCardAndDevice; // USB audio ALSA card and device numbers:
+                                   // card=<card_number>;device=<><device_number>
         bool    mLimitRingtoneVolume;                                       // limit ringtone volume to music volume if headset connected
         audio_devices_t mDeviceForStrategy[NUM_STRATEGIES];
         float   mLastVoiceVolume;                                           // last voice volume value sent to audio HAL
@@ -500,6 +502,7 @@ protected:
         KeyedVector<int, EffectDescriptor *> mEffects;  // list of registered audio effects
         bool    mA2dpSuspended;  // true if A2DP output is suspended
         bool mHasA2dp; // true on platforms with support for bluetooth A2DP
+        bool mHasUsb; // true on platforms with support for USB audio
         audio_devices_t mAttachedOutputDevices; // output devices always available on the platform
         audio_devices_t mDefaultOutputDevice; // output device selected by default at boot time
                                               // (must be in mAttachedOutputDevices)
