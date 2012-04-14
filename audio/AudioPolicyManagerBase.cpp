@@ -621,23 +621,30 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
     if (outputDesc->mRefCount[stream] == 1) {
         audio_devices_t prevDevice = outputDesc->device();
         audio_devices_t newDevice = getNewDevice(output, false /*fromCache*/);
-
-        // force a device change if any other output is active, is managed by the same and hw
-        // module and has a current device selection that differs from newly selected device.
-        // In this case, the audio HAL must receive the new device selection so that it can
-        // change the device currently selected by the other active output.
+        routing_strategy strategy = getStrategy(stream);
+        bool shouldWait = (strategy == STRATEGY_SONIFICATION) ||
+                            (strategy == STRATEGY_SONIFICATION_RESPECTFUL);
+        uint32_t waitMs = 0;
         bool force = false;
         for (size_t i = 0; i < mOutputs.size(); i++) {
             AudioOutputDescriptor *desc = mOutputs.valueAt(i);
-            if (output != mOutputs.keyAt(i) &&
-                    desc->refCount() != 0 &&
-                    outputDesc->sharesHwModuleWith(desc) &&
+            if (desc != outputDesc) {
+                // force a device change if any other output is managed by the same hw
+                // module and has a current device selection that differs from selected device.
+                // In this case, the audio HAL must receive the new device selection so that it can
+                // change the device currently selected by the other active output.
+                if (outputDesc->sharesHwModuleWith(desc) &&
                     desc->device() != newDevice) {
-                force = true;
-                break;
+                    force = true;
+                }
+                // wait for audio on other active outputs to be presented when starting
+                // a notification so that audio focus effect can propagate.
+                if (shouldWait && (desc->refCount() != 0) && (waitMs < desc->latency())) {
+                    waitMs = desc->latency();
+                }
             }
         }
-        setOutputDevice(output, newDevice, force);
+        uint32_t muteWaitMs = setOutputDevice(output, newDevice, force);
 
         // handle special case for sonification while in call
         if (isInCall()) {
@@ -653,6 +660,9 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
         // update the outputs if starting an output with a stream that can affect notification
         // routing
         handleNotificationRoutingForStream(stream);
+        if (waitMs > muteWaitMs) {
+            usleep((waitMs - muteWaitMs) * 2 * 1000);
+        }
     }
     return NO_ERROR;
 }
@@ -2055,15 +2065,11 @@ void AudioPolicyManagerBase::updateDeviceForStrategy()
     }
 }
 
-void AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,
+uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,
                                                        uint32_t delayMs)
 {
-    // mute/unmute strategies using an incompatible device combination
-    // if muting, wait for the audio in pcm buffer to be drained before proceeding
-    // if unmuting, unmute only after the specified delay
-
     if (outputDesc->isDuplicated()) {
-        return;
+        return 0;
     }
 
     uint32_t muteWaitMs = 0;
@@ -2109,11 +2115,14 @@ void AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor *ou
     muteWaitMs *= 2;
     // wait for the PCM output buffers to empty before proceeding with the rest of the command
     if (muteWaitMs > delayMs) {
-        usleep((muteWaitMs - delayMs)*1000);
+        muteWaitMs -= delayMs;
+        usleep(muteWaitMs * 1000);
+        return muteWaitMs;
     }
+    return 0;
 }
 
-void AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
+uint32_t AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
                                              audio_devices_t device,
                                              bool force,
                                              int delayMs)
@@ -2121,11 +2130,12 @@ void AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
     ALOGV("setOutputDevice() output %d device %04x delayMs %d", output, device, delayMs);
     AudioOutputDescriptor *outputDesc = mOutputs.valueFor(output);
     AudioParameter param;
+    uint32_t muteWaitMs = 0;
 
     if (outputDesc->isDuplicated()) {
-        setOutputDevice(outputDesc->mOutput1->mId, device, force, delayMs);
-        setOutputDevice(outputDesc->mOutput2->mId, device, force, delayMs);
-        return;
+        muteWaitMs = setOutputDevice(outputDesc->mOutput1->mId, device, force, delayMs);
+        muteWaitMs += setOutputDevice(outputDesc->mOutput2->mId, device, force, delayMs);
+        return muteWaitMs;
     }
     // filter devices according to output selected
     device = (audio_devices_t)(device & outputDesc->mProfile->mSupportedDevices);
@@ -2137,7 +2147,7 @@ void AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
     if (device != 0) {
         outputDesc->mDevice = device;
     }
-    checkDeviceMuteStrategies(outputDesc, delayMs);
+    muteWaitMs = checkDeviceMuteStrategies(outputDesc, delayMs);
 
     // Do not change the routing if:
     //  - the requested device is 0
@@ -2145,7 +2155,7 @@ void AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
     // Doing this check here allows the caller to call setOutputDevice() without conditions
     if ((device == 0 || device == prevDevice) && !force) {
         ALOGV("setOutputDevice() setting same device %04x or null device for output %d", device, output);
-        return;
+        return muteWaitMs;
     }
 
     ALOGV("setOutputDevice() changing device");
@@ -2155,6 +2165,8 @@ void AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
 
     // update stream volumes according to new device
     applyStreamVolumes(output, device, delayMs);
+
+    return muteWaitMs;
 }
 
 AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getInputProfile(audio_devices_t device,
@@ -3047,6 +3059,8 @@ const struct StringToEnum sDeviceNameToEnumTable[] = {
 const struct StringToEnum sFlagNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_DIRECT),
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_PRIMARY),
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_FAST),
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_DEEP_BUFFER),
 };
 
 const struct StringToEnum sFormatNameToEnumTable[] = {

@@ -329,8 +329,9 @@ protected:
         virtual audio_devices_t getDeviceForStrategy(routing_strategy strategy,
                                                      bool fromCache);
 
-        // change the route of the specified output
-        void setOutputDevice(audio_io_handle_t output,
+        // change the route of the specified output. Returns the number of ms we have slept to
+        // allow new routing to take effect in certain cases.
+        uint32_t setOutputDevice(audio_io_handle_t output,
                              audio_devices_t device,
                              bool force = false,
                              int delayMs = 0);
@@ -441,7 +442,11 @@ protected:
         bool vectorsEqual(SortedVector<audio_io_handle_t>& outputs1,
                                            SortedVector<audio_io_handle_t>& outputs2);
 
-        void checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,
+        // mute/unmute strategies using an incompatible device combination
+        // if muting, wait for the audio in pcm buffer to be drained before proceeding
+        // if unmuting, unmute only after the specified delay
+        // Returns the number of ms waited
+        uint32_t  checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,
                                        uint32_t delayMs);
 
         audio_io_handle_t selectOutput(const SortedVector<audio_io_handle_t>& outputs,
