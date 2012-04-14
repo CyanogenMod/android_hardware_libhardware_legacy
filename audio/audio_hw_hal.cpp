@@ -398,18 +398,18 @@ static char * adev_get_parameters(const struct audio_hw_device *dev,
 }
 
 static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
-                                         uint32_t sample_rate, audio_format_t format,
-                                         int channel_count)
+                                         const struct audio_config *config)
 {
     const struct legacy_audio_device *ladev = to_cladev(dev);
-    return ladev->hwif->getInputBufferSize(sample_rate, (int) format, channel_count);
+    return ladev->hwif->getInputBufferSize(config->sample_rate, (int) config->format,
+                                           popcount(config->channel_mask));
 }
 
 static int adev_open_output_stream(struct audio_hw_device *dev,
-                                   uint32_t devices,
-                                   audio_format_t *format,
-                                   uint32_t *channels,
-                                   uint32_t *sample_rate,
+                                   audio_io_handle_t handle,
+                                   audio_devices_t devices,
+                                   audio_output_flags_t flags,
+                                   struct audio_config *config,
                                    struct audio_stream_out **stream_out)
 {
     struct legacy_audio_device *ladev = to_ladev(dev);
@@ -421,8 +421,9 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     if (!out)
         return -ENOMEM;
 
-    out->legacy_out = ladev->hwif->openOutputStream(devices, (int *) format, channels,
-                                                    sample_rate, &status);
+    out->legacy_out = ladev->hwif->openOutputStream(devices, (int *) &config->format,
+                                                    &config->channel_mask,
+                                                    &config->sample_rate, &status);
     if (!out->legacy_out) {
         ret = status;
         goto err_open;
@@ -467,9 +468,9 @@ static void adev_close_output_stream(struct audio_hw_device *dev,
 
 /** This method creates and opens the audio hardware input stream */
 static int adev_open_input_stream(struct audio_hw_device *dev,
-                                  uint32_t devices, audio_format_t *format,
-                                  uint32_t *channels, uint32_t *sample_rate,
-                                  audio_in_acoustics_t acoustics,
+                                  audio_io_handle_t handle,
+                                  audio_devices_t devices,
+                                  struct audio_config *config,
                                   struct audio_stream_in **stream_in)
 {
     struct legacy_audio_device *ladev = to_ladev(dev);
@@ -481,9 +482,9 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
     if (!in)
         return -ENOMEM;
 
-    in->legacy_in = ladev->hwif->openInputStream(devices, (int *) format, channels,
-                                    sample_rate, &status,
-                                    (AudioSystem::audio_in_acoustics)acoustics);
+    in->legacy_in = ladev->hwif->openInputStream(devices, (int *) &config->format,
+                                                 &config->channel_mask, &config->sample_rate,
+                                                 &status, (AudioSystem::audio_in_acoustics)0);
     if (!in->legacy_in) {
         ret = status;
         goto err_open;
@@ -563,7 +564,7 @@ static int legacy_adev_open(const hw_module_t* module, const char* name,
         return -ENOMEM;
 
     ladev->device.common.tag = HARDWARE_DEVICE_TAG;
-    ladev->device.common.version = 0;
+    ladev->device.common.version = AUDIO_DEVICE_API_VERSION_1_0;
     ladev->device.common.module = const_cast<hw_module_t*>(module);
     ladev->device.common.close = legacy_adev_close;
 
@@ -607,8 +608,8 @@ struct legacy_audio_module HAL_MODULE_INFO_SYM = {
     module: {
         common: {
             tag: HARDWARE_MODULE_TAG,
-            version_major: 1,
-            version_minor: 0,
+            module_api_version: AUDIO_MODULE_API_VERSION_0_1,
+            hal_api_version: HARDWARE_HAL_API_VERSION,
             id: AUDIO_HARDWARE_MODULE_ID,
             name: "LEGACY Audio HW HAL",
             author: "The Android Open Source Project",
