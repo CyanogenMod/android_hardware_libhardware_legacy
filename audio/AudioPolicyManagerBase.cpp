@@ -423,7 +423,7 @@ audio_module_handle_t AudioPolicyManagerBase::getModuleForDirectoutput(audio_dev
                                                                uint32_t samplingRate,
                                                                uint32_t format,
                                                                uint32_t channelMask,
-                                                               audio_policy_output_flags_t flags)
+                                                               audio_output_flags_t flags)
 {
     for (size_t i = 0; i < mHwModules.size(); i++) {
         if (mHwModules[i]->mHandle == 0) {
@@ -465,7 +465,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
             outputDesc->mFormat = mTestFormat;
             outputDesc->mChannelMask = mTestChannels;
             outputDesc->mLatency = mTestLatencyMs;
-            outputDesc->mFlags = (audio_policy_output_flags_t)(mDirectOutput ? AudioSystem::OUTPUT_FLAG_DIRECT : 0);
+            outputDesc->mFlags = (audio_output_flags_t)(mDirectOutput ? AudioSystem::OUTPUT_FLAG_DIRECT : 0);
             outputDesc->mRefCount[stream] = 0;
             mTestOutputs[mCurOutput] = mpClientInterface->openOutput(0, &outputDesc->mDevice,
                                             &outputDesc->mSamplingRate,
@@ -489,7 +489,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
                          samplingRate,
                          (audio_format_t)format,
                          (audio_channel_mask_t)channelMask,
-                         (audio_policy_output_flags_t)flags,
+                         (audio_output_flags_t)flags,
                          device)) {
 
         ALOGV("getOutput() opening direct output device %x", device);
@@ -498,7 +498,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
                                                                 samplingRate,
                                                                 format,
                                                                 channelMask,
-                                                                (audio_policy_output_flags_t)flags);
+                                                                (audio_output_flags_t)flags);
         if (module == 0) {
             return 0;
         }
@@ -508,7 +508,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         outputDesc->mFormat = (audio_format_t)format;
         outputDesc->mChannelMask = (audio_channel_mask_t)channelMask;
         outputDesc->mLatency = 0;
-        outputDesc->mFlags = (audio_policy_output_flags_t)(flags | AudioSystem::OUTPUT_FLAG_DIRECT);
+        outputDesc->mFlags = (audio_output_flags_t)(flags | AudioSystem::OUTPUT_FLAG_DIRECT);
         outputDesc->mRefCount[stream] = 0;
         outputDesc->mStopTime[stream] = 0;
         output = mpClientInterface->openOutput(module,
@@ -584,7 +584,7 @@ audio_io_handle_t AudioPolicyManagerBase::selectOutput(const SortedVector<audio_
                 maxCommonFlags = commonFlags;
                 ALOGV("selectOutput() commonFlags for output %d, %04x", outputs[i], commonFlags);
             }
-            if (outputDesc->mProfile->mFlags & AUDIO_POLICY_OUTPUT_FLAG_PRIMARY) {
+            if (outputDesc->mProfile->mFlags & AUDIO_OUTPUT_FLAG_PRIMARY) {
                 outputPrimary = outputs[i];
             }
         }
@@ -1246,7 +1246,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
                     mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices |
                                             (outProfile->mSupportedDevices & mAttachedOutputDevices));
                     if (mPrimaryOutput == 0 &&
-                            outProfile->mFlags & AUDIO_POLICY_OUTPUT_FLAG_PRIMARY) {
+                            outProfile->mFlags & AUDIO_OUTPUT_FLAG_PRIMARY) {
                         mPrimaryOutput = output;
                     }
                     addOutput(output, outputDesc);
@@ -2174,7 +2174,7 @@ AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getInputProfile(audio
         {
             IOProfile *profile = mHwModules[i]->mInputProfiles[j];
             if (profile->isCompatibleProfile(device, samplingRate, format,
-                                             channelMask,(audio_policy_output_flags_t)0)) {
+                                             channelMask,(audio_output_flags_t)0)) {
                 return profile;
             }
         }
@@ -2636,7 +2636,7 @@ bool AudioPolicyManagerBase::needsDirectOuput(audio_stream_type_t stream,
                                               uint32_t samplingRate,
                                               audio_format_t format,
                                               audio_channel_mask_t channelMask,
-                                              audio_policy_output_flags_t flags,
+                                              audio_output_flags_t flags,
                                               audio_devices_t device)
 {
    return ((flags & AudioSystem::OUTPUT_FLAG_DIRECT) ||
@@ -2659,7 +2659,7 @@ AudioPolicyManagerBase::AudioOutputDescriptor::AudioOutputDescriptor(
         const IOProfile *profile)
     : mId(0), mSamplingRate(0), mFormat((audio_format_t)0),
       mChannelMask((audio_channel_mask_t)0), mLatency(0),
-    mFlags((audio_policy_output_flags_t)0), mDevice((audio_devices_t)0),
+    mFlags((audio_output_flags_t)0), mDevice((audio_devices_t)0),
     mOutput1(0), mOutput2(0), mProfile(profile)
 {
     // clear usage count for all stream types
@@ -2914,7 +2914,7 @@ void AudioPolicyManagerBase::HwModule::dump(int fd)
 }
 
 AudioPolicyManagerBase::IOProfile::IOProfile(HwModule *module)
-    : mFlags((audio_policy_output_flags_t)0), mModule(module)
+    : mFlags((audio_output_flags_t)0), mModule(module)
 {
 }
 
@@ -2928,7 +2928,7 @@ bool AudioPolicyManagerBase::IOProfile::isCompatibleProfile(audio_devices_t devi
                                                             uint32_t samplingRate,
                                                             uint32_t format,
                                                             uint32_t channelMask,
-                                                            audio_policy_output_flags_t flags) const
+                                                            audio_output_flags_t flags) const
 {
     if ((mSupportedDevices & device) != device) {
         return false;
@@ -3045,8 +3045,8 @@ const struct StringToEnum sDeviceNameToEnumTable[] = {
 };
 
 const struct StringToEnum sFlagNameToEnumTable[] = {
-    STRING_TO_ENUM(AUDIO_POLICY_OUTPUT_FLAG_DIRECT),
-    STRING_TO_ENUM(AUDIO_POLICY_OUTPUT_FLAG_PRIMARY),
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_DIRECT),
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_PRIMARY),
 };
 
 const struct StringToEnum sFormatNameToEnumTable[] = {
@@ -3083,7 +3083,7 @@ uint32_t AudioPolicyManagerBase::stringToEnum(const struct StringToEnum *table,
     return 0;
 }
 
-audio_policy_output_flags_t AudioPolicyManagerBase::parseFlagNames(char *name)
+audio_output_flags_t AudioPolicyManagerBase::parseFlagNames(char *name)
 {
     uint32_t flag = 0;
 
@@ -3098,7 +3098,7 @@ audio_policy_output_flags_t AudioPolicyManagerBase::parseFlagNames(char *name)
         }
         flagName = strtok(NULL, "|");
     }
-    return (audio_policy_output_flags_t)flag;
+    return (audio_output_flags_t)flag;
 }
 
 audio_devices_t AudioPolicyManagerBase::parseDeviceNames(char *name)

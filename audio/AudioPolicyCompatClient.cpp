@@ -41,7 +41,7 @@ audio_io_handle_t AudioPolicyCompatClient::openOutput(audio_module_handle_t modu
                                                       audio_format_t *pFormat,
                                                       audio_channel_mask_t *pChannelMask,
                                                       uint32_t *pLatencyMs,
-                                                      audio_policy_output_flags_t flags)
+                                                      audio_output_flags_t flags)
 {
     return mServiceOps->open_output_on_module(mService, module, pDevices, pSamplingRate,
                                               pFormat, pChannelMask, pLatencyMs,

@@ -199,7 +199,7 @@ protected:
                                      uint32_t samplingRate,
                                      uint32_t format,
                                      uint32_t channelMask,
-                                     audio_policy_output_flags_t flags) const;
+                                     audio_output_flags_t flags) const;
 
             void dump(int fd);
 
@@ -208,7 +208,7 @@ protected:
             Vector <audio_format_t> mFormats; // supported audio formats
             audio_devices_t mSupportedDevices; // supported devices (devices this output can be
                                                // routed to)
-            audio_policy_output_flags_t mFlags; // attribute flags (e.g primary output,
+            audio_output_flags_t mFlags; // attribute flags (e.g primary output,
                                                 // direct output...). For outputs only.
             HwModule *mModule;                     // audio HW module exposing this I/O stream
         };
@@ -248,7 +248,7 @@ protected:
             audio_format_t mFormat;             //
             audio_channel_mask_t mChannelMask;     // output configuration
             uint32_t mLatency;                  //
-            audio_policy_output_flags_t mFlags;   //
+            audio_output_flags_t mFlags;   //
             audio_devices_t mDevice;                   // current device this output is routed to
             uint32_t mRefCount[AudioSystem::NUM_STREAM_TYPES]; // number of streams of each type using this output
             nsecs_t mStopTime[AudioSystem::NUM_STREAM_TYPES];
@@ -418,7 +418,7 @@ protected:
                                       uint32_t samplingRate,
                                       audio_format_t format,
                                       audio_channel_mask_t channelMask,
-                                      audio_policy_output_flags_t flags,
+                                      audio_output_flags_t flags,
                                       audio_devices_t device);
 
         virtual uint32_t getMaxEffectsCpuLoad();
@@ -454,14 +454,14 @@ protected:
                                                        uint32_t samplingRate,
                                                        uint32_t format,
                                                        uint32_t channelMask,
-                                                       audio_policy_output_flags_t flags);
+                                                       audio_output_flags_t flags);
         //
         // Audio policy configuration file parsing (audio_policy.conf)
         //
         static uint32_t stringToEnum(const struct StringToEnum *table,
                                      size_t size,
                                      const char *name);
-        static audio_policy_output_flags_t parseFlagNames(char *name);
+        static audio_output_flags_t parseFlagNames(char *name);
         static audio_devices_t parseDeviceNames(char *name);
         void loadSamplingRates(char *name, IOProfile *profile);
         void loadFormats(char *name, IOProfile *profile);
