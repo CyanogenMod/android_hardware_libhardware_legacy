@@ -2066,8 +2066,12 @@ void AudioPolicyManagerBase::updateDeviceForStrategy()
 }
 
 uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,
+                                                       audio_devices_t prevDevice,
                                                        uint32_t delayMs)
 {
+    // mute/unmute strategies using an incompatible device combination
+    // if muting, wait for the audio in pcm buffer to be drained before proceeding
+    // if unmuting, unmute only after the specified delay
     if (outputDesc->isDuplicated()) {
         return 0;
     }
@@ -2076,6 +2080,9 @@ uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor
     audio_devices_t device = outputDesc->device();
     bool shouldMute = (outputDesc->refCount() != 0) &&
                     (AudioSystem::popCount(device) >= 2);
+    // temporary mute output if device selection changes to avoid volume bursts due to
+    // different per device volumes
+    bool tempMute = (outputDesc->refCount() != 0) && (device != prevDevice);
 
     for (size_t i = 0; i < NUM_STRATEGIES; i++) {
         audio_devices_t curDevice = getDeviceForStrategy((routing_strategy)i, false /*fromCache*/);
@@ -2089,7 +2096,7 @@ uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor
             doMute = true;
             outputDesc->mStrategyMutedByDevice[i] = false;
         }
-        if (doMute) {
+        if (doMute || tempMute) {
             for (size_t j = 0; j < mOutputs.size(); j++) {
                 AudioOutputDescriptor *desc = mOutputs.valueAt(j);
                 if ((desc->supportedDevices() & outputDesc->supportedDevices()) == 0) {
@@ -2099,9 +2106,15 @@ uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor
                 ALOGV("checkDeviceMuteStrategies() %s strategy %d (curDevice %04x) on output %d",
                       mute ? "muting" : "unmuting", i, curDevice, curOutput);
                 setStrategyMute((routing_strategy)i, mute, curOutput, mute ? 0 : delayMs);
-                if (mute && (desc->strategyRefCount((routing_strategy)i) != 0)) {
-                    if (muteWaitMs < desc->latency()) {
-                        muteWaitMs = desc->latency();
+                if (desc->strategyRefCount((routing_strategy)i) != 0) {
+                    if (tempMute) {
+                        setStrategyMute((routing_strategy)i, true, curOutput, 0);
+                        setStrategyMute((routing_strategy)i, false, curOutput, desc->latency() * 2);
+                    }
+                    if (tempMute || mute) {
+                        if (muteWaitMs < desc->latency()) {
+                            muteWaitMs = desc->latency();
+                        }
                     }
                 }
             }
@@ -2147,7 +2160,7 @@ uint32_t AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
     if (device != 0) {
         outputDesc->mDevice = device;
     }
-    muteWaitMs = checkDeviceMuteStrategies(outputDesc, delayMs);
+    muteWaitMs = checkDeviceMuteStrategies(outputDesc, prevDevice, delayMs);
 
     // Do not change the routing if:
     //  - the requested device is 0

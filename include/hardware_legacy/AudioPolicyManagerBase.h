@@ -447,7 +447,8 @@ protected:
         // if unmuting, unmute only after the specified delay
         // Returns the number of ms waited
         uint32_t  checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,
-                                       uint32_t delayMs);
+                                            audio_devices_t prevDevice,
+                                            uint32_t delayMs);
 
         audio_io_handle_t selectOutput(const SortedVector<audio_io_handle_t>& outputs,
                                        AudioSystem::output_flags flags);
