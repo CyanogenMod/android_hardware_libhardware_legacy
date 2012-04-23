@@ -26,6 +26,7 @@
 #define AUDIO_HARDWARE_MODULE_ID_MAX_LEN 32
 
 #define AUDIO_POLICY_CONFIG_FILE "/system/etc/audio_policy.conf"
+#define AUDIO_POLICY_VENDOR_CONFIG_FILE "/vendor/etc/audio_policy.conf"
 
 // global configuration
 #define GLOBAL_CONFIG_TAG "global_configuration"

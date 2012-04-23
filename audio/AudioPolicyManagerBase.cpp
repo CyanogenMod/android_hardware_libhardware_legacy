@@ -1217,8 +1217,10 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
     mScoDeviceAddress = String8("");
     mUsbCardAndDevice = String8("");
 
-    if (loadAudioPolicyConfig(AUDIO_POLICY_CONFIG_FILE) != NO_ERROR) {
-        ALOGE("could not load audio policy configuration file");
+    if (loadAudioPolicyConfig(AUDIO_POLICY_VENDOR_CONFIG_FILE) != NO_ERROR) {
+        if (loadAudioPolicyConfig(AUDIO_POLICY_CONFIG_FILE) != NO_ERROR) {
+            ALOGE("could not load audio policy configuration file");
+        }
     }
 
     // open all output streams needed to access attached devices
@@ -3398,6 +3400,8 @@ status_t AudioPolicyManagerBase::loadAudioPolicyConfig(const char *path)
     config_free(root);
     free(root);
     free(data);
+
+    ALOGI("loadAudioPolicyConfig() loaded %s\n", path);
 
     return NO_ERROR;
 }
