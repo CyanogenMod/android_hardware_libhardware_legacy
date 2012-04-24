@@ -1219,7 +1219,8 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
 
     if (loadAudioPolicyConfig(AUDIO_POLICY_VENDOR_CONFIG_FILE) != NO_ERROR) {
         if (loadAudioPolicyConfig(AUDIO_POLICY_CONFIG_FILE) != NO_ERROR) {
-            ALOGE("could not load audio policy configuration file");
+            ALOGE("could not load audio policy configuration file, setting defaults");
+            defaultAudioPolicyConfig();
         }
     }
 
@@ -3406,5 +3407,33 @@ status_t AudioPolicyManagerBase::loadAudioPolicyConfig(const char *path)
     return NO_ERROR;
 }
 
+void AudioPolicyManagerBase::defaultAudioPolicyConfig(void)
+{
+    HwModule *module;
+    IOProfile *profile;
+
+    mDefaultOutputDevice = AUDIO_DEVICE_OUT_SPEAKER;
+    mAttachedOutputDevices = AUDIO_DEVICE_OUT_SPEAKER;
+    mAvailableInputDevices = AUDIO_DEVICE_IN_BUILTIN_MIC;
+
+    module = new HwModule("primary");
+
+    profile = new IOProfile(module);
+    profile->mSamplingRates.add(44100);
+    profile->mFormats.add(AUDIO_FORMAT_PCM_16_BIT);
+    profile->mChannelMasks.add(AUDIO_CHANNEL_OUT_STEREO);
+    profile->mSupportedDevices = AUDIO_DEVICE_OUT_SPEAKER;
+    profile->mFlags = AUDIO_OUTPUT_FLAG_PRIMARY;
+    module->mOutputProfiles.add(profile);
+
+    profile = new IOProfile(module);
+    profile->mSamplingRates.add(8000);
+    profile->mFormats.add(AUDIO_FORMAT_PCM_16_BIT);
+    profile->mChannelMasks.add(AUDIO_CHANNEL_IN_MONO);
+    profile->mSupportedDevices = AUDIO_DEVICE_IN_BUILTIN_MIC;
+    module->mInputProfiles.add(profile);
+
+    mHwModules.add(module);
+}
 
 }; // namespace android

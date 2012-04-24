@@ -479,6 +479,7 @@ protected:
         void loadHwModules(cnode *root);
         void loadGlobalConfig(cnode *root);
         status_t loadAudioPolicyConfig(const char *path);
+        void defaultAudioPolicyConfig(void);
 
 
         AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
