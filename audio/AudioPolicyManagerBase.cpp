@@ -1998,11 +1998,16 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
 
     case STRATEGY_ENFORCED_AUDIBLE:
         // strategy STRATEGY_ENFORCED_AUDIBLE uses same routing policy as STRATEGY_SONIFICATION
-        // except when in call where it doesn't default to STRATEGY_PHONE behavior
+        // except:
+        //   - when in call where it doesn't default to STRATEGY_PHONE behavior
+        //   - in countries where not enforced in which case it follows STRATEGY_MEDIA
 
-        device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
-        if (device == 0) {
-            ALOGE("getDeviceForStrategy() speaker device not found for STRATEGY_SONIFICATION");
+        if (strategy == STRATEGY_SONIFICATION ||
+                !mStreams[AUDIO_STREAM_ENFORCED_AUDIBLE].mCanBeMuted) {
+            device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
+            if (device == 0) {
+                ALOGE("getDeviceForStrategy() speaker device not found for STRATEGY_SONIFICATION");
+            }
         }
         // The second device used for sonification is the same as the device used by media strategy
         // FALL THROUGH
@@ -2377,48 +2382,80 @@ const AudioPolicyManagerBase::VolumeCurvePoint
     {1, -29.7f}, {33, -20.1f}, {66, -10.2f}, {100, 0.0f}
 };
 
+// AUDIO_STREAM_SYSTEM, AUDIO_STREAM_ENFORCED_AUDIBLE and AUDIO_STREAM_DTMF volume tracks
+// AUDIO_STREAM_RING on phones and AUDIO_STREAM_MUSIC on tablets (See AudioService.java).
+// The range is constrained between -24dB and -6dB over speaker and -24dB and -12dB over headset.
+const AudioPolicyManagerBase::VolumeCurvePoint
+    AudioPolicyManagerBase::sDefaultSystemVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {1, -24.0f}, {33, -18.0f}, {66, -12.0f}, {100, -6.0f}
+};
 
 const AudioPolicyManagerBase::VolumeCurvePoint
-            *AudioPolicyManagerBase::sVolumeProfiles[AudioPolicyManagerBase::NUM_STRATEGIES]
+    AudioPolicyManagerBase::sHeadsetSystemVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {1, -24.0f}, {33, -18.0f}, {66, -15.0f}, {100, -12.0f}
+};
+
+const AudioPolicyManagerBase::VolumeCurvePoint
+            *AudioPolicyManagerBase::sVolumeProfiles[AUDIO_STREAM_CNT]
                                                    [AudioPolicyManagerBase::DEVICE_CATEGORY_CNT] = {
-    { // STRATEGY_MEDIA
+    { // AUDIO_STREAM_VOICE_CALL
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // AUDIO_STREAM_SYSTEM
+        sHeadsetSystemVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sDefaultSystemVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultSystemVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // AUDIO_STREAM_RING
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // AUDIO_STREAM_MUSIC
         sDefaultMediaVolumeCurve, // DEVICE_CATEGORY_HEADSET
         sSpeakerMediaVolumeCurve, // DEVICE_CATEGORY_SPEAKER
         sDefaultMediaVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
-    { // STRATEGY_PHONE
+    { // AUDIO_STREAM_ALARM
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // AUDIO_STREAM_NOTIFICATION
+        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // AUDIO_STREAM_BLUETOOTH_SCO
         sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
         sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
         sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
-    { // STRATEGY_SONIFICATION
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
-        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
-        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    { // AUDIO_STREAM_ENFORCED_AUDIBLE
+        sHeadsetSystemVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sDefaultSystemVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultSystemVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
-    { // STRATEGY_SONIFICATION_RESPECTFUL uses same volumes as SONIFICATION
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
-        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
-        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    {  // AUDIO_STREAM_DTMF
+        sHeadsetSystemVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sDefaultSystemVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultSystemVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
-    {  // STRATEGY_DTMF
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
-        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
-    },
-    { // STRATEGY_ENFORCED_AUDIBLE
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
-        sSpeakerSonificationVolumeCurve, // DEVICE_CATEGORY_SPEAKER
-        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    { // AUDIO_STREAM_TTS
+        sDefaultMediaVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerMediaVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultMediaVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
 };
 
 void AudioPolicyManagerBase::initializeVolumeCurves()
 {
-    for (int i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
+    for (int i = 0; i < AUDIO_STREAM_CNT; i++) {
         for (int j = 0; j < DEVICE_CATEGORY_CNT; j++) {
             mStreams[i].mVolumeCurve[j] =
-                    sVolumeProfiles[getStrategy((AudioSystem::stream_type)i)][j];
+                    sVolumeProfiles[i][j];
         }
     }
 }
