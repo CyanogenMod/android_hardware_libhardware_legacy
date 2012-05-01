@@ -203,6 +203,9 @@ protected:
 
             void dump(int fd);
 
+            // by convention, "0' in the first entry in mSamplingRates, mChannelMasks or mFormats
+            // indicates the supported parameters should be read from the output stream
+            // after it is opened for the first time
             Vector <uint32_t> mSamplingRates; // supported sampling rates
             Vector <audio_channel_mask_t> mChannelMasks; // supported channel masks
             Vector <audio_format_t> mFormats; // supported audio formats
@@ -387,8 +390,9 @@ protected:
         // when a device is disconnected, checks if an output is not used any more and
         // returns its handle if any.
         // transfers the audio tracks and effects from one output thread to another accordingly.
-        audio_io_handle_t checkOutputForDevice(audio_devices_t device,
-                                               AudioSystem::device_connection_state state);
+        status_t checkOutputsForDevice(audio_devices_t device,
+                                       AudioSystem::device_connection_state state,
+                                       SortedVector<audio_io_handle_t>& outputs);
 
         // close an output and its companion duplicating output.
         void closeOutput(audio_io_handle_t output);
@@ -466,7 +470,7 @@ protected:
                                    uint32_t samplingRate,
                                    uint32_t format,
                                    uint32_t channelMask);
-        audio_module_handle_t getModuleForDirectoutput(audio_devices_t device,
+        IOProfile *getProfileForDirectOutput(audio_devices_t device,
                                                        uint32_t samplingRate,
                                                        uint32_t format,
                                                        uint32_t channelMask,
