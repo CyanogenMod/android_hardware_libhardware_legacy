@@ -44,6 +44,28 @@ int is_wifi_driver_loaded();
 
 
 /**
+ * Load the Wi-Fi HotSpot driver.
+ *
+ * @return 0 on success, < 0 on failure.
+ */
+int wifi_load_hotspot_driver();
+
+/**
+ * Unload the Wi-Fi HotSpot driver.
+ *
+ * @return 0 on success, < 0 on failure.
+ */
+int wifi_unload_hotspot_driver();
+
+/**
+ * Check if the Wi-Fi Hotspot driver is loaded.
+ *
+ * @return 0 on success, < 0 on failure.
+ */
+int is_wifi_hotspot_driver_loaded();
+
+
+/**
  * Start supplicant.
  *
  * @return 0 on success, < 0 on failure.
