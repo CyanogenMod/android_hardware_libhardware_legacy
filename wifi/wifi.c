@@ -944,6 +944,14 @@ int wifi_change_fw_path(const char *fwpath)
 
     if (!fwpath)
         return ret;
+
+    if (!is_wifi_driver_loaded()) {
+        LOGD("Loading wifi driver so that we may set the fw path");
+        if (wifi_load_driver() != 0) {
+            LOGE("Could not load wifi driver!");
+        }
+    }
+
     fd = open(WIFI_DRIVER_FW_PATH_PARAM, O_WRONLY);
     if (fd < 0) {
         LOGE("Failed to open wlan fw path param (%s)", strerror(errno));
