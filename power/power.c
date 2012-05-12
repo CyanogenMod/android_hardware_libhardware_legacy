@@ -46,8 +46,6 @@ const char * const NEW_PATHS[] = {
     "/sys/power/wake_unlock",
 };
 
-const char * const AUTO_OFF_TIMEOUT_DEV = "/sys/android_power/auto_off_timeout";
-
 //XXX static pthread_once_t g_initialized = THREAD_ONCE_INIT;
 static int g_initialized = 0;
 static int g_fds[OUR_FD_COUNT];
@@ -124,23 +122,4 @@ release_wake_lock(const char* id)
 
     ssize_t len = write(g_fds[RELEASE_WAKE_LOCK], id, strlen(id));
     return len >= 0;
-}
-
-int
-set_last_user_activity_timeout(int64_t delay)
-{
-//    ALOGI("set_last_user_activity_timeout delay=%d\n", ((int)(delay)));
-
-    int fd = open(AUTO_OFF_TIMEOUT_DEV, O_RDWR);
-    if (fd >= 0) {
-        char buf[32];
-        ssize_t len;
-        len = snprintf(buf, sizeof(buf), "%d", ((int)(delay)));
-        buf[sizeof(buf) - 1] = '\0';
-        len = write(fd, buf, len);
-        close(fd);
-        return 0;
-    } else {
-        return errno;
-    }
 }
