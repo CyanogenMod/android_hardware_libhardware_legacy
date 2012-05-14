@@ -471,6 +471,9 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
 
         LOGV("getOutput() opening direct output device %x", device);
         AudioOutputDescriptor *outputDesc = new AudioOutputDescriptor();
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+        device = AudioSystem::DEVICE_OUT_DIRECTOUTPUT;
+#endif
         outputDesc->mDevice = device;
         outputDesc->mSamplingRate = samplingRate;
         outputDesc->mFormat = format;
@@ -688,13 +691,25 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
     // adapt channel selection to input source
     switch(inputSource) {
     case AUDIO_SOURCE_VOICE_UPLINK:
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+        channels |= AudioSystem::CHANNEL_IN_VOICE_UPLINK;
+#else
         channels = AudioSystem::CHANNEL_IN_VOICE_UPLINK;
+#endif
         break;
     case AUDIO_SOURCE_VOICE_DOWNLINK:
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+        channels |= AudioSystem::CHANNEL_IN_VOICE_DNLINK;
+#else
         channels = AudioSystem::CHANNEL_IN_VOICE_DNLINK;
+#endif
         break;
     case AUDIO_SOURCE_VOICE_CALL:
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+        channels |= (AudioSystem::CHANNEL_IN_VOICE_UPLINK | AudioSystem::CHANNEL_IN_VOICE_DNLINK);
+#else
         channels = (AudioSystem::CHANNEL_IN_VOICE_UPLINK | AudioSystem::CHANNEL_IN_VOICE_DNLINK);
+#endif
         break;
     default:
         break;
@@ -2284,8 +2299,16 @@ bool AudioPolicyManagerBase::needsDirectOuput(AudioSystem::stream_type stream,
                                     AudioSystem::output_flags flags,
                                     uint32_t device)
 {
+#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+   LOGV("AudioPolicyManagerBase::needsDirectOuput stream = %d mPhoneState = %d \n", stream, mPhoneState);
+   return ((flags & AudioSystem::OUTPUT_FLAG_DIRECT) ||
+          (format !=0 && !AudioSystem::isLinearPCM(format)) ||
+          ((stream == AudioSystem::VOICE_CALL) && (channels == AudioSystem::CHANNEL_OUT_MONO)
+          && ((samplingRate == 8000 )||(samplingRate == 16000 )) && (mPhoneState == AudioSystem::MODE_IN_COMMUNICATION)));
+#else
    return ((flags & AudioSystem::OUTPUT_FLAG_DIRECT) ||
           (format !=0 && !AudioSystem::isLinearPCM(format)));
+#endif
 }
 
 uint32_t AudioPolicyManagerBase::getMaxEffectsCpuLoad()
