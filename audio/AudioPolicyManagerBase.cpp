@@ -1675,10 +1675,10 @@ bool AudioPolicyManagerBase::vectorsEqual(SortedVector<audio_io_handle_t>& outpu
 
 void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
 {
-    SortedVector<audio_io_handle_t> srcOutputs =
-            getOutputsForDevice(getDeviceForStrategy(strategy, true /*fromCache*/));
-    SortedVector<audio_io_handle_t> dstOutputs =
-            getOutputsForDevice(getDeviceForStrategy(strategy, false /*fromCache*/));
+    audio_devices_t oldDevice = getDeviceForStrategy(strategy, true /*fromCache*/);
+    audio_devices_t newDevice = getDeviceForStrategy(strategy, false /*fromCache*/);
+    SortedVector<audio_io_handle_t> srcOutputs = getOutputsForDevice(oldDevice);
+    SortedVector<audio_io_handle_t> dstOutputs = getOutputsForDevice(newDevice);
 
     if (!vectorsEqual(srcOutputs,dstOutputs)) {
         ALOGV("checkOutputForStrategy() strategy %d, moving from output %d to output %d",
@@ -1686,7 +1686,7 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
         // mute strategy while moving tracks from one output to another
         for (size_t i = 0; i < srcOutputs.size(); i++) {
             setStrategyMute(strategy, true, srcOutputs[i]);
-            setStrategyMute(strategy, false, srcOutputs[i], MUTE_TIME_MS);
+            setStrategyMute(strategy, false, srcOutputs[i], MUTE_TIME_MS, newDevice);
         }
 
         // Move effects associated to this strategy from previous output to new output
@@ -2116,8 +2116,9 @@ uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor
                 setStrategyMute((routing_strategy)i, mute, curOutput, mute ? 0 : delayMs);
                 if (desc->strategyRefCount((routing_strategy)i) != 0) {
                     if (tempMute) {
-                        setStrategyMute((routing_strategy)i, true, curOutput, 0);
-                        setStrategyMute((routing_strategy)i, false, curOutput, desc->latency() * 2);
+                        setStrategyMute((routing_strategy)i, true, curOutput);
+                        setStrategyMute((routing_strategy)i, false, curOutput,
+                                            desc->latency() * 2, device);
                     }
                     if (tempMute || mute) {
                         if (muteWaitMs < desc->latency()) {
@@ -2603,23 +2604,34 @@ void AudioPolicyManagerBase::applyStreamVolumes(audio_io_handle_t output,
     }
 }
 
-void AudioPolicyManagerBase::setStrategyMute(routing_strategy strategy, bool on, audio_io_handle_t output, int delayMs)
+void AudioPolicyManagerBase::setStrategyMute(routing_strategy strategy,
+                                             bool on,
+                                             audio_io_handle_t output,
+                                             int delayMs,
+                                             audio_devices_t device)
 {
     ALOGV("setStrategyMute() strategy %d, mute %d, output %d", strategy, on, output);
     for (int stream = 0; stream < AudioSystem::NUM_STREAM_TYPES; stream++) {
         if (getStrategy((AudioSystem::stream_type)stream) == strategy) {
-            setStreamMute(stream, on, output, delayMs);
+            setStreamMute(stream, on, output, delayMs, device);
         }
     }
 }
 
-void AudioPolicyManagerBase::setStreamMute(int stream, bool on, audio_io_handle_t output, int delayMs)
+void AudioPolicyManagerBase::setStreamMute(int stream,
+                                           bool on,
+                                           audio_io_handle_t output,
+                                           int delayMs,
+                                           audio_devices_t device)
 {
     StreamDescriptor &streamDesc = mStreams[stream];
     AudioOutputDescriptor *outputDesc = mOutputs.valueFor(output);
-    audio_devices_t device = outputDesc->device();
+    if (device == 0) {
+        device = outputDesc->device();
+    }
 
-    ALOGV("setStreamMute() stream %d, mute %d, output %d, mMuteCount %d", stream, on, output, outputDesc->mMuteCount[stream]);
+    ALOGV("setStreamMute() stream %d, mute %d, output %d, mMuteCount %d device %04x",
+          stream, on, output, outputDesc->mMuteCount[stream], device);
 
     if (on) {
         if (outputDesc->mMuteCount[stream] == 0) {
