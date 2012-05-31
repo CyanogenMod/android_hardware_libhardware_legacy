@@ -985,7 +985,18 @@ audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(effect_descriptor_t
 {
     ALOGV("getOutputForEffect()");
     // apply simple rule where global effects are attached to the same output as MUSIC streams
-    return getOutput(AudioSystem::MUSIC);
+
+    routing_strategy strategy = getStrategy(AudioSystem::MUSIC);
+    audio_devices_t device = getDeviceForStrategy(strategy, false /*fromCache*/);
+    SortedVector<audio_io_handle_t> dstOutputs = getOutputsForDevice(device);
+    int outIdx = 0;
+    for (size_t i = 0; i < dstOutputs.size(); i++) {
+        AudioOutputDescriptor *desc = mOutputs.valueFor(dstOutputs[i]);
+        if (desc->mFlags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) {
+            outIdx = i;
+        }
+    }
+    return dstOutputs[outIdx];
 }
 
 status_t AudioPolicyManagerBase::registerEffect(effect_descriptor_t *desc,
@@ -1691,25 +1702,36 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
         }
 
         // Move effects associated to this strategy from previous output to new output
-//FIXME: removing this code works for effects applied to a particular session as they will be
-//       re-connected when the tracks are re-created after being invalidated.
-//       However we need to define a policy for global effects when more than one output is possible
-//        for (size_t i = 0; i < mEffects.size(); i++) {
-//            EffectDescriptor *desc = mEffects.valueAt(i);
-//            if (desc->mSession != AudioSystem::SESSION_OUTPUT_STAGE &&
-//                    desc->mStrategy == strategy &&
-//                    desc->mIo == srcOutputs[0]) {
-//                ALOGV("checkOutputForStrategy() moving effect %d to output %d",
-//                      mEffects.keyAt(i), dstOutputs[0]);
-//                mpClientInterface->moveEffects(desc->mSession, srcOutputs[0], dstOutputs[0]);
-//                desc->mIo = dstOutputs[0];
-//            }
-//        }
+        if (strategy == STRATEGY_MEDIA) {
+            int outIdx = 0;
+            for (size_t i = 0; i < dstOutputs.size(); i++) {
+                AudioOutputDescriptor *desc = mOutputs.valueFor(dstOutputs[i]);
+                if (desc->mFlags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) {
+                    outIdx = i;
+                }
+            }
+            SortedVector<audio_io_handle_t> moved;
+            for (size_t i = 0; i < mEffects.size(); i++) {
+                EffectDescriptor *desc = mEffects.valueAt(i);
+                if (desc->mSession == AUDIO_SESSION_OUTPUT_MIX &&
+                        desc->mIo != dstOutputs[outIdx]) {
+                    if (moved.indexOf(desc->mIo) < 0) {
+                        ALOGV("checkOutputForStrategy() moving effect %d to output %d",
+                              mEffects.keyAt(i), dstOutputs[outIdx]);
+                        mpClientInterface->moveEffects(AUDIO_SESSION_OUTPUT_MIX, desc->mIo,
+                                                       dstOutputs[outIdx]);
+                        moved.add(desc->mIo);
+                    }
+                    desc->mIo = dstOutputs[outIdx];
+                }
+            }
+        }
         // Move tracks associated to this strategy from previous output to new output
         for (int i = 0; i < (int)AudioSystem::NUM_STREAM_TYPES; i++) {
             if (getStrategy((AudioSystem::stream_type)i) == strategy) {
                 //FIXME see fixme on name change
-                mpClientInterface->setStreamOutput((AudioSystem::stream_type)i, dstOutputs[0]);
+                mpClientInterface->setStreamOutput((AudioSystem::stream_type)i,
+                                                   dstOutputs[0] /* ignored */);
             }
         }
     }
