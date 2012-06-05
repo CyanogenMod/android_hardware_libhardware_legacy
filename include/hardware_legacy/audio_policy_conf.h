@@ -47,4 +47,8 @@
 #define DEVICES_TAG "devices"
 #define FLAGS_TAG "flags"
 
+#define DYNAMIC_VALUE_TAG "dynamic" // special value for "channel_masks", "sampling_rates" and
+                                    // "formats" in outputs descriptors indicating that supported
+                                    // values should be queried after opening the output.
+
 #endif  // ANDROID_AUDIO_POLICY_CONF_H
