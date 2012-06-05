@@ -2414,10 +2414,10 @@ const AudioPolicyManagerBase::VolumeCurvePoint
 
 // AUDIO_STREAM_SYSTEM, AUDIO_STREAM_ENFORCED_AUDIBLE and AUDIO_STREAM_DTMF volume tracks
 // AUDIO_STREAM_RING on phones and AUDIO_STREAM_MUSIC on tablets (See AudioService.java).
-// The range is constrained between -30dB and -12dB over speaker and -30dB and -18dB over headset.
+// The range is constrained between -24dB and -6dB over speaker and -30dB and -18dB over headset.
 const AudioPolicyManagerBase::VolumeCurvePoint
     AudioPolicyManagerBase::sDefaultSystemVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
-    {1, -30.0f}, {33, -24.0f}, {66, -18.0f}, {100, -12.0f}
+    {1, -24.0f}, {33, -18.0f}, {66, -12.0f}, {100, -6.0f}
 };
 
 const AudioPolicyManagerBase::VolumeCurvePoint
