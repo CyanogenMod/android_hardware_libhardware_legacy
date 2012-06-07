@@ -2642,7 +2642,8 @@ float AudioPolicyManagerBase::computeVolume(int stream,
         // when the phone is ringing we must consider that music could have been paused just before
         // by the music application and behave as if music was active if the last music track was
         // just stopped
-        if (outputDesc->mRefCount[AudioSystem::MUSIC] || mLimitRingtoneVolume) {
+        if (isStreamActive(AudioSystem::MUSIC, SONIFICATION_HEADSET_MUSIC_DELAY) ||
+                mLimitRingtoneVolume) {
             float musicVol = computeVolume(AudioSystem::MUSIC,
                                mStreams[AudioSystem::MUSIC].getVolumeIndex(device),
                                output,
