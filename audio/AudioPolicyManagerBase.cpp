@@ -1803,8 +1803,11 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
               strategy, srcOutputs[0], dstOutputs[0]);
         // mute strategy while moving tracks from one output to another
         for (size_t i = 0; i < srcOutputs.size(); i++) {
-            setStrategyMute(strategy, true, srcOutputs[i]);
-            setStrategyMute(strategy, false, srcOutputs[i], MUTE_TIME_MS, newDevice);
+            AudioOutputDescriptor *desc = mOutputs.valueFor(srcOutputs[i]);
+            if (desc->strategyRefCount(strategy) != 0) {
+                setStrategyMute(strategy, true, srcOutputs[i]);
+                setStrategyMute(strategy, false, srcOutputs[i], MUTE_TIME_MS, newDevice);
+            }
         }
 
         // Move effects associated to this strategy from previous output to new output
