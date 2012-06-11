@@ -41,14 +41,17 @@ static int fd = -1;
 /* Returns 0 on failure, 1 on success */
 int uevent_init()
 {
-    struct sockaddr_nl addr;
+    union {
+        struct sockaddr_nl nl;
+        struct sockaddr generic;
+    } addr;
     int sz = 64*1024;
     int s;
 
-    memset(&addr, 0, sizeof(addr));
-    addr.nl_family = AF_NETLINK;
-    addr.nl_pid = getpid();
-    addr.nl_groups = 0xffffffff;
+    memset(&addr.nl, 0, sizeof(addr.nl));
+    addr.nl.nl_family = AF_NETLINK;
+    addr.nl.nl_pid = getpid();
+    addr.nl.nl_groups = 0xffffffff;
 
     s = socket(PF_NETLINK, SOCK_DGRAM, NETLINK_KOBJECT_UEVENT);
     if(s < 0)
@@ -56,7 +59,7 @@ int uevent_init()
 
     setsockopt(s, SOL_SOCKET, SO_RCVBUFFORCE, &sz, sizeof(sz));
 
-    if(bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+    if(bind(s, &addr.generic, sizeof(addr.nl)) < 0) {
         close(s);
         return 0;
     }
