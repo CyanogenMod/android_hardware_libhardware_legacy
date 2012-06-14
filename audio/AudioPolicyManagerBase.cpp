@@ -403,8 +403,8 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
     for (size_t i = 0; i < mOutputs.size(); i++) {
         audio_io_handle_t output = mOutputs.keyAt(i);
         audio_devices_t newDevice = getNewDevice(output, true /*fromCache*/);
-        setOutputDevice(output, newDevice, true);
-        if (forceVolumeReeval) {
+        setOutputDevice(output, newDevice, (newDevice != 0));
+        if (forceVolumeReeval && (newDevice != 0)) {
             applyStreamVolumes(output, newDevice, 0, true);
         }
     }
@@ -1630,7 +1630,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                     // add output descriptor
                     addOutput(output, desc);
                     // set initial stream volume for device
-                    applyStreamVolumes(output, device);
+                    applyStreamVolumes(output, device, 0, true);
 
                     //TODO: configure audio effect output stage here
 
@@ -1647,7 +1647,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                         dupOutputDesc->mChannelMask = desc->mChannelMask;
                         dupOutputDesc->mLatency = desc->mLatency;
                         addOutput(duplicatedOutput, dupOutputDesc);
-                        applyStreamVolumes(duplicatedOutput, device);
+                        applyStreamVolumes(duplicatedOutput, device, 0, true);
                     } else {
                         ALOGW("checkOutputsForDevice() could not open dup output for %d and %d",
                                 mPrimaryOutput, output);
