@@ -195,6 +195,16 @@ set_screen_state(int on)
     return 0;
 }
 
+#ifdef EXYNOS4X12_ENHANCEMENTS
+void acquire_dvfs_lock()
+{
+}
+
+void release_dvfs_lock()
+{
+}
+#endif
+
 #ifdef QCOM_HARDWARE
 /************************************
  If 'state' equals 1
