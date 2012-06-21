@@ -66,6 +66,9 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
             return BAD_VALUE;
         }
 
+        // save a copy of the opened output descriptors before any output is opened or closed
+        // by checkOutputsForDevice(). This will be needed by checkOutputForAllStrategies()
+        mPreviousOutputs = mOutputs;
         switch (state)
         {
         // handle output device connection
@@ -152,7 +155,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(AudioSystem::audio_dev
             }
         }
 
-        updateDeviceForStrategy();
+        updateDevicesAndOutputs();
         for (size_t i = 0; i < mOutputs.size(); i++) {
             setOutputDevice(mOutputs.keyAt(i), getNewDevice(mOutputs.keyAt(i), true /*fromCache*/));
         }
@@ -298,7 +301,7 @@ void AudioPolicyManagerBase::setPhoneState(int state)
     newDevice = getNewDevice(mPrimaryOutput, false /*fromCache*/);
     checkA2dpSuspend();
     checkOutputForAllStrategies();
-    updateDeviceForStrategy();
+    updateDevicesAndOutputs();
 
     AudioOutputDescriptor *hwOutputDesc = mOutputs.valueFor(mPrimaryOutput);
 
@@ -399,7 +402,7 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
     // check for device and output changes triggered by new force usage
     checkA2dpSuspend();
     checkOutputForAllStrategies();
-    updateDeviceForStrategy();
+    updateDevicesAndOutputs();
     for (size_t i = 0; i < mOutputs.size(); i++) {
         audio_io_handle_t output = mOutputs.keyAt(i);
         audio_devices_t newDevice = getNewDevice(output, true /*fromCache*/);
@@ -567,7 +570,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
 
     // get which output is suitable for the specified stream. The actual routing change will happen
     // when startOutput() will be called
-    SortedVector<audio_io_handle_t> outputs = getOutputsForDevice(device);
+    SortedVector<audio_io_handle_t> outputs = getOutputsForDevice(device, mOutputs);
 
     output = selectOutput(outputs, flags);
 
@@ -1011,7 +1014,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(effect_descriptor_t
 
     routing_strategy strategy = getStrategy(AudioSystem::MUSIC);
     audio_devices_t device = getDeviceForStrategy(strategy, false /*fromCache*/);
-    SortedVector<audio_io_handle_t> dstOutputs = getOutputsForDevice(device);
+    SortedVector<audio_io_handle_t> dstOutputs = getOutputsForDevice(device, mOutputs);
     int outIdx = 0;
     for (size_t i = 0; i < dstOutputs.size(); i++) {
         AudioOutputDescriptor *desc = mOutputs.valueFor(dstOutputs[i]);
@@ -1308,7 +1311,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
 
     ALOGE_IF((mPrimaryOutput == 0), "Failed to open primary output");
 
-    updateDeviceForStrategy();
+    updateDevicesAndOutputs();
 
 #ifdef AUDIO_POLICY_TEST
     if (mPrimaryOutput != 0) {
@@ -1761,17 +1764,18 @@ void AudioPolicyManagerBase::closeOutput(audio_io_handle_t output)
     mOutputs.removeItem(output);
 }
 
-SortedVector<audio_io_handle_t> AudioPolicyManagerBase::getOutputsForDevice(audio_devices_t device)
+SortedVector<audio_io_handle_t> AudioPolicyManagerBase::getOutputsForDevice(audio_devices_t device,
+                        DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> openOutputs)
 {
     SortedVector<audio_io_handle_t> outputs;
 
     ALOGVV("getOutputsForDevice() device %04x", device);
-    for (size_t i = 0; i < mOutputs.size(); i++) {
+    for (size_t i = 0; i < openOutputs.size(); i++) {
         ALOGVV("output %d isDuplicated=%d device=%04x",
-                i, mOutputs.valueAt(i)->isDuplicated(), mOutputs.valueAt(i)->supportedDevices());
-        if ((device & mOutputs.valueAt(i)->supportedDevices()) == device) {
-            ALOGVV("getOutputsForDevice() found output %d", mOutputs.keyAt(i));
-            outputs.add(mOutputs.keyAt(i));
+                i, openOutputs.valueAt(i)->isDuplicated(), openOutputs.valueAt(i)->supportedDevices());
+        if ((device & openOutputs.valueAt(i)->supportedDevices()) == device) {
+            ALOGVV("getOutputsForDevice() found output %d", openOutputs.keyAt(i));
+            outputs.add(openOutputs.keyAt(i));
         }
     }
     return outputs;
@@ -1795,8 +1799,8 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
 {
     audio_devices_t oldDevice = getDeviceForStrategy(strategy, true /*fromCache*/);
     audio_devices_t newDevice = getDeviceForStrategy(strategy, false /*fromCache*/);
-    SortedVector<audio_io_handle_t> srcOutputs = getOutputsForDevice(oldDevice);
-    SortedVector<audio_io_handle_t> dstOutputs = getOutputsForDevice(newDevice);
+    SortedVector<audio_io_handle_t> srcOutputs = getOutputsForDevice(oldDevice, mPreviousOutputs);
+    SortedVector<audio_io_handle_t> dstOutputs = getOutputsForDevice(newDevice, mOutputs);
 
     if (!vectorsEqual(srcOutputs,dstOutputs)) {
         ALOGV("checkOutputForStrategy() strategy %d, moving from output %d to output %d",
@@ -2003,7 +2007,7 @@ void AudioPolicyManagerBase::handleNotificationRoutingForStream(AudioSystem::str
     switch(stream) {
     case AudioSystem::MUSIC:
         checkOutputForStrategy(STRATEGY_SONIFICATION_RESPECTFUL);
-        updateDeviceForStrategy();
+        updateDevicesAndOutputs();
         break;
     default:
         break;
@@ -2204,11 +2208,12 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
     return (audio_devices_t)device;
 }
 
-void AudioPolicyManagerBase::updateDeviceForStrategy()
+void AudioPolicyManagerBase::updateDevicesAndOutputs()
 {
     for (int i = 0; i < NUM_STRATEGIES; i++) {
         mDeviceForStrategy[i] = getDeviceForStrategy((routing_strategy)i, false /*fromCache*/);
     }
+    mPreviousOutputs = mOutputs;
 }
 
 uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor *outputDesc,

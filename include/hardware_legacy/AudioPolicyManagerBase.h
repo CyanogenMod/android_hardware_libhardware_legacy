@@ -330,7 +330,7 @@ protected:
         //  2 access to either current device selection (fromCache == true) or
         // "future" device selection (fromCache == false) when called from a context
         //  where conditions are changing (setDeviceConnectionState(), setPhoneState()...) AND
-        //  before updateDeviceForStrategy() is called.
+        //  before updateDevicesAndOutputs() is called.
         virtual audio_devices_t getDeviceForStrategy(routing_strategy strategy,
                                                      bool fromCache);
 
@@ -400,7 +400,7 @@ protected:
         // checks and if necessary changes outputs used for all strategies.
         // must be called every time a condition that affects the output choice for a given strategy
         // changes: connected device, phone state, force use...
-        // Must be called before updateDeviceForStrategy()
+        // Must be called before updateDevicesAndOutputs()
         void checkOutputForStrategy(routing_strategy strategy);
 
         // Same as checkOutputForStrategy() but for a all strategies in order of priority
@@ -424,7 +424,7 @@ protected:
         // cached values are used by getDeviceForStrategy() if parameter fromCache is true.
          // Must be called after checkOutputForAllStrategies()
 
-        void updateDeviceForStrategy();
+        void updateDevicesAndOutputs();
 
         // true if current platform requires a specific output to be opened for this particular
         // set of parameters. This function is called by getOutput() and is implemented by platform
@@ -452,7 +452,8 @@ protected:
         // extract one device relevant for volume control from multiple device selection
         static audio_devices_t getDeviceForVolume(audio_devices_t device);
 
-        SortedVector<audio_io_handle_t> getOutputsForDevice(audio_devices_t device);
+        SortedVector<audio_io_handle_t> getOutputsForDevice(audio_devices_t device,
+                        DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> openOutputs);
         bool vectorsEqual(SortedVector<audio_io_handle_t>& outputs1,
                                            SortedVector<audio_io_handle_t>& outputs2);
 
@@ -498,7 +499,11 @@ protected:
 
         AudioPolicyClientInterface *mpClientInterface;  // audio policy client interface
         audio_io_handle_t mPrimaryOutput;              // primary output handle
-        DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mOutputs;   // list of output descriptors
+        // list of descriptors for outputs currently opened
+        DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mOutputs;
+        // copy of mOutputs before setDeviceConnectionState() opens new outputs
+        // reset to mOutputs when updateDevicesAndOutputs() is called.
+        DefaultKeyedVector<audio_io_handle_t, AudioOutputDescriptor *> mPreviousOutputs;
         DefaultKeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of input descriptors
         audio_devices_t mAvailableOutputDevices; // bit field of all available output devices
         audio_devices_t mAvailableInputDevices; // bit field of all available input devices
