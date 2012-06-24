@@ -254,7 +254,7 @@ public:
                                      audio_io_handle_t srcOutput,
                                      audio_io_handle_t dstOutput) = 0;
 
-#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+#if defined(QCOM_HARDWARE) && defined(HAVE_FM_RADIO) && !defined(USES_AUDIO_LEGACY)
     // set FM volume.
     virtual status_t setFmVolume(float volume, int delayMs = 0) { return 0; }
 #endif

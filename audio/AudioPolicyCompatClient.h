@@ -76,7 +76,7 @@ public:
     virtual status_t startTone(ToneGenerator::tone_type tone, AudioSystem::stream_type stream);
     virtual status_t stopTone();
     virtual status_t setVoiceVolume(float volume, int delayMs = 0);
-#if defined(QCOM_HARDWARE) && !defined(USES_AUDIO_LEGACY)
+#if defined(QCOM_HARDWARE) && defined(HAVE_FM_RADIO) && !defined(USES_AUDIO_LEGACY)
     virtual status_t setFmVolume(float volume, int delayMs = 0);
 #endif
 
