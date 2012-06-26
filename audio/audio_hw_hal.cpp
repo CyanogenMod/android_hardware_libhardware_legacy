@@ -77,11 +77,11 @@ static size_t out_get_buffer_size(const struct audio_stream *stream)
     return out->legacy_out->bufferSize();
 }
 
-static uint32_t out_get_channels(const struct audio_stream *stream)
+static audio_channel_mask_t out_get_channels(const struct audio_stream *stream)
 {
     const struct legacy_stream_out *out =
         reinterpret_cast<const struct legacy_stream_out *>(stream);
-    return out->legacy_out->channels();
+    return (audio_channel_mask_t) out->legacy_out->channels();
 }
 
 static audio_format_t out_get_format(const struct audio_stream *stream)
@@ -206,11 +206,11 @@ static size_t in_get_buffer_size(const struct audio_stream *stream)
     return in->legacy_in->bufferSize();
 }
 
-static uint32_t in_get_channels(const struct audio_stream *stream)
+static audio_channel_mask_t in_get_channels(const struct audio_stream *stream)
 {
     const struct legacy_stream_in *in =
         reinterpret_cast<const struct legacy_stream_in *>(stream);
-    return in->legacy_in->channels();
+    return (audio_channel_mask_t) in->legacy_in->channels();
 }
 
 static audio_format_t in_get_format(const struct audio_stream *stream)
