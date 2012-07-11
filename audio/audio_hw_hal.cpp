@@ -248,6 +248,7 @@ static int out_get_render_position(const struct audio_stream_out *stream,
     return out->legacy_out->getRenderPosition(dsp_frames);
 }
 
+#ifndef ICS_AUDIO_BLOB
 static int out_get_next_write_timestamp(const struct audio_stream_out *stream,
                                         int64_t *timestamp)
 {
@@ -255,6 +256,7 @@ static int out_get_next_write_timestamp(const struct audio_stream_out *stream,
         reinterpret_cast<const struct legacy_stream_out *>(stream);
     return out->legacy_out->getNextWriteTimestamp(timestamp);
 }
+#endif
 
 static int out_add_audio_effect(const struct audio_stream *stream, effect_handle_t effect)
 {
@@ -434,11 +436,13 @@ static int adev_set_master_volume(struct audio_hw_device *dev, float volume)
     return ladev->hwif->setMasterVolume(volume);
 }
 
+#ifndef ICS_AUDIO_BLOB
 static int adev_get_master_volume(struct audio_hw_device *dev, float* volume)
 {
     struct legacy_audio_device *ladev = to_ladev(dev);
     return ladev->hwif->getMasterVolume(volume);
 }
+#endif
 
 static int adev_set_mode(struct audio_hw_device *dev, audio_mode_t mode)
 {
@@ -475,6 +479,7 @@ static char * adev_get_parameters(const struct audio_hw_device *dev,
     return strdup(s8.string());
 }
 
+#ifndef ICS_AUDIO_BLOB
 static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
                                          const struct audio_config *config)
 {
@@ -482,13 +487,31 @@ static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
     return ladev->hwif->getInputBufferSize(config->sample_rate, (int) config->format,
                                            popcount(config->channel_mask));
 }
+#else
+static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
+                                         uint32_t sample_rate, int format,
+                                         int channel_count)
+{
+    const struct legacy_audio_device *ladev = to_cladev(dev);
+    return ladev->hwif->getInputBufferSize(sample_rate, format, channel_count);
+}
+#endif
 
+#ifndef ICS_AUDIO_BLOB
 static int adev_open_output_stream(struct audio_hw_device *dev,
                                    audio_io_handle_t handle,
                                    audio_devices_t devices,
                                    audio_output_flags_t flags,
                                    struct audio_config *config,
                                    struct audio_stream_out **stream_out)
+#else
+static int adev_open_output_stream(struct audio_hw_device *dev,
+                                   uint32_t devices,
+                                   int *format,
+                                   uint32_t *channels,
+                                   uint32_t *sample_rate,
+                                   struct audio_stream_out **stream_out)
+#endif
 {
     struct legacy_audio_device *ladev = to_ladev(dev);
     status_t status;
@@ -501,9 +524,15 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
 
     devices = convert_audio_device(devices, HAL_API_REV_2_0, HAL_API_REV_1_0);
 
+#ifndef ICS_AUDIO_BLOB
     out->legacy_out = ladev->hwif->openOutputStream(devices, (int *) &config->format,
                                                     &config->channel_mask,
                                                     &config->sample_rate, &status);
+#else
+    out->legacy_out = ladev->hwif->openOutputStream(devices, format, channels,
+                                                    sample_rate, &status);
+#endif
+
     if (!out->legacy_out) {
         ret = status;
         goto err_open;
@@ -525,7 +554,9 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->stream.set_volume = out_set_volume;
     out->stream.write = out_write;
     out->stream.get_render_position = out_get_render_position;
+#ifndef ICS_AUDIO_BLOB
     out->stream.get_next_write_timestamp = out_get_next_write_timestamp;
+#endif
 
     *stream_out = &out->stream;
     return 0;
@@ -548,9 +579,15 @@ static void adev_close_output_stream(struct audio_hw_device *dev,
 
 /** This method creates and opens the audio hardware input stream */
 static int adev_open_input_stream(struct audio_hw_device *dev,
+#ifndef ICS_AUDIO_BLOB
                                   audio_io_handle_t handle,
                                   audio_devices_t devices,
                                   struct audio_config *config,
+#else
+                                  uint32_t devices, int *format,
+                                  uint32_t *channels, uint32_t *sample_rate,
+                                  audio_in_acoustics_t acoustics,
+#endif
                                   struct audio_stream_in **stream_in)
 {
     struct legacy_audio_device *ladev = to_ladev(dev);
@@ -564,9 +601,15 @@ static int adev_open_input_stream(struct audio_hw_device *dev,
 
     devices = convert_audio_device(devices, HAL_API_REV_2_0, HAL_API_REV_1_0);
 
+#ifndef ICS_AUDIO_BLOB
     in->legacy_in = ladev->hwif->openInputStream(devices, (int *) &config->format,
                                                  &config->channel_mask, &config->sample_rate,
                                                  &status, (AudioSystem::audio_in_acoustics)0);
+#else
+    in->legacy_in = ladev->hwif->openInputStream(devices, format, channels,
+                                    sample_rate, &status,
+                                    (AudioSystem::audio_in_acoustics)acoustics);
+#endif
     if (!in->legacy_in) {
         ret = status;
         goto err_open;
@@ -653,7 +696,9 @@ static int legacy_adev_open(const hw_module_t* module, const char* name,
     ladev->device.init_check = adev_init_check;
     ladev->device.set_voice_volume = adev_set_voice_volume;
     ladev->device.set_master_volume = adev_set_master_volume;
+#ifndef ICS_AUDIO_BLOB
     ladev->device.get_master_volume = adev_get_master_volume;
+#endif
     ladev->device.set_mode = adev_set_mode;
     ladev->device.set_mic_mute = adev_set_mic_mute;
     ladev->device.get_mic_mute = adev_get_mic_mute;
@@ -661,8 +706,8 @@ static int legacy_adev_open(const hw_module_t* module, const char* name,
     ladev->device.get_parameters = adev_get_parameters;
     ladev->device.get_input_buffer_size = adev_get_input_buffer_size;
     ladev->device.open_output_stream = adev_open_output_stream;
-    ladev->device.close_output_stream = adev_close_output_stream;
     ladev->device.open_input_stream = adev_open_input_stream;
+    ladev->device.close_output_stream = adev_close_output_stream;
     ladev->device.close_input_stream = adev_close_input_stream;
     ladev->device.dump = adev_dump;
 
