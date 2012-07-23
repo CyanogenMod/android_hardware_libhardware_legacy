@@ -11,7 +11,7 @@ LOCAL_SRC_FILES := \
     audio_hw_hal.cpp
 
 ifeq ($(BOARD_USES_AUDIO_LEGACY),true)
-    LOCAL_CFLAGS += -DUSES_AUDIO_LEGACY -DICS_AUDIO_BLOB
+    LOCAL_CFLAGS += -DUSES_AUDIO_LEGACY
 endif
 
 LOCAL_MODULE := libaudiohw_legacy
