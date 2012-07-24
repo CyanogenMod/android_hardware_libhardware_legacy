@@ -1007,7 +1007,7 @@ status_t AudioPolicyManagerBase::getStreamVolumeIndex(AudioSystem::stream_type s
     return NO_ERROR;
 }
 
-audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(effect_descriptor_t *desc)
+audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(const effect_descriptor_t *desc)
 {
     ALOGV("getOutputForEffect()");
     // apply simple rule where global effects are attached to the same output as MUSIC streams
@@ -1025,7 +1025,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(effect_descriptor_t
     return dstOutputs[outIdx];
 }
 
-status_t AudioPolicyManagerBase::registerEffect(effect_descriptor_t *desc,
+status_t AudioPolicyManagerBase::registerEffect(const effect_descriptor_t *desc,
                                 audio_io_handle_t io,
                                 uint32_t strategy,
                                 int session,

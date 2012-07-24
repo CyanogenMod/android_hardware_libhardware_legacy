@@ -147,8 +147,8 @@ public:
     virtual audio_devices_t getDevicesForStream(AudioSystem::stream_type stream) = 0;
 
     // Audio effect management
-    virtual audio_io_handle_t getOutputForEffect(effect_descriptor_t *desc) = 0;
-    virtual status_t registerEffect(effect_descriptor_t *desc,
+    virtual audio_io_handle_t getOutputForEffect(const effect_descriptor_t *desc) = 0;
+    virtual status_t registerEffect(const effect_descriptor_t *desc,
                                     audio_io_handle_t io,
                                     uint32_t strategy,
                                     int session,
