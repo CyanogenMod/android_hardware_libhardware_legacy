@@ -331,6 +331,9 @@ static uint32_t adev_get_supported_devices(const struct audio_hw_device *dev)
             AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET |
             AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET |
             AUDIO_DEVICE_OUT_ALL_SCO |
+#ifdef QCOM_HARDWARE
+            AUDIO_DEVICE_OUT_PROXY |
+#endif
             AUDIO_DEVICE_OUT_DEFAULT |
             /* IN */
             AUDIO_DEVICE_IN_COMMUNICATION |
@@ -449,7 +452,11 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
         return -ENOMEM;
 
 #ifndef ICS_AUDIO_BLOB
+#ifdef QCOM_HARDWARE
+    out->legacy_out = ladev->hwif->openOutputStream(devices, flags, (int *) &config->format,
+#else
     out->legacy_out = ladev->hwif->openOutputStream(devices, (int *) &config->format,
+#endif
                                                     &config->channel_mask,
                                                     &config->sample_rate, &status);
 #else

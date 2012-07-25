@@ -119,6 +119,13 @@ public:
     virtual status_t    getNextWriteTimestamp(int64_t *timestamp);
 #endif
 
+#ifdef QCOM_HARDWARE
+    virtual status_t    start() {return INVALID_OPERATION;}
+    virtual status_t    pause()  {return INVALID_OPERATION;}
+    virtual status_t    flush()  {return INVALID_OPERATION;}
+    virtual status_t    stop()  {return INVALID_OPERATION;}
+    virtual int         setObserver(void *observer)  {return INVALID_OPERATION;}
+#endif
 };
 
 /**
@@ -254,6 +261,9 @@ public:
     /** This method creates and opens the audio hardware output stream */
     virtual AudioStreamOut* openOutputStream(
                                 uint32_t devices,
+#ifdef QCOM_HARDWARE
+                                audio_output_flags_t flags,
+#endif
                                 int *format=0,
                                 uint32_t *channels=0,
                                 uint32_t *sampleRate=0,
