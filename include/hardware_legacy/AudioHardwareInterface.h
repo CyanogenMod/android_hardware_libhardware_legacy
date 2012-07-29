@@ -128,6 +128,86 @@ public:
 #endif
 };
 
+#ifdef QCOM_HARDWARE
+/**
+ * AudioBroadcastStream is the abstraction interface for the
+ * audio output hardware.
+ *
+ * It provides information about various properties of the audio output hardware driver.
+ */
+class AudioBroadcastStream {
+public:
+    virtual             ~AudioBroadcastStream() = 0;
+
+    /** return audio sampling rate in hz - eg. 44100 */
+    virtual uint32_t    sampleRate() const = 0;
+
+    /** returns size of output buffer - eg. 4800 */
+    virtual size_t      bufferSize() const = 0;
+
+    /**
+     * returns the output channel nask
+     */
+    virtual uint32_t    channels() const = 0;
+
+    /**
+     * return audio format in 8bit or 16bit PCM format -
+     * eg. AudioSystem:PCM_16_BIT
+     */
+    virtual int         format() const = 0;
+
+    /**
+     * return the frame size (number of bytes per sample).
+     */
+    uint32_t    frameSize() const { return popcount(channels())*((format()==AUDIO_FORMAT_PCM_16_BIT)?sizeof(int16_t):sizeof(int8_t)); }
+
+    /**
+     * return the audio hardware driver latency in milli seconds.
+     */
+    //virtual uint32_t    latency() const = 0;
+
+    /**
+     * Use this method in situations where audio mixing is done in the
+     * hardware. This method serves as a direct interface with hardware,
+     * allowing you to directly set the volume as apposed to via the framework.
+     * This method might produce multiple PCM outputs or hardware accelerated
+     * codecs, such as MP3 or AAC.
+     */
+    virtual status_t    setVolume(float left, float right) = 0;
+
+    /**
+     * Use this method to mute the volume
+     */
+    virtual status_t    mute(bool mute) = 0;
+
+    /**
+     * Use this method to start rendering the data
+     */
+    virtual status_t    start(int64_t absTimeToStart) = 0;
+
+    /** write audio buffer to driver. Returns number of bytes written */
+    virtual ssize_t     write(const void* buffer, size_t bytes, int64_t timestamp, int audioType) = 0;
+
+    /**
+     * Put the audio hardware output into standby mode. Returns
+     * status based on include/utils/Errors.h
+     */
+    virtual status_t    standby() = 0;
+
+    /** dump the state of the audio output device */
+    virtual status_t dump(int fd, const Vector<String16>& args) = 0;
+
+    // set/get audio output parameters. The function accepts a list of parameters
+    // key value pairs in the form: key1=value1;key2=value2;...
+    // Some keys are reserved for standard parameters (See AudioParameter class).
+    // If the implementation does not accept a parameter change while the output is
+    // active but the parameter is acceptable otherwise, it must return INVALID_OPERATION.
+    // The audio flinger will put the output in standby and then change the parameter value.
+    virtual status_t    setParameters(const String8& keyValuePairs) = 0;
+    virtual String8     getParameters(const String8& keys) = 0;
+};
+#endif
+
 /**
  * AudioStreamIn is the abstraction interface for the audio input hardware.
  *
@@ -269,7 +349,17 @@ public:
                                 uint32_t *sampleRate=0,
                                 status_t *status=0) = 0;
     virtual    void        closeOutputStream(AudioStreamOut* out) = 0;
-
+#ifdef QCOM_HARDWARE
+    /** This method creates and opens the audio hardware output stream */
+    virtual AudioBroadcastStream* openBroadcastStream(
+                                uint32_t devices,
+                                int      format=0,
+                                uint32_t channels=0,
+                                uint32_t sampleRate=0,
+                                uint32_t audioSource=0,
+                                status_t *status=0) {return NULL;};
+    virtual    void        closeBroadcastStream(AudioBroadcastStream* out) {};
+#endif
     /** This method creates and opens the audio hardware input stream */
     virtual AudioStreamIn* openInputStream(
                                 uint32_t devices,

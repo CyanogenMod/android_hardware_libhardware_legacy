@@ -26,6 +26,9 @@
 #define AUDIO_HARDWARE_MODULE_ID_MAX_LEN 32
 
 #define AUDIO_POLICY_CONFIG_FILE "/system/etc/audio_policy.conf"
+#ifdef QCOM_HARDWARE
+#define AUDIO_POLICY_MPQ_CONFIG_FILE "/system/etc/audio_policy_8064.conf"
+#endif
 #define AUDIO_POLICY_VENDOR_CONFIG_FILE "/vendor/etc/audio_policy.conf"
 
 // global configuration

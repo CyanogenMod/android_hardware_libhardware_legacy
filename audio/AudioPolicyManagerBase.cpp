@@ -31,6 +31,9 @@
 #include <hardware/audio.h>
 #include <math.h>
 #include <hardware_legacy/audio_policy_conf.h>
+#ifdef QCOM_HARDWARE
+#include <stdio.h>
+#endif
 
 namespace android_audio_legacy {
 
@@ -1246,6 +1249,25 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
 {
     mpClientInterface = clientInterface;
 
+#ifdef QCOM_HARDWARE
+    //Check if HDMI is the primary interface
+    //In that case we need to route audio to HDMI
+    bool hdmi_as_primary = false;
+    const char* file = "/sys/class/graphics/fb0/hdmi_primary";
+    FILE* fp = fopen(file, "r");
+    if(fp) {
+        ALOGD("%s: HDMI is used as primary interface", __FUNCTION__);
+        hdmi_as_primary = true;
+        fclose(fp);
+    }
+
+    if(hdmi_as_primary) {
+        // If HDMI is used as primary then all audio should always be
+        // routed to HDMI by default. The connection can be assumed to
+        // be always ON. Overrideable by Bluetooth.
+        mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices | AUDIO_DEVICE_OUT_AUX_DIGITAL);
+    }
+#endif
     for (int i = 0; i < AudioSystem::NUM_FORCE_USE; i++) {
         mForceUse[i] = AudioSystem::FORCE_NONE;
     }
@@ -1255,9 +1277,18 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
     mA2dpDeviceAddress = String8("");
     mScoDeviceAddress = String8("");
     mUsbCardAndDevice = String8("");
-
+#ifdef QCOM_HARDWARE
+    int is_mpq = 0;
+    IS_TARGET_MPQ(is_mpq);
+#endif
     if (loadAudioPolicyConfig(AUDIO_POLICY_VENDOR_CONFIG_FILE) != NO_ERROR) {
+
+#ifdef QCOM_HARDWARE
+        if ((is_mpq && loadAudioPolicyConfig(AUDIO_POLICY_MPQ_CONFIG_FILE) != NO_ERROR) ||
+               (!is_mpq && loadAudioPolicyConfig(AUDIO_POLICY_CONFIG_FILE) != NO_ERROR)) {
+#else
         if (loadAudioPolicyConfig(AUDIO_POLICY_CONFIG_FILE) != NO_ERROR) {
+#endif
             ALOGE("could not load audio policy configuration file, setting defaults");
             defaultAudioPolicyConfig();
         }
@@ -3349,12 +3380,25 @@ const struct StringToEnum sFormatNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_FORMAT_AMR_WB),
     STRING_TO_ENUM(AUDIO_FORMAT_QCELP),
     STRING_TO_ENUM(AUDIO_FORMAT_EVRC),
+    STRING_TO_ENUM(AUDIO_FORMAT_AC3),
+    STRING_TO_ENUM(AUDIO_FORMAT_EAC3),
+    STRING_TO_ENUM(AUDIO_FORMAT_DTS),
+    STRING_TO_ENUM(AUDIO_FORMAT_WMA),
+    STRING_TO_ENUM(AUDIO_FORMAT_WMA_PRO),
+    STRING_TO_ENUM(AUDIO_FORMAT_AAC_ADIF),
+    STRING_TO_ENUM(AUDIO_FORMAT_EVRCB),
+    STRING_TO_ENUM(AUDIO_FORMAT_EVRCWB),
 #endif
 };
 
 const struct StringToEnum sOutChannelsNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_CHANNEL_OUT_MONO),
     STRING_TO_ENUM(AUDIO_CHANNEL_OUT_STEREO),
+#ifdef QCOM_HARDWARE
+    STRING_TO_ENUM(AUDIO_CHANNEL_OUT_QUAD),
+    STRING_TO_ENUM(AUDIO_CHANNEL_OUT_SURROUND),
+    STRING_TO_ENUM(AUDIO_CHANNEL_OUT_PENTA),
+#endif
     STRING_TO_ENUM(AUDIO_CHANNEL_OUT_5POINT1),
     STRING_TO_ENUM(AUDIO_CHANNEL_OUT_7POINT1),
 };

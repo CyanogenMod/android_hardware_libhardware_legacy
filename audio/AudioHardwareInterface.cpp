@@ -66,6 +66,12 @@ AudioHardwareInterface* AudioHardwareInterface::create()
     return NULL;
 }
 
+#ifdef QCOM_HARDWARE
+AudioBroadcastStream::~AudioBroadcastStream()
+{
+}
+#endif
+
 AudioStreamOut::~AudioStreamOut()
 {
 }
