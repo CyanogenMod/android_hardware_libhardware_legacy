@@ -529,6 +529,7 @@ protected:
         bool    mA2dpSuspended;  // true if A2DP output is suspended
         bool mHasA2dp; // true on platforms with support for bluetooth A2DP
         bool mHasUsb; // true on platforms with support for USB audio
+        bool mHasRemoteSubmix; // true on platforms with support for remote presentation of a submix
         audio_devices_t mAttachedOutputDevices; // output devices always available on the platform
         audio_devices_t mDefaultOutputDevice; // output device selected by default at boot time
                                               // (must be in mAttachedOutputDevices)

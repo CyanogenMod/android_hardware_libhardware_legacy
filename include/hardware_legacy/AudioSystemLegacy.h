@@ -288,6 +288,7 @@ public:
         FORCE_ANALOG_DOCK,
         FORCE_DIGITAL_DOCK,
         FORCE_NO_BT_A2DP,
+        FORCE_REMOTE_SUBMIX,
         NUM_FORCE_CONFIG,
         FORCE_DEFAULT = FORCE_NONE
     };

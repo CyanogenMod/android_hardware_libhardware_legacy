@@ -62,11 +62,15 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
     if (audio_is_output_device(device)) {
 
         if (!mHasA2dp && audio_is_a2dp_device(device)) {
-            ALOGE("setDeviceConnectionState() invalid device: %x", device);
+            ALOGE("setDeviceConnectionState() invalid A2DP device: %x", device);
             return BAD_VALUE;
         }
         if (!mHasUsb && audio_is_usb_device(device)) {
-            ALOGE("setDeviceConnectionState() invalid device: %x", device);
+            ALOGE("setDeviceConnectionState() invalid USB audio device: %x", device);
+            return BAD_VALUE;
+        }
+        if (!mHasRemoteSubmix && audio_is_remote_submix_device((audio_devices_t)device)) {
+            ALOGE("setDeviceConnectionState() invalid remote submix audio device: %x", device);
             return BAD_VALUE;
         }
 
@@ -108,6 +112,8 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
                     mUsbCardAndDevice = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
                     paramStr = mUsbCardAndDevice;
                 }
+                // not currently handling multiple simultaneous submixes: ignoring remote submix
+                //   case and address
                 if (!paramStr.isEmpty()) {
                     for (size_t i = 0; i < outputs.size(); i++) {
                         mpClientInterface->setParameters(outputs[i], paramStr);
@@ -138,6 +144,8 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
                 // handle USB device disconnection
                 mUsbCardAndDevice = "";
             }
+            // not currently handling multiple simultaneous submixes: ignoring remote submix
+            //   case and address
             } break;
 
         default:
@@ -241,7 +249,10 @@ AudioSystem::device_connection_state AudioPolicyManagerBase::getDeviceConnection
             }
             if (audio_is_usb_device(device) &&
                 (!mHasUsb || (address != "" && mUsbCardAndDevice != address))) {
-                ALOGE("setDeviceConnectionState() invalid device: %x", device);
+                ALOGE("getDeviceConnectionState() invalid device: %x", device);
+                return state;
+            }
+            if (audio_is_remote_submix_device((audio_devices_t)device) && !mHasRemoteSubmix) {
                 return state;
             }
             state = AudioSystem::DEVICE_STATE_AVAILABLE;
@@ -373,7 +384,8 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
             config != AudioSystem::FORCE_WIRED_ACCESSORY &&
             config != AudioSystem::FORCE_ANALOG_DOCK &&
             config != AudioSystem::FORCE_DIGITAL_DOCK && config != AudioSystem::FORCE_NONE &&
-            config != AudioSystem::FORCE_NO_BT_A2DP) {
+            config != AudioSystem::FORCE_NO_BT_A2DP &&
+            config != AudioSystem::FORCE_REMOTE_SUBMIX) {
             ALOGW("setForceUse() invalid config %d for FOR_MEDIA", config);
             return;
         }
@@ -1244,7 +1256,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
     mPhoneState(AudioSystem::MODE_NORMAL),
     mLimitRingtoneVolume(false), mLastVoiceVolume(-1.0f),
     mTotalEffectsCpuLoad(0), mTotalEffectsMemory(0),
-    mA2dpSuspended(false), mHasA2dp(false), mHasUsb(false)
+    mA2dpSuspended(false), mHasA2dp(false), mHasUsb(false), mHasRemoteSubmix(false)
 {
     mpClientInterface = clientInterface;
 
@@ -2157,7 +2169,12 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
 
     case STRATEGY_MEDIA: {
         uint32_t device2 = APM_AUDIO_DEVICE_NONE;
-        if (mHasA2dp && (mForceUse[AudioSystem::FOR_MEDIA] != AudioSystem::FORCE_NO_BT_A2DP) &&
+        if (mHasRemoteSubmix
+                && mForceUse[AudioSystem::FOR_MEDIA] == AudioSystem::FORCE_REMOTE_SUBMIX) {
+            device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_REMOTE_SUBMIX;
+        }
+        if ((device2 == APM_AUDIO_DEVICE_NONE) &&
+                mHasA2dp && (mForceUse[AudioSystem::FOR_MEDIA] != AudioSystem::FORCE_NO_BT_A2DP) &&
                 (getA2dpOutput() != APM_AUDIO_DEVICE_NONE) && !mA2dpSuspended) {
             device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_BLUETOOTH_A2DP;
             if (device2 == APM_AUDIO_DEVICE_NONE) {
@@ -2395,6 +2412,11 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
             device = AUDIO_DEVICE_IN_VOICE_CALL;
         }
         break;
+    case AUDIO_SOURCE_REMOTE_SUBMIX:
+        if (mAvailableInputDevices & AUDIO_DEVICE_IN_REMOTE_SUBMIX) {
+            device = AUDIO_DEVICE_IN_REMOTE_SUBMIX;
+        }
+        break;
     default:
         ALOGW("getDeviceForInputSource() invalid input source %d", inputSource);
         break;
@@ -2458,6 +2480,7 @@ AudioPolicyManagerBase::device_category AudioPolicyManagerBase::getDeviceCategor
         case AUDIO_DEVICE_OUT_AUX_DIGITAL:
         case AUDIO_DEVICE_OUT_USB_ACCESSORY:
         case AUDIO_DEVICE_OUT_USB_DEVICE:
+        case AUDIO_DEVICE_OUT_REMOTE_SUBMIX:
         default:
             return DEVICE_CATEGORY_SPEAKER;
     }
@@ -3268,12 +3291,14 @@ const struct StringToEnum sDeviceNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_DEVICE_OUT_USB_DEVICE),
     STRING_TO_ENUM(AUDIO_DEVICE_OUT_USB_ACCESSORY),
     STRING_TO_ENUM(AUDIO_DEVICE_OUT_ALL_USB),
+    STRING_TO_ENUM(AUDIO_DEVICE_OUT_REMOTE_SUBMIX),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_BUILTIN_MIC),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_WIRED_HEADSET),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_AUX_DIGITAL),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_VOICE_CALL),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_BACK_MIC),
+    STRING_TO_ENUM(AUDIO_DEVICE_IN_REMOTE_SUBMIX),
 };
 
 const struct StringToEnum sFlagNameToEnumTable[] = {
@@ -3544,6 +3569,8 @@ void AudioPolicyManagerBase::loadHwModule(cnode *root)
             mHasA2dp = true;
         } else if (strcmp(root->name, AUDIO_HARDWARE_MODULE_ID_USB) == 0) {
             mHasUsb = true;
+        } else if (strcmp(root->name, AUDIO_HARDWARE_MODULE_ID_REMOTE_SUBMIX) == 0) {
+            mHasRemoteSubmix = true;
         }
 
         node = node->first_child;
