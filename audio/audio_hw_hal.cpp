@@ -458,7 +458,11 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
 #endif
 
 #ifdef USES_AUDIO_LEGACY
+#ifndef ICS_AUDIO_BLOB
+    config->channel_mask = config->channel_mask >> 2;
+#else
     *channels = *channels >> 2;
+#endif
 #endif
 
     if (!out->legacy_out) {
