@@ -534,8 +534,6 @@ protected:
                                               // (must be in mAttachedOutputDevices)
 
         Vector <HwModule *> mHwModules;
-        Vector <IOProfile *> mOutputProfiles; // output profiles loaded from audio_policy.conf
-        Vector <IOProfile *> mInputProfiles;  // input profiles loaded from audio_policy.conf
 
 #ifdef AUDIO_POLICY_TEST
         Mutex   mLock;
