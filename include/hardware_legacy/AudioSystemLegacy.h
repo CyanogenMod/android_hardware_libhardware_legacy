@@ -226,6 +226,8 @@ public:
         TX_DISABLE    = 0
     };
 
+    // DO NOT USE: the "audio_devices" enumeration below is obsolete, use type "audio_devices_t" and
+    //   audio device enumeration from system/audio.h instead.
     enum audio_devices {
         // output devices
         DEVICE_OUT_EARPIECE = 0x1,

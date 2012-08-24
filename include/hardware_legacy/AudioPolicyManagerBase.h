@@ -72,10 +72,10 @@ public:
         virtual ~AudioPolicyManagerBase();
 
         // AudioPolicyInterface
-        virtual status_t setDeviceConnectionState(AudioSystem::audio_devices device,
+        virtual status_t setDeviceConnectionState(audio_devices_t device,
                                                           AudioSystem::device_connection_state state,
                                                           const char *device_address);
-        virtual AudioSystem::device_connection_state getDeviceConnectionState(AudioSystem::audio_devices device,
+        virtual AudioSystem::device_connection_state getDeviceConnectionState(audio_devices_t device,
                                                                               const char *device_address);
         virtual void setPhoneState(int state);
         virtual void setForceUse(AudioSystem::force_use usage, AudioSystem::forced_config config);

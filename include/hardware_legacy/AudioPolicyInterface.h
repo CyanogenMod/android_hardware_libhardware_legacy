@@ -66,11 +66,11 @@ public:
     //
 
     // indicate a change in device connection status
-    virtual status_t setDeviceConnectionState(AudioSystem::audio_devices device,
+    virtual status_t setDeviceConnectionState(audio_devices_t device,
                                           AudioSystem::device_connection_state state,
                                           const char *device_address) = 0;
     // retrieve a device connection status
-    virtual AudioSystem::device_connection_state getDeviceConnectionState(AudioSystem::audio_devices device,
+    virtual AudioSystem::device_connection_state getDeviceConnectionState(audio_devices_t device,
                                                                           const char *device_address) = 0;
     // indicate a change in phone state. Valid phones states are defined by AudioSystem::audio_mode
     virtual void setPhoneState(int state) = 0;
