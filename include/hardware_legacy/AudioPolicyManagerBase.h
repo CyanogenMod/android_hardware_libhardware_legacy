@@ -507,6 +507,8 @@ protected:
         DefaultKeyedVector<audio_io_handle_t, AudioInputDescriptor *> mInputs;     // list of input descriptors
         audio_devices_t mAvailableOutputDevices; // bit field of all available output devices
         audio_devices_t mAvailableInputDevices; // bit field of all available input devices
+                                                // without AUDIO_DEVICE_BIT_IN to allow direct bit
+                                                // field comparisons
         int mPhoneState;                                                    // current phone state
         AudioSystem::forced_config mForceUse[AudioSystem::NUM_FORCE_USE];   // current forced use configuration
 
