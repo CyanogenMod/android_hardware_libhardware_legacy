@@ -125,6 +125,11 @@ public:
     virtual status_t    flush()  {return INVALID_OPERATION;}
     virtual status_t    stop()  {return INVALID_OPERATION;}
     virtual int         setObserver(void *observer)  {return INVALID_OPERATION;}
+    virtual status_t    getBufferInfo(buf_info **buf) {return INVALID_OPERATION;}
+    virtual status_t    isBufferAvailable(int *isAvail) {
+        *isAvail = true;
+        return NO_ERROR;
+    }
 #endif
 };
 
