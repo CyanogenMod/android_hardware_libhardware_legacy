@@ -24,6 +24,10 @@
 #define ALOGVV(a...) do { } while(0)
 #endif
 
+// A device mask for all audio input devices that are considered "virtual" when evaluating
+// active inputs in getActiveInput()
+#define APM_AUDIO_IN_DEVICE_VIRTUAL_ALL  AUDIO_DEVICE_IN_REMOTE_SUBMIX
+
 #include <utils/Log.h>
 #include <hardware_legacy/AudioPolicyManagerBase.h>
 #include <hardware/audio_effect.h>
@@ -2421,10 +2425,22 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
     return device;
 }
 
-audio_io_handle_t AudioPolicyManagerBase::getActiveInput()
+bool AudioPolicyManagerBase::isVirtualInputDevice(audio_devices_t device)
+{
+    if ((device & AUDIO_DEVICE_BIT_IN) != 0) {
+        device &= ~AUDIO_DEVICE_BIT_IN;
+        if ((popcount(device) == 1) && ((device & ~APM_AUDIO_IN_DEVICE_VIRTUAL_ALL) == 0))
+            return true;
+    }
+    return false;
+}
+
+audio_io_handle_t AudioPolicyManagerBase::getActiveInput(bool ignoreVirtualInputs)
 {
     for (size_t i = 0; i < mInputs.size(); i++) {
-        if (mInputs.valueAt(i)->mRefCount > 0) {
+        const AudioInputDescriptor * input_descriptor = mInputs.valueAt(i);
+        if ((input_descriptor->mRefCount > 0)
+                && (!ignoreVirtualInputs || !isVirtualInputDevice(input_descriptor->mDevice))) {
             return mInputs.keyAt(i);
         }
     }

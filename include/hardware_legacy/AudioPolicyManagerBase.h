@@ -345,7 +345,9 @@ protected:
         virtual audio_devices_t getDeviceForInputSource(int inputSource);
 
         // return io handle of active input or 0 if no input is active
-        audio_io_handle_t getActiveInput();
+        //    Only considers inputs from physical devices (e.g. main mic, headset mic) when
+        //    ignoreVirtualInputs is true.
+        audio_io_handle_t getActiveInput(bool ignoreVirtualInputs = true);
 
         // initialize volume curves for each strategy and device category
         void initializeVolumeCurves();
@@ -559,6 +561,7 @@ private:
         // updates device caching and output for streams that can influence the
         //    routing of notifications
         void handleNotificationRoutingForStream(AudioSystem::stream_type stream);
+        static bool isVirtualInputDevice(audio_devices_t device);
 };
 
 };
