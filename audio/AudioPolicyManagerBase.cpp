@@ -795,6 +795,7 @@ void AudioPolicyManagerBase::releaseOutput(audio_io_handle_t output)
         mpClientInterface->closeOutput(output);
         delete mOutputs.valueAt(index);
         mOutputs.removeItem(output);
+        mPreviousOutputs = mOutputs;
     }
 
 }
