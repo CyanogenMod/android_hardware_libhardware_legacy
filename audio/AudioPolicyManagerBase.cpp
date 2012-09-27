@@ -169,7 +169,10 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
 
         updateDevicesAndOutputs();
         for (size_t i = 0; i < mOutputs.size(); i++) {
-            setOutputDevice(mOutputs.keyAt(i), getNewDevice(mOutputs.keyAt(i), true /*fromCache*/));
+            setOutputDevice(mOutputs.keyAt(i),
+                            getNewDevice(mOutputs.keyAt(i), true /*fromCache*/),
+                            true,
+                            0);
         }
 
         if (device == AUDIO_DEVICE_OUT_WIRED_HEADSET) {
