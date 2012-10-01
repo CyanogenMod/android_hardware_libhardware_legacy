@@ -81,7 +81,7 @@ int uevent_next_event(char* buffer, int buffer_length)
         fds.revents = 0;
         nr = poll(&fds, 1, -1);
      
-        if(nr > 0 && fds.revents == POLLIN) {
+        if(nr > 0 && (fds.revents & POLLIN)) {
             int count = recv(fd, buffer, buffer_length, 0);
             if (count > 0) {
                 struct uevent_handler *h;
