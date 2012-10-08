@@ -289,6 +289,7 @@ public:
         FORCE_DIGITAL_DOCK,
         FORCE_NO_BT_A2DP,
         FORCE_REMOTE_SUBMIX,
+        FORCE_SYSTEM_ENFORCED,
         NUM_FORCE_CONFIG,
         FORCE_DEFAULT = FORCE_NONE
     };
@@ -299,6 +300,7 @@ public:
         FOR_MEDIA,
         FOR_RECORD,
         FOR_DOCK,
+        FOR_SYSTEM,
         NUM_FORCE_USE
     };
 

@@ -413,6 +413,14 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
         forceVolumeReeval = true;
         mForceUse[usage] = config;
         break;
+    case AudioSystem::FOR_SYSTEM:
+        if (config != AudioSystem::FORCE_NONE &&
+            config != AudioSystem::FORCE_SYSTEM_ENFORCED) {
+            ALOGW("setForceUse() invalid config %d for FOR_SYSTEM", config);
+        }
+        forceVolumeReeval = true;
+        mForceUse[usage] = config;
+        break;
     default:
         ALOGW("setForceUse() invalid usage %d", usage);
         break;
@@ -455,15 +463,6 @@ AudioSystem::forced_config AudioPolicyManagerBase::getForceUse(AudioSystem::forc
 void AudioPolicyManagerBase::setSystemProperty(const char* property, const char* value)
 {
     ALOGV("setSystemProperty() property %s, value %s", property, value);
-    if (strcmp(property, "ro.camera.sound.forced") == 0) {
-        if (atoi(value)) {
-            ALOGV("ENFORCED_AUDIBLE cannot be muted");
-            mStreams[AudioSystem::ENFORCED_AUDIBLE].mCanBeMuted = false;
-        } else {
-            ALOGV("ENFORCED_AUDIBLE can be muted");
-            mStreams[AudioSystem::ENFORCED_AUDIBLE].mCanBeMuted = true;
-        }
-    }
 }
 
 AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getProfileForDirectOutput(
@@ -1191,6 +1190,8 @@ status_t AudioPolicyManagerBase::dump(int fd)
     snprintf(buffer, SIZE, " Force use for record %d\n", mForceUse[AudioSystem::FOR_RECORD]);
     result.append(buffer);
     snprintf(buffer, SIZE, " Force use for dock %d\n", mForceUse[AudioSystem::FOR_DOCK]);
+    result.append(buffer);
+    snprintf(buffer, SIZE, " Force use for system %d\n", mForceUse[AudioSystem::FOR_SYSTEM]);
     result.append(buffer);
     write(fd, result.string(), result.size());
 
@@ -2161,8 +2162,8 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
         //   - when in call where it doesn't default to STRATEGY_PHONE behavior
         //   - in countries where not enforced in which case it follows STRATEGY_MEDIA
 
-        if (strategy == STRATEGY_SONIFICATION ||
-                !mStreams[AUDIO_STREAM_ENFORCED_AUDIBLE].mCanBeMuted) {
+        if ((strategy == STRATEGY_SONIFICATION) ||
+                (mForceUse[AudioSystem::FOR_SYSTEM] == AudioSystem::FORCE_SYSTEM_ENFORCED)) {
             device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_SPEAKER;
             if (device == AUDIO_DEVICE_NONE) {
                 ALOGE("getDeviceForStrategy() speaker device not found for STRATEGY_SONIFICATION");
@@ -2684,7 +2685,9 @@ float AudioPolicyManagerBase::computeVolume(int stream,
             AUDIO_DEVICE_OUT_WIRED_HEADPHONE)) &&
         ((stream_strategy == STRATEGY_SONIFICATION)
                 || (stream_strategy == STRATEGY_SONIFICATION_RESPECTFUL)
-                || (stream == AudioSystem::SYSTEM)) &&
+                || (stream == AudioSystem::SYSTEM)
+                || ((stream_strategy == STRATEGY_ENFORCED_AUDIBLE) &&
+                    (mForceUse[AudioSystem::FOR_SYSTEM] == AudioSystem::FORCE_NONE))) &&
         streamDesc.mCanBeMuted) {
         volume *= SONIFICATION_HEADSET_VOLUME_FACTOR;
         // when the phone is ringing we must consider that music could have been paused just before
@@ -2823,7 +2826,9 @@ void AudioPolicyManagerBase::setStreamMute(int stream,
 
     if (on) {
         if (outputDesc->mMuteCount[stream] == 0) {
-            if (streamDesc.mCanBeMuted) {
+            if (streamDesc.mCanBeMuted &&
+                    ((stream != AudioSystem::ENFORCED_AUDIBLE) ||
+                     (mForceUse[AudioSystem::FOR_SYSTEM] == AudioSystem::FORCE_NONE))) {
                 checkAndSetVolume(stream, 0, output, device, delayMs);
             }
         }
