@@ -133,6 +133,7 @@ public:
         virtual status_t setEffectEnabled(int id, bool enabled);
 
         virtual bool isStreamActive(int stream, uint32_t inPastMs = 0) const;
+        virtual bool isSourceActive(audio_source_t source) const;
 
         virtual status_t dump(int fd);
 
