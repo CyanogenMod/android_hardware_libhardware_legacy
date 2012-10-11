@@ -1159,6 +1159,19 @@ bool AudioPolicyManagerBase::isStreamActive(int stream, uint32_t inPastMs) const
     return false;
 }
 
+bool AudioPolicyManagerBase::isSourceActive(audio_source_t source) const
+{
+    for (size_t i = 0; i < mInputs.size(); i++) {
+        const AudioInputDescriptor * inputDescriptor = mInputs.valueAt(i);
+        if ((inputDescriptor->mInputSource == (int) source)
+                && (inputDescriptor->mRefCount > 0)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 status_t AudioPolicyManagerBase::dump(int fd)
 {
