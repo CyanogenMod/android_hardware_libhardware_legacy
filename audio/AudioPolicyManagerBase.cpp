@@ -2952,6 +2952,9 @@ AudioPolicyManagerBase::AudioOutputDescriptor::AudioOutputDescriptor(
         mMuteCount[i] = 0;
         mStopTime[i] = 0;
     }
+    for (int i = 0; i < NUM_STRATEGIES; i++) {
+        mStrategyMutedByDevice[i] = false;
+    }
     if (profile != NULL) {
         mSamplingRate = profile->mSamplingRates[0];
         mFormat = profile->mFormats[0];
