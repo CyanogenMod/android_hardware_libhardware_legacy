@@ -2601,12 +2601,22 @@ const AudioPolicyManagerBase::VolumeCurvePoint
 };
 
 const AudioPolicyManagerBase::VolumeCurvePoint
+    AudioPolicyManagerBase::sDefaultVoiceVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {0, -42.0f}, {33, -28.0f}, {66, -14.0f}, {100, 0.0f}
+};
+
+const AudioPolicyManagerBase::VolumeCurvePoint
+    AudioPolicyManagerBase::sSpeakerVoiceVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
+    {0, -24.0f}, {33, -16.0f}, {66, -8.0f}, {100, 0.0f}
+};
+
+const AudioPolicyManagerBase::VolumeCurvePoint
             *AudioPolicyManagerBase::sVolumeProfiles[AUDIO_STREAM_CNT]
                                                    [AudioPolicyManagerBase::DEVICE_CATEGORY_CNT] = {
     { // AUDIO_STREAM_VOICE_CALL
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
-        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+        sDefaultVoiceVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerVoiceVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVoiceVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
     { // AUDIO_STREAM_SYSTEM
         sHeadsetSystemVolumeCurve, // DEVICE_CATEGORY_HEADSET
@@ -2634,9 +2644,9 @@ const AudioPolicyManagerBase::VolumeCurvePoint
         sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
     { // AUDIO_STREAM_BLUETOOTH_SCO
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_HEADSET
-        sDefaultVolumeCurve, // DEVICE_CATEGORY_SPEAKER
-        sDefaultVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+        sDefaultVoiceVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerVoiceVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultVoiceVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
     { // AUDIO_STREAM_ENFORCED_AUDIBLE
         sHeadsetSystemVolumeCurve, // DEVICE_CATEGORY_HEADSET
@@ -2760,19 +2770,11 @@ status_t AudioPolicyManagerBase::checkAndSetVolume(int stream,
             force) {
         mOutputs.valueFor(output)->mCurVolume[stream] = volume;
         ALOGVV("checkAndSetVolume() for output %d stream %d, volume %f, delay %d", output, stream, volume, delayMs);
-        if (stream == AudioSystem::VOICE_CALL ||
-            stream == AudioSystem::DTMF ||
-            stream == AudioSystem::BLUETOOTH_SCO) {
-            // offset value to reflect actual hardware volume that never reaches 0
-            // 1% corresponds roughly to first step in VOICE_CALL stream volume setting (see AudioService.java)
-            volume = 0.01 + 0.99 * volume;
-            // Force VOICE_CALL to track BLUETOOTH_SCO stream volume when bluetooth audio is
-            // enabled
-            if (stream == AudioSystem::BLUETOOTH_SCO) {
-                mpClientInterface->setStreamVolume(AudioSystem::VOICE_CALL, volume, output, delayMs);
-            }
+        // Force VOICE_CALL to track BLUETOOTH_SCO stream volume when bluetooth audio is
+        // enabled
+        if (stream == AudioSystem::BLUETOOTH_SCO) {
+            mpClientInterface->setStreamVolume(AudioSystem::VOICE_CALL, volume, output, delayMs);
         }
-
         mpClientInterface->setStreamVolume((AudioSystem::stream_type)stream, volume, output, delayMs);
     }
 
