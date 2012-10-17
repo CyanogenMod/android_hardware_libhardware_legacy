@@ -2111,16 +2111,18 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
             if (device) break;
             device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_WIRED_HEADSET;
             if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_ACCESSORY;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_AUX_DIGITAL;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET;
-            if (device) break;
+            if (mPhoneState != AudioSystem::MODE_IN_CALL) {
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_ACCESSORY;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_AUX_DIGITAL;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET;
+                if (device) break;
+            }
             device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_EARPIECE;
             if (device) break;
             device = mDefaultOutputDevice;
@@ -2138,16 +2140,18 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
                 device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER;
                 if (device) break;
             }
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_ACCESSORY;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_AUX_DIGITAL;
-            if (device) break;
-            device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET;
-            if (device) break;
+            if (mPhoneState != AudioSystem::MODE_IN_CALL) {
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_ACCESSORY;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_AUX_DIGITAL;
+                if (device) break;
+                device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET;
+                if (device) break;
+            }
             device = mAvailableOutputDevices & AUDIO_DEVICE_OUT_SPEAKER;
             if (device) break;
             device = mDefaultOutputDevice;
