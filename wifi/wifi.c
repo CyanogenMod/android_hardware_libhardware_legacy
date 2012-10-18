@@ -728,7 +728,13 @@ int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
     if (rfds[0].revents & POLLIN) {
         return wpa_ctrl_recv(monitor_conn[index], reply, reply_len);
     } else if (rfds[1].revents & POLLIN) {
-        wifi_close_sockets(index);
+        /* Close only the p2p sockets on receive side
+         * see wifi_close_supplicant_connection()
+         */
+        if (index == SECONDARY) {
+            ALOGD("close sockets %d", index);
+            wifi_close_sockets(index);
+        }
     }
     return -2;
 }
