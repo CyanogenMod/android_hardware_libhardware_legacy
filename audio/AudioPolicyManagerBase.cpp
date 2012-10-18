@@ -1611,13 +1611,13 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
 
             // nothing to do if one output is already opened for this profile
             size_t j;
-            for (j = 0; j < outputs.size(); j++) {
+            for (j = 0; j < mOutputs.size(); j++) {
                 desc = mOutputs.valueAt(j);
                 if (!desc->isDuplicated() && desc->mProfile == profile) {
                     break;
                 }
             }
-            if (j != outputs.size()) {
+            if (j != mOutputs.size()) {
                 continue;
             }
 
