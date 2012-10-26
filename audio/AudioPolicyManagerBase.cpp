@@ -677,7 +677,12 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
                                     uint32_t samplingRate,
                                     uint32_t format,
                                     uint32_t channels,
+#ifdef STE_AUDIO
+                                    AudioSystem::audio_in_acoustics acoustics,
+                                    AudioSystem::audio_input_clients *inputClientId)
+#else
                                     AudioSystem::audio_in_acoustics acoustics)
+#endif
 {
     audio_io_handle_t input = 0;
     uint32_t device = getDeviceForInputSource(inputSource);
@@ -728,8 +733,12 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
                                     &inputDesc->mSamplingRate,
                                     &inputDesc->mFormat,
                                     &inputDesc->mChannels,
+#ifdef STE_AUDIO
+                                    inputDesc->mAcoustics,
+                                    (uint32_t*)inputClientId);
+#else
                                     inputDesc->mAcoustics);
-
+#endif
     // only accept input with the exact requested set of parameters
     if (input == 0 ||
         (samplingRate != inputDesc->mSamplingRate) ||

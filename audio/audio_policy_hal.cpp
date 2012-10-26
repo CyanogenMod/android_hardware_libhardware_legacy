@@ -175,11 +175,21 @@ static audio_io_handle_t ap_get_input(struct audio_policy *pol, int inputSource,
                                       uint32_t sampling_rate,
                                       uint32_t format,
                                       uint32_t channels,
+#ifdef STE_AUDIO
+                                      audio_in_acoustics_t acoustics,
+                                      audio_input_clients *inputClientId)
+#else
                                       audio_in_acoustics_t acoustics)
+#endif
 {
     struct legacy_audio_policy *lap = to_lap(pol);
     return lap->apm->getInput(inputSource, sampling_rate, format, channels,
+#ifdef STE_AUDIO
+                              (AudioSystem::audio_in_acoustics)acoustics,
+                              (AudioSystem::audio_input_clients*)inputClientId);
+#else
                               (AudioSystem::audio_in_acoustics)acoustics);
+#endif
 }
 
 static int ap_start_input(struct audio_policy *pol, audio_io_handle_t input)

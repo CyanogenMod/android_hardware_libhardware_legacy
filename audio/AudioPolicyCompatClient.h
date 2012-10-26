@@ -58,8 +58,14 @@ public:
                                         uint32_t *pSamplingRate,
                                         uint32_t *pFormat,
                                         uint32_t *pChannels,
+#ifdef STE_AUDIO
+                                        uint32_t acoustics,
+                                        uint32_t *pInputClientId = NULL);
+    virtual status_t closeInput(audio_io_handle_t input, uint32_t *inputClientId = NULL);
+#else
                                         uint32_t acoustics);
     virtual status_t closeInput(audio_io_handle_t input);
+#endif
     virtual status_t setStreamOutput(AudioSystem::stream_type stream, audio_io_handle_t output);
     virtual status_t moveEffects(int session,
                                  audio_io_handle_t srcOutput,

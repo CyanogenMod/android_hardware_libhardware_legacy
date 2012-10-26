@@ -86,6 +86,19 @@ audio_io_handle_t AudioPolicyCompatClient::openInput(uint32_t *pDevices,
                                 uint32_t *pSamplingRate,
                                 uint32_t *pFormat,
                                 uint32_t *pChannels,
+#ifdef STE_AUDIO
+                                uint32_t acoustics,
+                                uint32_t *pInputClientId)
+{
+    return mServiceOps->open_input(mService, pDevices, pSamplingRate, pFormat,
+                                   pChannels, acoustics, pInputClientId);
+}
+
+status_t AudioPolicyCompatClient::closeInput(audio_io_handle_t input, uint32_t *inputClientId)
+{
+    return mServiceOps->close_input(mService, input, inputClientId);
+}
+#else
                                 uint32_t acoustics)
 {
     return mServiceOps->open_input(mService, pDevices, pSamplingRate, pFormat,
@@ -96,6 +109,7 @@ status_t AudioPolicyCompatClient::closeInput(audio_io_handle_t input)
 {
     return mServiceOps->close_input(mService, input);
 }
+#endif
 
 status_t AudioPolicyCompatClient::setStreamOutput(AudioSystem::stream_type stream,
                                              audio_io_handle_t output)
