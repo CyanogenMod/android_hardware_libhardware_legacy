@@ -2240,7 +2240,8 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
             // no sonification on aux digital (e.g. HDMI)
             device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_AUX_DIGITAL;
         }
-        if (device2 == AUDIO_DEVICE_NONE) {
+        if ((device2 == AUDIO_DEVICE_NONE) &&
+                (mForceUse[AudioSystem::FOR_DOCK] == AudioSystem::FORCE_ANALOG_DOCK)) {
             device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET;
         }
         if (device2 == AUDIO_DEVICE_NONE) {
