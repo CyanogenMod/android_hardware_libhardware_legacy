@@ -1642,7 +1642,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                                   reply.string());
                         value = strpbrk((char *)reply.string(), "=");
                         if (value != NULL) {
-                            loadSamplingRates(value, profile);
+                            loadSamplingRates(value + 1, profile);
                         }
                     }
                     if (profile->mFormats[0] == 0) {
@@ -1652,7 +1652,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                                   reply.string());
                         value = strpbrk((char *)reply.string(), "=");
                         if (value != NULL) {
-                            loadFormats(value, profile);
+                            loadFormats(value + 1, profile);
                         }
                     }
                     if (profile->mChannelMasks[0] == 0) {
