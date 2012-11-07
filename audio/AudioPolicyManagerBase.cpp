@@ -348,7 +348,7 @@ void AudioPolicyManagerBase::setPhoneState(int state)
         for (size_t i = 0; i < mOutputs.size(); i++) {
             AudioOutputDescriptor *desc = mOutputs.valueAt(i);
             //take the biggest latency for all outputs
-            if (delayMs < desc->mLatency*2) {
+            if (delayMs < (int)desc->mLatency*2) {
                 delayMs = desc->mLatency*2;
             }
             //mute STRATEGY_MEDIA on all outputs
@@ -702,8 +702,9 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
                 }
                 // wait for audio on other active outputs to be presented when starting
                 // a notification so that audio focus effect can propagate.
-                if (shouldWait && (desc->refCount() != 0) && (waitMs < desc->latency())) {
-                    waitMs = desc->latency();
+                uint32_t latency = desc->latency();
+                if (shouldWait && desc->isActive(latency * 2) && (waitMs < latency)) {
+                    waitMs = latency;
                 }
             }
         }
@@ -3062,6 +3063,18 @@ audio_devices_t AudioPolicyManagerBase::AudioOutputDescriptor::supportedDevices(
     } else {
         return mProfile->mSupportedDevices ;
     }
+}
+
+bool AudioPolicyManagerBase::AudioOutputDescriptor::isActive(uint32_t inPastMs) const
+{
+    nsecs_t sysTime = systemTime();
+    for (int i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
+        if (mRefCount[i] != 0 ||
+            ns2ms(sysTime - mStopTime[i]) < inPastMs) {
+            return true;
+        }
+    }
+    return false;
 }
 
 status_t AudioPolicyManagerBase::AudioOutputDescriptor::dump(int fd)

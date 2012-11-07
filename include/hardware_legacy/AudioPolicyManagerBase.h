@@ -250,6 +250,7 @@ protected:
             audio_devices_t supportedDevices();
             uint32_t latency();
             bool sharesHwModuleWith(const AudioOutputDescriptor *outputDesc);
+            bool isActive(uint32_t inPastMs) const;
 
             audio_io_handle_t mId;              // output handle
             uint32_t mSamplingRate;             //
