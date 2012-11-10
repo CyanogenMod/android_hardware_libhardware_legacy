@@ -620,12 +620,14 @@ int wifi_start_supplicant(int p2p_supported)
     }
 #endif
 
+#ifdef WIFI_DRIVER_MODULE_PATH
     /* The ar6k driver needs the interface up in order to scan! */
     if (!strncmp(DRIVER_MODULE_NAME, "ar6000", 6)) {
         ifc_init();
         ifc_up("wlan0");
         sleep(2);
     }
+#endif
 
     property_get("wifi.interface", primary_iface, WIFI_TEST_INTERFACE);
 
