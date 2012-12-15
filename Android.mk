@@ -13,6 +13,11 @@ LOCAL_SHARED_LIBRARIES := libcutils libwpa_client
 
 LOCAL_INCLUDES += $(LOCAL_PATH)
 
+ifdef USES_TI_MAC80211
+LOCAL_STATIC_LIBRARIES := libnl_2
+LOCAL_C_INCLUDES += external/libnl-headers
+endif
+
 LOCAL_CFLAGS  += -DQEMU_HARDWARE
 QEMU_HARDWARE := true
 
