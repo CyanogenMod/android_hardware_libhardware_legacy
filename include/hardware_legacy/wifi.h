@@ -145,6 +145,11 @@ const char *wifi_get_fw_path(int fw_type);
 int wifi_change_fw_path(const char *fwpath);
 
 /**
+ * Set the wifi mode (0 = normal, 1 = ap)
+ */
+int wifi_set_mode(int mode);
+
+/**
  * Check and create if necessary initial entropy file
  */
 #define WIFI_ENTROPY_FILE	"/data/misc/wifi/entropy.bin"
