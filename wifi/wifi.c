@@ -284,16 +284,13 @@ int wifi_load_driver()
     char module_arg2[256];
 
 #ifdef SAMSUNG_WIFI
-#ifdef WIFI_DRIVER_MODULE_AP_ARG
-    if (wifi_mode == 1) {
-        snprintf(module_arg2, sizeof(module_arg2), DRIVER_MODULE_AP_ARG);
-    } else {
-        snprintf(module_arg2, sizeof(module_arg2), DRIVER_MODULE_ARG);
-    }
-#else
     char* type = get_samsung_wifi_type();
-    snprintf(module_arg2, sizeof(module_arg2), "%s%s", DRIVER_MODULE_ARG, type == NULL ? "" : type);
-#endif
+
+    if (wifi_mode == 1) {
+        snprintf(module_arg2, sizeof(module_arg2), "%s%s", DRIVER_MODULE_AP_ARG, type == NULL ? "" : type);
+    } else {
+        snprintf(module_arg2, sizeof(module_arg2), "%s%s", DRIVER_MODULE_ARG, type == NULL ? "" : type);
+    }
 
     if (insmod(DRIVER_MODULE_PATH, module_arg2) < 0) {
 #else
