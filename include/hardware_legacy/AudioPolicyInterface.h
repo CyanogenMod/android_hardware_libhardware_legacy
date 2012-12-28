@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,6 +245,11 @@ public:
     virtual status_t moveEffects(int session,
                                      audio_io_handle_t srcOutput,
                                      audio_io_handle_t dstOutput) = 0;
+
+#ifdef QCOM_FM_ENABLED
+    // set FM volume.
+    virtual status_t setFmVolume(float volume, int delayMs = 0) { return 0; }
+#endif
 
 };
 
