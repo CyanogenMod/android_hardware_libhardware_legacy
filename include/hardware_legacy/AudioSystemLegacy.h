@@ -89,6 +89,9 @@ public:
         DTMF             = 8,
         TTS              = 9,
         INCALL_MUSIC     = 10,
+#ifdef QCOM_FM_ENABLED
+        FM               = 11,
+#endif
         NUM_STREAM_TYPES
     };
 
