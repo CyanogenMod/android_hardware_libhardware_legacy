@@ -3406,6 +3406,7 @@ const struct StringToEnum sOutChannelsNameToEnumTable[] = {
 const struct StringToEnum sInChannelsNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_CHANNEL_IN_MONO),
     STRING_TO_ENUM(AUDIO_CHANNEL_IN_STEREO),
+    STRING_TO_ENUM(AUDIO_CHANNEL_IN_FRONT_BACK),
 };
 
 
