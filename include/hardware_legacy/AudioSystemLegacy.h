@@ -61,8 +61,12 @@ enum audio_source {
     AUDIO_SOURCE_CAMCORDER = 5,
     AUDIO_SOURCE_VOICE_RECOGNITION = 6,
     AUDIO_SOURCE_VOICE_COMMUNICATION = 7,
+#if defined (STE_FM)
+    AUDIO_SOURCE_FM_RX = 8,
+    AUDIO_SOURCE_MAX = AUDIO_SOURCE_FM_RX,
+#else
     AUDIO_SOURCE_MAX = AUDIO_SOURCE_VOICE_COMMUNICATION,
-
+#endif
     AUDIO_SOURCE_LIST_END  // must be last - used to validate audio source type
 };
 
@@ -280,6 +284,9 @@ public:
         DEVICE_IN_PROXY = 0x20000000,
         DEVICE_IN_ANLG_DOCK_HEADSET = 0x40000000,
 #endif
+#if defined (STE_FM)
+        DEVICE_IN_FM_RX = 0x1000000,
+#endif
         DEVICE_IN_DEFAULT = 0x80000000,
 
         DEVICE_IN_ALL = (DEVICE_IN_COMMUNICATION | DEVICE_IN_AMBIENT | DEVICE_IN_BUILTIN_MIC |
@@ -287,6 +294,9 @@ public:
                 DEVICE_IN_VOICE_CALL | DEVICE_IN_BACK_MIC |
 #ifdef QCOM_HARDWARE
                 DEVICE_IN_ANC_HEADSET | DEVICE_IN_PROXY | DEVICE_IN_ANLG_DOCK_HEADSET |
+#endif
+#if defined (STE_FM)
+                DEVICE_IN_FM_RX |
 #endif
                 DEVICE_IN_DEFAULT)
     };
