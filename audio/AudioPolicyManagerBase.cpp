@@ -2355,7 +2355,7 @@ uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor
                     if (tempMute) {
                         setStrategyMute((routing_strategy)i, true, curOutput);
                         setStrategyMute((routing_strategy)i, false, curOutput,
-                                            desc->latency() * 2, device);
+                                            desc->latency() * 4, device);
                     }
                     if (tempMute || mute) {
                         if (muteWaitMs < desc->latency()) {
