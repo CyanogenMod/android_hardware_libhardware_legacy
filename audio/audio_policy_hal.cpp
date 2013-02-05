@@ -302,6 +302,13 @@ static bool ap_is_stream_active(const struct audio_policy *pol, audio_stream_typ
     return lap->apm->isStreamActive((int) stream, in_past_ms);
 }
 
+static bool ap_is_stream_active_remotely(const struct audio_policy *pol, audio_stream_type_t stream,
+                                uint32_t in_past_ms)
+{
+    const struct legacy_audio_policy *lap = to_clap(pol);
+    return lap->apm->isStreamActiveRemotely((int) stream, in_past_ms);
+}
+
 static bool ap_is_source_active(const struct audio_policy *pol, audio_source_t source)
 {
     const struct legacy_audio_policy *lap = to_clap(pol);
@@ -358,6 +365,7 @@ static int create_legacy_ap(const struct audio_policy_device *device,
     lap->policy.unregister_effect = ap_unregister_effect;
     lap->policy.set_effect_enabled = ap_set_effect_enabled;
     lap->policy.is_stream_active = ap_is_stream_active;
+    lap->policy.is_stream_active_remotely = ap_is_stream_active_remotely;
     lap->policy.is_source_active = ap_is_source_active;
     lap->policy.dump = ap_dump;
 

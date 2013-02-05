@@ -133,6 +133,10 @@ public:
         virtual status_t setEffectEnabled(int id, bool enabled);
 
         virtual bool isStreamActive(int stream, uint32_t inPastMs = 0) const;
+        // return whether a stream is playing remotely, override to change the definition of
+        //   local/remote playback, used for instance by notification manager to not make
+        //   media players lose audio focus when not playing locally
+        virtual bool isStreamActiveRemotely(int stream, uint32_t inPastMs = 0) const;
         virtual bool isSourceActive(audio_source_t source) const;
 
         virtual status_t dump(int fd);
@@ -241,7 +245,7 @@ protected:
 
             status_t    dump(int fd);
 
-            audio_devices_t device();
+            audio_devices_t device() const;
             void changeRefCount(AudioSystem::stream_type, int delta);
             uint32_t refCount();
             uint32_t strategyRefCount(routing_strategy strategy);
