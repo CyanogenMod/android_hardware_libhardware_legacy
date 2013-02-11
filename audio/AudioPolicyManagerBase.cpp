@@ -347,12 +347,12 @@ void AudioPolicyManagerBase::setPhoneState(int state)
     if (isStateInCall(state)) {
         for (size_t i = 0; i < mOutputs.size(); i++) {
             AudioOutputDescriptor *desc = mOutputs.valueAt(i);
-            //take the biggest latency for all outputs
-            if (delayMs < (int)desc->mLatency*2) {
-                delayMs = desc->mLatency*2;
-            }
-            //mute STRATEGY_MEDIA on all outputs
+            // mute strategy media and delay device switch by the largest latency of any output
+            // where strategy media is active.
             if (desc->strategyRefCount(STRATEGY_MEDIA) != 0) {
+                if (delayMs < (int)desc->mLatency*2) {
+                    delayMs = desc->mLatency*2;
+                }
                 setStrategyMute(STRATEGY_MEDIA, true, mOutputs.keyAt(i));
                 setStrategyMute(STRATEGY_MEDIA, false, mOutputs.keyAt(i), MUTE_TIME_MS,
                     getDeviceForStrategy(STRATEGY_MEDIA, true /*fromCache*/));
