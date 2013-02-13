@@ -888,10 +888,18 @@ int wifi_start_supplicant(int p2p_supported)
     return -1;
 }
 
-int wifi_stop_supplicant()
+int wifi_stop_supplicant(int p2p_supported)
 {
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 50; /* wait at most 5 seconds for completion */
+
+    if (p2p_supported) {
+        strcpy(supplicant_name, P2P_SUPPLICANT_NAME);
+        strcpy(supplicant_prop_name, P2P_PROP_NAME);
+    } else {
+        strcpy(supplicant_name, SUPPLICANT_NAME);
+        strcpy(supplicant_prop_name, SUPP_PROP_NAME);
+    }
 
     /* Check whether supplicant already stopped */
     if (property_get(supplicant_prop_name, supp_status, NULL)
@@ -909,6 +917,7 @@ int wifi_stop_supplicant()
         }
         usleep(100000);
     }
+    ALOGE("Failed to stop supplicant");
     return -1;
 }
 
