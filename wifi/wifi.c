@@ -60,6 +60,7 @@ extern char *dhcp_lasterror();
 extern void get_dhcp_info();
 extern int init_module(void *, unsigned long, const char *);
 extern int delete_module(const char *, unsigned int);
+void wifi_close_sockets(int index);
 
 static char primary_iface[PROPERTY_VALUE_MAX];
 // TODO: use new ANDROID_SOCKET mechanism, once support for multiple
@@ -751,11 +752,7 @@ int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
 int wifi_wait_on_socket(int index, char *buf, size_t buflen)
 {
     size_t nread = buflen - 1;
-    int fd;
-    fd_set rfds;
     int result;
-    struct timeval tval;
-    struct timeval *tptr;
 
     if (monitor_conn[index] == NULL) {
         ALOGD("Connection closed\n");
