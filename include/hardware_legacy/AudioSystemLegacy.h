@@ -85,6 +85,7 @@ public:
         ENFORCED_AUDIBLE = 7, // Sounds that cannot be muted by user and must be routed to speaker
         DTMF             = 8,
         TTS              = 9,
+        INCALL_MUSIC     = 10,
         NUM_STREAM_TYPES
     };
 

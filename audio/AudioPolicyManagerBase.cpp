@@ -2121,6 +2121,7 @@ AudioPolicyManagerBase::routing_strategy AudioPolicyManagerBase::getStrategy(
         // while key clicks are played produces a poor result
     case AudioSystem::TTS:
     case AudioSystem::MUSIC:
+    case AudioSystem::INCALL_MUSIC:
         return STRATEGY_MEDIA;
     case AudioSystem::ENFORCED_AUDIBLE:
         return STRATEGY_ENFORCED_AUDIBLE;
@@ -2677,7 +2678,6 @@ float AudioPolicyManagerBase::volIndexToAmpl(audio_devices_t device, const Strea
             decibels,
             curve[segment+1].mDBAttenuation,
             amplification);
-
     return amplification;
 }
 
@@ -2773,6 +2773,11 @@ const AudioPolicyManagerBase::VolumeCurvePoint
         sDefaultSystemVolumeCurve  // DEVICE_CATEGORY_EARPIECE
     },
     { // AUDIO_STREAM_TTS
+        sDefaultMediaVolumeCurve, // DEVICE_CATEGORY_HEADSET
+        sSpeakerMediaVolumeCurve, // DEVICE_CATEGORY_SPEAKER
+        sDefaultMediaVolumeCurve  // DEVICE_CATEGORY_EARPIECE
+    },
+    { // AUDIO_STREAM_INCALL_MUSIC
         sDefaultMediaVolumeCurve, // DEVICE_CATEGORY_HEADSET
         sSpeakerMediaVolumeCurve, // DEVICE_CATEGORY_SPEAKER
         sDefaultMediaVolumeCurve  // DEVICE_CATEGORY_EARPIECE
@@ -3563,6 +3568,7 @@ const struct StringToEnum sFlagNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_VOIP_RX),
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_LPA),
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_TUNNEL),
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_INCALL_MUSIC),
 };
 
 const struct StringToEnum sFormatNameToEnumTable[] = {
