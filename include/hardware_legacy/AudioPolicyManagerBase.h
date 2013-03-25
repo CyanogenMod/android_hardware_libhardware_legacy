@@ -87,7 +87,8 @@ public:
                                             uint32_t format = AudioSystem::FORMAT_DEFAULT,
                                             uint32_t channels = 0,
                                             AudioSystem::output_flags flags =
-                                                    AudioSystem::OUTPUT_FLAG_INDIRECT);
+                                                    AudioSystem::OUTPUT_FLAG_INDIRECT,
+                                            const audio_offload_info_t *offloadInfo = NULL);
         virtual status_t startOutput(audio_io_handle_t output,
                                      AudioSystem::stream_type stream,
                                      int session = 0);
@@ -140,6 +141,8 @@ public:
         virtual bool isSourceActive(audio_source_t source) const;
 
         virtual status_t dump(int fd);
+
+        virtual bool isOffloadSupported(const audio_offload_info_t& offloadInfo);
 
 protected:
 
@@ -247,6 +250,7 @@ protected:
 
             audio_devices_t device() const;
             void changeRefCount(AudioSystem::stream_type stream, int delta);
+
             bool isDuplicated() const { return (mOutput1 != NULL && mOutput2 != NULL); }
             audio_devices_t supportedDevices();
             uint32_t latency();

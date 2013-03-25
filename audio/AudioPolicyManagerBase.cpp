@@ -508,7 +508,8 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
                                     uint32_t samplingRate,
                                     uint32_t format,
                                     uint32_t channelMask,
-                                    AudioSystem::output_flags flags)
+                                    AudioSystem::output_flags flags,
+                                    const audio_offload_info_t *offloadInfo)
 {
     audio_io_handle_t output = 0;
     uint32_t latency = 0;
@@ -537,7 +538,8 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
                                             &outputDesc->mFormat,
                                             &outputDesc->mChannelMask,
                                             &outputDesc->mLatency,
-                                            outputDesc->mFlags);
+                                            outputDesc->mFlags,
+                                            offloadInfo);
             if (mTestOutputs[mCurOutput]) {
                 AudioParameter outputCmd = AudioParameter();
                 outputCmd.addInt(String8("set_id"),mCurOutput);
@@ -582,7 +584,8 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         outputDesc->mFormat = (audio_format_t)format;
         outputDesc->mChannelMask = (audio_channel_mask_t)channelMask;
         outputDesc->mLatency = 0;
-        outputDesc->mFlags = (audio_output_flags_t)(flags | AUDIO_OUTPUT_FLAG_DIRECT);;
+        outputDesc->mFlags =(audio_output_flags_t)
+                               (outputDesc->mFlags | flags | AUDIO_OUTPUT_FLAG_DIRECT);
         outputDesc->mRefCount[stream] = 0;
         outputDesc->mStopTime[stream] = 0;
         outputDesc->mDirectOpenCount = 1;
@@ -1314,6 +1317,12 @@ status_t AudioPolicyManagerBase::dump(int fd)
 
 
     return NO_ERROR;
+}
+
+bool AudioPolicyManagerBase::isOffloadSupported(const audio_offload_info_t& offloadInfo)
+{
+    // Stub implementation
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -3455,6 +3464,8 @@ const struct StringToEnum sFlagNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_PRIMARY),
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_FAST),
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_DEEP_BUFFER),
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_COMPRESS_OFFLOAD),
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_NON_BLOCKING),
 };
 
 const struct StringToEnum sFormatNameToEnumTable[] = {
