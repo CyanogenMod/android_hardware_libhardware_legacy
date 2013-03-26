@@ -246,15 +246,18 @@ protected:
             status_t    dump(int fd);
 
             audio_devices_t device() const;
-            void changeRefCount(AudioSystem::stream_type, int delta);
-            uint32_t refCount();
-            uint32_t strategyRefCount(routing_strategy strategy);
-            bool isUsedByStrategy(routing_strategy strategy) { return (strategyRefCount(strategy) != 0);}
+            void changeRefCount(AudioSystem::stream_type stream, int delta);
             bool isDuplicated() const { return (mOutput1 != NULL && mOutput2 != NULL); }
             audio_devices_t supportedDevices();
             uint32_t latency();
             bool sharesHwModuleWith(const AudioOutputDescriptor *outputDesc);
-            bool isActive(uint32_t inPastMs) const;
+            bool isActive(uint32_t inPastMs = 0) const;
+            bool isStreamActive(AudioSystem::stream_type stream,
+                                uint32_t inPastMs = 0,
+                                nsecs_t sysTime = 0) const;
+            bool isStrategyActive(routing_strategy strategy,
+                             uint32_t inPastMs = 0,
+                             nsecs_t sysTime = 0) const;
 
             audio_io_handle_t mId;              // output handle
             uint32_t mSamplingRate;             //

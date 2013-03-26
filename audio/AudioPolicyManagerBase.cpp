@@ -335,31 +335,29 @@ void AudioPolicyManagerBase::setPhoneState(int state)
         newDevice = hwOutputDesc->device();
     }
 
-    // when changing from ring tone to in call mode, mute the ringing tone
-    // immediately and delay the route change to avoid sending the ring tone
-    // tail into the earpiece or headset.
     int delayMs = 0;
-    if (isStateInCall(state) && oldState == AudioSystem::MODE_RINGTONE) {
-        // delay the device change command by twice the output latency to have some margin
-        // and be sure that audio buffers not yet affected by the mute are out when
-        // we actually apply the route change
-        delayMs = hwOutputDesc->mLatency*2;
-        setStreamMute(AudioSystem::RING, true, mPrimaryOutput);
-    }
-
     if (isStateInCall(state)) {
+        nsecs_t sysTime = systemTime();
         for (size_t i = 0; i < mOutputs.size(); i++) {
             AudioOutputDescriptor *desc = mOutputs.valueAt(i);
-            // mute strategy media and delay device switch by the largest latency of any output
-            // where strategy media is active.
-            if (desc->strategyRefCount(STRATEGY_MEDIA) != 0) {
-                if (delayMs < (int)desc->mLatency*2) {
-                    delayMs = desc->mLatency*2;
-                }
-                setStrategyMute(STRATEGY_MEDIA, true, mOutputs.keyAt(i));
-                setStrategyMute(STRATEGY_MEDIA, false, mOutputs.keyAt(i), MUTE_TIME_MS,
-                    getDeviceForStrategy(STRATEGY_MEDIA, true /*fromCache*/));
+            // mute media and sonification strategies and delay device switch by the largest
+            // latency of any output where either strategy is active.
+            // This avoid sending the ring tone or music tail into the earpiece or headset.
+            if ((desc->isStrategyActive(STRATEGY_MEDIA,
+                                     SONIFICATION_HEADSET_MUSIC_DELAY,
+                                     sysTime) ||
+                    desc->isStrategyActive(STRATEGY_SONIFICATION,
+                                         SONIFICATION_HEADSET_MUSIC_DELAY,
+                                         sysTime)) &&
+                    (delayMs < (int)desc->mLatency*2)) {
+                delayMs = desc->mLatency*2;
             }
+            setStrategyMute(STRATEGY_MEDIA, true, mOutputs.keyAt(i));
+            setStrategyMute(STRATEGY_MEDIA, false, mOutputs.keyAt(i), MUTE_TIME_MS,
+                getDeviceForStrategy(STRATEGY_MEDIA, true /*fromCache*/));
+            setStrategyMute(STRATEGY_SONIFICATION, true, mOutputs.keyAt(i));
+            setStrategyMute(STRATEGY_SONIFICATION, false, mOutputs.keyAt(i), MUTE_TIME_MS,
+                getDeviceForStrategy(STRATEGY_SONIFICATION, true /*fromCache*/));
         }
     }
 
@@ -370,11 +368,6 @@ void AudioPolicyManagerBase::setPhoneState(int state)
     // pertaining to sonification strategy see handleIncallSonification()
     if (isStateInCall(state)) {
         ALOGV("setPhoneState() in call state management: new state is %d", state);
-        // unmute the ringing tone after a sufficient delay if it was muted before
-        // setting output device above
-        if (oldState == AudioSystem::MODE_RINGTONE) {
-            setStreamMute(AudioSystem::RING, false, mPrimaryOutput, MUTE_TIME_MS);
-        }
         for (int stream = 0; stream < AudioSystem::NUM_STREAM_TYPES; stream++) {
             handleIncallSonification(stream, true, true);
         }
@@ -773,7 +766,7 @@ status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
                 audio_io_handle_t curOutput = mOutputs.keyAt(i);
                 AudioOutputDescriptor *desc = mOutputs.valueAt(i);
                 if (curOutput != output &&
-                        desc->refCount() != 0 &&
+                        desc->isActive() &&
                         outputDesc->sharesHwModuleWith(desc) &&
                         newDevice != desc->device()) {
                     setOutputDevice(curOutput,
@@ -805,7 +798,7 @@ void AudioPolicyManagerBase::releaseOutput(audio_io_handle_t output)
     int testIndex = testOutputIndex(output);
     if (testIndex != 0) {
         AudioOutputDescriptor *outputDesc = mOutputs.valueAt(index);
-        if (outputDesc->refCount() == 0) {
+        if (outputDesc->isActive()) {
             mpClientInterface->closeOutput(output);
             delete mOutputs.valueAt(index);
             mOutputs.removeItem(output);
@@ -1173,8 +1166,8 @@ bool AudioPolicyManagerBase::isStreamActive(int stream, uint32_t inPastMs) const
 {
     nsecs_t sysTime = systemTime();
     for (size_t i = 0; i < mOutputs.size(); i++) {
-        if (mOutputs.valueAt(i)->mRefCount[stream] != 0 ||
-            ns2ms(sysTime - mOutputs.valueAt(i)->mStopTime[stream]) < inPastMs) {
+        const AudioOutputDescriptor *outputDesc = mOutputs.valueAt(i);
+        if (outputDesc->isStreamActive((AudioSystem::stream_type)stream, inPastMs, sysTime)) {
             return true;
         }
     }
@@ -1186,9 +1179,8 @@ bool AudioPolicyManagerBase::isStreamActiveRemotely(int stream, uint32_t inPastM
     nsecs_t sysTime = systemTime();
     for (size_t i = 0; i < mOutputs.size(); i++) {
         const AudioOutputDescriptor *outputDesc = mOutputs.valueAt(i);
-        if ((outputDesc->mRefCount[stream] != 0 ||
-                ns2ms(sysTime - outputDesc->mStopTime[stream]) < inPastMs)
-             && ((outputDesc->device() & APM_AUDIO_OUT_DEVICE_REMOTE_ALL) != 0) ) {
+        if (((outputDesc->device() & APM_AUDIO_OUT_DEVICE_REMOTE_ALL) != 0) &&
+                outputDesc->isStreamActive((AudioSystem::stream_type)stream, inPastMs, sysTime)) {
             return true;
         }
     }
@@ -1878,7 +1870,7 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
         // mute strategy while moving tracks from one output to another
         for (size_t i = 0; i < srcOutputs.size(); i++) {
             AudioOutputDescriptor *desc = mOutputs.valueFor(srcOutputs[i]);
-            if (desc->strategyRefCount(strategy) != 0) {
+            if (desc->isStrategyActive(strategy)) {
                 setStrategyMute(strategy, true, srcOutputs[i]);
                 setStrategyMute(strategy, false, srcOutputs[i], MUTE_TIME_MS, newDevice);
             }
@@ -2009,18 +2001,18 @@ audio_devices_t AudioPolicyManagerBase::getNewDevice(audio_io_handle_t output, b
     //      use device for strategy media
     // 6: the strategy DTMF is active on the output:
     //      use device for strategy DTMF
-    if (outputDesc->isUsedByStrategy(STRATEGY_ENFORCED_AUDIBLE)) {
+    if (outputDesc->isStrategyActive(STRATEGY_ENFORCED_AUDIBLE)) {
         device = getDeviceForStrategy(STRATEGY_ENFORCED_AUDIBLE, fromCache);
     } else if (isInCall() ||
-                    outputDesc->isUsedByStrategy(STRATEGY_PHONE)) {
+                    outputDesc->isStrategyActive(STRATEGY_PHONE)) {
         device = getDeviceForStrategy(STRATEGY_PHONE, fromCache);
-    } else if (outputDesc->isUsedByStrategy(STRATEGY_SONIFICATION)) {
+    } else if (outputDesc->isStrategyActive(STRATEGY_SONIFICATION)) {
         device = getDeviceForStrategy(STRATEGY_SONIFICATION, fromCache);
-    } else if (outputDesc->isUsedByStrategy(STRATEGY_SONIFICATION_RESPECTFUL)) {
+    } else if (outputDesc->isStrategyActive(STRATEGY_SONIFICATION_RESPECTFUL)) {
         device = getDeviceForStrategy(STRATEGY_SONIFICATION_RESPECTFUL, fromCache);
-    } else if (outputDesc->isUsedByStrategy(STRATEGY_MEDIA)) {
+    } else if (outputDesc->isStrategyActive(STRATEGY_MEDIA)) {
         device = getDeviceForStrategy(STRATEGY_MEDIA, fromCache);
-    } else if (outputDesc->isUsedByStrategy(STRATEGY_DTMF)) {
+    } else if (outputDesc->isStrategyActive(STRATEGY_DTMF)) {
         device = getDeviceForStrategy(STRATEGY_DTMF, fromCache);
     }
 
@@ -2317,11 +2309,10 @@ uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor
 
     uint32_t muteWaitMs = 0;
     audio_devices_t device = outputDesc->device();
-    bool shouldMute = (outputDesc->refCount() != 0) &&
-                    (AudioSystem::popCount(device) >= 2);
+    bool shouldMute = outputDesc->isActive() && (AudioSystem::popCount(device) >= 2);
     // temporary mute output if device selection changes to avoid volume bursts due to
     // different per device volumes
-    bool tempMute = (outputDesc->refCount() != 0) && (device != prevDevice);
+    bool tempMute = outputDesc->isActive() && (device != prevDevice);
 
     for (size_t i = 0; i < NUM_STRATEGIES; i++) {
         audio_devices_t curDevice = getDeviceForStrategy((routing_strategy)i, false /*fromCache*/);
@@ -2347,7 +2338,7 @@ uint32_t AudioPolicyManagerBase::checkDeviceMuteStrategies(AudioOutputDescriptor
                 ALOGVV("checkDeviceMuteStrategies() %s strategy %d (curDevice %04x) on output %d",
                       mute ? "muting" : "unmuting", i, curDevice, curOutput);
                 setStrategyMute((routing_strategy)i, mute, curOutput, mute ? 0 : delayMs);
-                if (desc->strategyRefCount((routing_strategy)i) != 0) {
+                if (desc->isStrategyActive((routing_strategy)i)) {
                     // do tempMute only for current output
                     if (tempMute && (desc == outputDesc)) {
                         setStrategyMute((routing_strategy)i, true, curOutput);
@@ -3076,26 +3067,6 @@ void AudioPolicyManagerBase::AudioOutputDescriptor::changeRefCount(AudioSystem::
     ALOGV("changeRefCount() stream %d, count %d", stream, mRefCount[stream]);
 }
 
-uint32_t AudioPolicyManagerBase::AudioOutputDescriptor::refCount()
-{
-    uint32_t refcount = 0;
-    for (int i = 0; i < (int)AudioSystem::NUM_STREAM_TYPES; i++) {
-        refcount += mRefCount[i];
-    }
-    return refcount;
-}
-
-uint32_t AudioPolicyManagerBase::AudioOutputDescriptor::strategyRefCount(routing_strategy strategy)
-{
-    uint32_t refCount = 0;
-    for (int i = 0; i < (int)AudioSystem::NUM_STREAM_TYPES; i++) {
-        if (getStrategy((AudioSystem::stream_type)i) == strategy) {
-            refCount += mRefCount[i];
-        }
-    }
-    return refCount;
-}
-
 audio_devices_t AudioPolicyManagerBase::AudioOutputDescriptor::supportedDevices()
 {
     if (isDuplicated()) {
@@ -3107,15 +3078,45 @@ audio_devices_t AudioPolicyManagerBase::AudioOutputDescriptor::supportedDevices(
 
 bool AudioPolicyManagerBase::AudioOutputDescriptor::isActive(uint32_t inPastMs) const
 {
-    nsecs_t sysTime = systemTime();
+    return isStrategyActive(NUM_STRATEGIES, inPastMs);
+}
+
+bool AudioPolicyManagerBase::AudioOutputDescriptor::isStrategyActive(routing_strategy strategy,
+                                                                       uint32_t inPastMs,
+                                                                       nsecs_t sysTime) const
+{
+    if ((sysTime == 0) && (inPastMs != 0)) {
+        sysTime = systemTime();
+    }
     for (int i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
-        if (mRefCount[i] != 0 ||
-            ns2ms(sysTime - mStopTime[i]) < inPastMs) {
+        if (((getStrategy((AudioSystem::stream_type)i) == strategy) ||
+                (NUM_STRATEGIES == strategy)) &&
+                isStreamActive((AudioSystem::stream_type)i, inPastMs, sysTime)) {
             return true;
         }
     }
     return false;
 }
+
+bool AudioPolicyManagerBase::AudioOutputDescriptor::isStreamActive(AudioSystem::stream_type stream,
+                                                                       uint32_t inPastMs,
+                                                                       nsecs_t sysTime) const
+{
+    if (mRefCount[stream] != 0) {
+        return true;
+    }
+    if (inPastMs == 0) {
+        return false;
+    }
+    if (sysTime == 0) {
+        sysTime = systemTime();
+    }
+    if (ns2ms(sysTime - mStopTime[stream]) < inPastMs) {
+        return true;
+    }
+    return false;
+}
+
 
 status_t AudioPolicyManagerBase::AudioOutputDescriptor::dump(int fd)
 {
