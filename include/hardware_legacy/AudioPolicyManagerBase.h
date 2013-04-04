@@ -275,6 +275,7 @@ protected:
             const IOProfile *mProfile;          // I/O profile this output derives from
             bool mStrategyMutedByDevice[NUM_STRATEGIES]; // strategies muted because of incompatible
                                                 // device selection. See checkDeviceMuteStrategies()
+            uint32_t mDirectOpenCount; // number of clients using this output (direct outputs only)
         };
 
         // descriptor for audio inputs. Used to maintain current configuration of each opened audio input
