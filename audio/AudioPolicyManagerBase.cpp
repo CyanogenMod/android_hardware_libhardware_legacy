@@ -556,10 +556,27 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
                                                    channelMask,
                                                    (audio_output_flags_t)flags);
     if (profile != NULL) {
+        AudioOutputDescriptor *outputDesc = NULL;
 
-        ALOGV("getOutput() opening direct output device %x", device);
-
-        AudioOutputDescriptor *outputDesc = new AudioOutputDescriptor(profile);
+        for (size_t i = 0; i < mOutputs.size(); i++) {
+            AudioOutputDescriptor *desc = mOutputs.valueAt(i);
+            if (!desc->isDuplicated() && (profile == desc->mProfile)) {
+                outputDesc = desc;
+                // reuse direct output if currently open and configured with same parameters
+                if ((samplingRate == outputDesc->mSamplingRate) &&
+                        (format == outputDesc->mFormat) &&
+                        (channelMask == outputDesc->mChannelMask)) {
+                    outputDesc->mDirectOpenCount++;
+                    ALOGV("getOutput() reusing direct output %d", output);
+                    return mOutputs.keyAt(i);
+                }
+            }
+        }
+        // close direct output if currently open and configured with different parameters
+        if (outputDesc != NULL) {
+            closeOutput(outputDesc->mId);
+        }
+        outputDesc = new AudioOutputDescriptor(profile);
         outputDesc->mDevice = device;
         outputDesc->mSamplingRate = samplingRate;
         outputDesc->mFormat = (audio_format_t)format;
@@ -568,6 +585,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         outputDesc->mFlags = (audio_output_flags_t)(flags | AUDIO_OUTPUT_FLAG_DIRECT);;
         outputDesc->mRefCount[stream] = 0;
         outputDesc->mStopTime[stream] = 0;
+        outputDesc->mDirectOpenCount = 1;
         output = mpClientInterface->openOutput(profile->mModule->mHandle,
                                         &outputDesc->mDevice,
                                         &outputDesc->mSamplingRate,
@@ -592,7 +610,8 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
             return 0;
         }
         addOutput(output, outputDesc);
-        ALOGV("getOutput() returns direct output %d", output);
+        mPreviousOutputs = mOutputs;
+        ALOGV("getOutput() returns new direct output %d", output);
         return output;
     }
 
@@ -808,11 +827,16 @@ void AudioPolicyManagerBase::releaseOutput(audio_io_handle_t output)
     }
 #endif //AUDIO_POLICY_TEST
 
-    if (mOutputs.valueAt(index)->mFlags & AudioSystem::OUTPUT_FLAG_DIRECT) {
-        mpClientInterface->closeOutput(output);
-        delete mOutputs.valueAt(index);
-        mOutputs.removeItem(output);
-        mPreviousOutputs = mOutputs;
+    AudioOutputDescriptor *desc = mOutputs.valueAt(index);
+    if (desc->mFlags & AudioSystem::OUTPUT_FLAG_DIRECT) {
+        if (desc->mDirectOpenCount <= 0) {
+            ALOGW("releaseOutput() invalid open count %d for output %d",
+                                                              desc->mDirectOpenCount, output);
+            return;
+        }
+        if (--desc->mDirectOpenCount == 0) {
+            closeOutput(output);
+        }
     }
 
 }
@@ -1822,8 +1846,9 @@ void AudioPolicyManagerBase::closeOutput(audio_io_handle_t output)
     mpClientInterface->setParameters(output, param.toString());
 
     mpClientInterface->closeOutput(output);
-    delete mOutputs.valueFor(output);
+    delete outputDesc;
     mOutputs.removeItem(output);
+    mPreviousOutputs = mOutputs;
 }
 
 SortedVector<audio_io_handle_t> AudioPolicyManagerBase::getOutputsForDevice(audio_devices_t device,
@@ -3001,7 +3026,7 @@ AudioPolicyManagerBase::AudioOutputDescriptor::AudioOutputDescriptor(
     : mId(0), mSamplingRate(0), mFormat((audio_format_t)0),
       mChannelMask((audio_channel_mask_t)0), mLatency(0),
     mFlags((audio_output_flags_t)0), mDevice(AUDIO_DEVICE_NONE),
-    mOutput1(0), mOutput2(0), mProfile(profile)
+    mOutput1(0), mOutput2(0), mProfile(profile), mDirectOpenCount(0)
 {
     // clear usage count for all stream types
     for (int i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
