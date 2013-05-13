@@ -52,6 +52,10 @@ namespace android_audio_legacy {
 
 #define NUM_VOL_CURVE_KNEES 2
 
+// Default minimum length allowed for offloading a compressed track
+// Can be overridden by the audio.offload.min.duration.secs property
+#define OFFLOAD_DEFAULT_MIN_DURATION_SECS 5
+
 // ----------------------------------------------------------------------------
 // AudioPolicyManagerBase implements audio policy manager behavior common to all platforms.
 // Each platform must implement an AudioPolicyManager class derived from AudioPolicyManagerBase
@@ -443,16 +447,6 @@ protected:
          // Must be called after checkOutputForAllStrategies()
 
         void updateDevicesAndOutputs();
-
-        // true if current platform requires a specific output to be opened for this particular
-        // set of parameters. This function is called by getOutput() and is implemented by platform
-        // specific audio policy manager.
-        virtual bool needsDirectOuput(audio_stream_type_t stream,
-                                      uint32_t samplingRate,
-                                      audio_format_t format,
-                                      audio_channel_mask_t channelMask,
-                                      audio_output_flags_t flags,
-                                      audio_devices_t device);
 
         virtual uint32_t getMaxEffectsCpuLoad();
         virtual uint32_t getMaxEffectsMemory();
