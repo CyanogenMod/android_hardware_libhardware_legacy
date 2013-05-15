@@ -54,8 +54,15 @@ public:
                                         audio_devices_t *pDevices,
                                         uint32_t *pSamplingRate,
                                         audio_format_t *pFormat,
+#ifdef STE_AUDIO
+                                        audio_channel_mask_t *pChannelMask,
+                                        audio_input_clients *pInputClientId = NULL);
+    virtual status_t closeInput(audio_io_handle_t input,
+                                audio_input_clients *inputClientId = NULL);
+#else
                                         audio_channel_mask_t *pChannelMask);
     virtual status_t closeInput(audio_io_handle_t input);
+#endif
     virtual status_t setStreamOutput(AudioSystem::stream_type stream, audio_io_handle_t output);
     virtual status_t moveEffects(int session,
                                  audio_io_handle_t srcOutput,
