@@ -381,7 +381,7 @@ int update_ctrl_interface(const char *config_file) {
      * The <value> is deemed to be a directory if the "DIR=" form is used or
      * the value begins with "/".
      */
-    if (sptr = strstr(pbuf, "ctrl_interface=")) {
+    if ((sptr = strstr(pbuf, "ctrl_interface="))) {
         ret = 0;
         if ((!strstr(pbuf, "ctrl_interface=DIR=")) &&
                 (!strstr(pbuf, "ctrl_interface=/"))) {
@@ -484,45 +484,6 @@ int ensure_config_file_exists(const char *config_file)
     return update_ctrl_interface(config_file);
 }
 
-/**
- * wifi_wpa_ctrl_cleanup() - Delete any local UNIX domain socket files that
- * may be left over from clients that were previously connected to
- * wpa_supplicant. This keeps these files from being orphaned in the
- * event of crashes that prevented them from being removed as part
- * of the normal orderly shutdown.
- */
-void wifi_wpa_ctrl_cleanup(void)
-{
-    DIR *dir;
-    struct dirent entry;
-    struct dirent *result;
-    size_t dirnamelen;
-    size_t maxcopy;
-    char pathname[PATH_MAX];
-    char *namep;
-    char *local_socket_dir = CONFIG_CTRL_IFACE_CLIENT_DIR;
-    char *local_socket_prefix = CONFIG_CTRL_IFACE_CLIENT_PREFIX;
-
-    if ((dir = opendir(local_socket_dir)) == NULL)
-        return;
-
-    dirnamelen = (size_t)snprintf(pathname, sizeof(pathname), "%s/", local_socket_dir);
-    if (dirnamelen >= sizeof(pathname)) {
-        closedir(dir);
-        return;
-    }
-    namep = pathname + dirnamelen;
-    maxcopy = PATH_MAX - dirnamelen;
-    while (readdir_r(dir, &entry, &result) == 0 && result != NULL) {
-        if (strncmp(entry.d_name, local_socket_prefix, strlen(local_socket_prefix)) == 0) {
-            if (strlcpy(namep, entry.d_name, maxcopy) < maxcopy) {
-                unlink(pathname);
-            }
-        }
-    }
-    closedir(dir);
-}
-
 int wifi_start_supplicant(int p2p_supported)
 {
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
@@ -564,7 +525,7 @@ int wifi_start_supplicant(int p2p_supported)
     }
 
     /* Clear out any stale socket files that might be left over. */
-    wifi_wpa_ctrl_cleanup();
+    wpa_ctrl_cleanup();
 
     /* Reset sockets used for exiting from hung state */
     for (i=0; i<MAX_CONNS; i++) {
