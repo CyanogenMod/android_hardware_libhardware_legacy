@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2009 The Android Open Source Project
  * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1364,7 +1365,8 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
         {
             const IOProfile *outProfile = mHwModules[i]->mOutputProfiles[j];
 
-            if (outProfile->mSupportedDevices & mAttachedOutputDevices) {
+            if ( (outProfile->mSupportedDevices & mAttachedOutputDevices) &&
+                  !(outProfile->mFlags & AUDIO_OUTPUT_FLAG_DIRECT) ){
                 AudioOutputDescriptor *outputDesc = new AudioOutputDescriptor(outProfile);
                 outputDesc->mDevice = (audio_devices_t)(mDefaultOutputDevice &
                                                             outProfile->mSupportedDevices);
