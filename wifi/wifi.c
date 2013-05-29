@@ -109,6 +109,10 @@ static const char P2P_CONFIG_FILE[]     = "/data/misc/wifi/p2p_supplicant.conf";
 static const char CONTROL_IFACE_PATH[]  = "/data/misc/wifi/sockets";
 static const char MODULE_FILE[]         = "/proc/modules";
 
+static const char IFNAME[]              = "IFNAME=";
+#define IFNAMELEN			(sizeof(IFNAME) - 1)
+static const char WPA_EVENT_IGNORE[]    = "CTRL-EVENT-IGNORE ";
+
 static const char SUPP_ENTROPY_FILE[]   = WIFI_ENTROPY_FILE;
 static unsigned char dummy_key[21] = { 0x02, 0x11, 0xbe, 0x33, 0x43, 0x35,
                                        0x68, 0x47, 0x84, 0x99, 0xa9, 0x2b,
@@ -128,6 +132,13 @@ static int is_primary_interface(const char *ifname)
         return 1;
     }
     return 0;
+}
+
+static int wifi_interface_nomatch(int index, char *iface, char *match)
+{
+    int iflen = match - iface;
+
+    return ((strncmp(primary_iface, iface, iflen) == 0) ^ (index == PRIMARY));
 }
 
 static int insmod(const char *filename, const char *args)
@@ -651,17 +662,16 @@ int wifi_connect_on_socket_path(int index, const char *path)
 /* Establishes the control and monitor socket connections on the interface */
 int wifi_connect_to_supplicant(const char *ifname)
 {
-    char path[256];
+    static char path[PATH_MAX];
 
     if (is_primary_interface(ifname)) {
         if (access(IFACE_DIR, F_OK) == 0) {
             snprintf(path, sizeof(path), "%s/%s", IFACE_DIR, primary_iface);
         } else {
-            strlcpy(path, primary_iface, sizeof(path));
+            snprintf(path, sizeof(path), "@android:wpa_%s", primary_iface);
         }
         return wifi_connect_on_socket_path(PRIMARY, path);
     } else {
-        sprintf(path, "%s/%s", CONTROL_IFACE_PATH, ifname);
         return wifi_connect_on_socket_path(SECONDARY, path);
     }
 }
@@ -723,49 +733,56 @@ int wifi_wait_on_socket(int index, char *buf, size_t buflen)
 {
     size_t nread = buflen - 1;
     int result;
+    char *match;
 
     if (monitor_conn[index] == NULL) {
         ALOGD("Connection closed\n");
-        strncpy(buf, WPA_EVENT_TERMINATING " - connection closed", buflen-1);
-        buf[buflen-1] = '\0';
-        return strlen(buf);
+        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");
     }
 
     result = wifi_ctrl_recv(index, buf, &nread);
 
     /* Terminate reception on exit socket */
     if (result == -2) {
-        strncpy(buf, WPA_EVENT_TERMINATING " - connection closed", buflen-1);
-        buf[buflen-1] = '\0';
-        return strlen(buf);
+        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");
     }
 
     if (result < 0) {
         ALOGD("wifi_ctrl_recv failed: %s\n", strerror(errno));
-        strncpy(buf, WPA_EVENT_TERMINATING " - recv error", buflen-1);
-        buf[buflen-1] = '\0';
-        return strlen(buf);
+        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - recv error");
     }
     buf[nread] = '\0';
     /* Check for EOF on the socket */
     if (result == 0 && nread == 0) {
         /* Fabricate an event to pass up */
         ALOGD("Received EOF on supplicant socket\n");
-        strncpy(buf, WPA_EVENT_TERMINATING " - signal 0 received", buflen-1);
-        buf[buflen-1] = '\0';
-        return strlen(buf);
+        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - signal 0 received");
     }
     /*
      * Events strings are in the format
      *
+     *     IFNAME=iface <N>CTRL-EVENT-XXX 
+     *        or
      *     <N>CTRL-EVENT-XXX 
      *
      * where N is the message level in numerical form (0=VERBOSE, 1=DEBUG,
      * etc.) and XXX is the event name. The level information is not useful
      * to us, so strip it off.
      */
+    if (strncmp(buf, IFNAME, IFNAMELEN) == 0) {
+        match = strchr(buf, ' ');
+        if (match != NULL) {
+            if (wifi_interface_nomatch(index, buf+IFNAMELEN, match)) {
+                return snprintf(buf, buflen, "%s", WPA_EVENT_IGNORE);
+            }
+            nread -= (match+1-buf);
+            memmove(buf, match+1, nread+1);
+        } else {
+            return snprintf(buf, buflen, "%s", WPA_EVENT_IGNORE);
+        }
+    }
     if (buf[0] == '<') {
-        char *match = strchr(buf, '>');
+        match = strchr(buf, '>');
         if (match != NULL) {
             nread -= (match+1-buf);
             memmove(buf, match+1, nread+1);
@@ -834,9 +851,22 @@ void wifi_close_supplicant_connection(const char *ifname)
     }
 }
 
+/*
+ * Note: 'command' buffer should be preallocated with ~32 bytes free space
+ */
 int wifi_command(const char *ifname, char *command, size_t commandlen,
                  char *reply, size_t *reply_len)
 {
+    size_t cmdlen = strlen(command) + 1;
+    size_t iflen = strlen(ifname) + IFNAMELEN + 1;
+
+    if (commandlen >= cmdlen + iflen) {
+        memmove((&command[iflen]), command, cmdlen);
+        snprintf(command, iflen, "%s%s", IFNAME, ifname);
+        command[iflen - 1] = ' ';
+    } else {
+        ALOGE("CmdBuf is too small (%d) for %s", commandlen, command);
+    }
     if (is_primary_interface(ifname)) {
         return wifi_send_command(PRIMARY, command, reply, reply_len);
     } else {
