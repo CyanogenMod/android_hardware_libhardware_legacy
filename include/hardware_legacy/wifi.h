@@ -97,7 +97,8 @@ int wifi_wait_for_event(const char *iface, char *buf, size_t len);
  * driver commands that are supported
  *
  * @param iface is the interface on which command is sent
- * @param command is the string command
+ * @param command is the string command (preallocated with 32 bytes)
+ * @param commandlen is command buffer length
  * @param reply is a buffer to receive a reply string
  * @param reply_len on entry, this is the maximum length of
  *        the reply buffer. On exit, the number of
@@ -105,7 +106,8 @@ int wifi_wait_for_event(const char *iface, char *buf, size_t len);
  *
  * @return 0 if successful, < 0 if an error.
  */
-int wifi_command(const char *iface, const char *command, char *reply, size_t *reply_len);
+int wifi_command(const char *iface, char *command, size_t commandlen,
+                 char *reply, size_t *reply_len);
 
 /**
  * do_dhcp_request() issues a dhcp request and returns the acquired

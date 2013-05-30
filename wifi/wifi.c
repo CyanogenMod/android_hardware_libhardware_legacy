@@ -834,7 +834,8 @@ void wifi_close_supplicant_connection(const char *ifname)
     }
 }
 
-int wifi_command(const char *ifname, const char *command, char *reply, size_t *reply_len)
+int wifi_command(const char *ifname, char *command, size_t commandlen,
+                 char *reply, size_t *reply_len)
 {
     if (is_primary_interface(ifname)) {
         return wifi_send_command(PRIMARY, command, reply, reply_len);
