@@ -860,12 +860,14 @@ int wifi_command(const char *ifname, char *command, size_t commandlen,
     size_t cmdlen = strlen(command) + 1;
     size_t iflen = strlen(ifname) + IFNAMELEN + 1;
 
-    if (commandlen >= cmdlen + iflen) {
-        memmove((&command[iflen]), command, cmdlen);
-        snprintf(command, iflen, "%s%s", IFNAME, ifname);
-        command[iflen - 1] = ' ';
-    } else {
-        ALOGE("CmdBuf is too small (%d) for %s", commandlen, command);
+    if (strncmp(command, IFNAME, IFNAMELEN) != 0) {
+        if (commandlen >= cmdlen + iflen) {
+            memmove((&command[iflen]), command, cmdlen);
+            snprintf(command, iflen, "%s%s", IFNAME, ifname);
+            command[iflen - 1] = ' ';
+        } else {
+            ALOGE("CmdBuf is too small (%d) for %s", commandlen, command);
+        }
     }
     if (is_primary_interface(ifname)) {
         return wifi_send_command(PRIMARY, command, reply, reply_len);
