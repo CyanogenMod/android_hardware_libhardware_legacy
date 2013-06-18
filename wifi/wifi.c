@@ -571,7 +571,7 @@ int wifi_start_supplicant(int p2p_supported)
      */
     pi = __system_property_find(supplicant_prop_name);
     if (pi != NULL) {
-        serial = pi->serial;
+        serial = __system_property_serial(pi);
     }
 #endif
     property_get("wifi.interface", primary_iface, WIFI_TEST_INTERFACE);
@@ -588,7 +588,7 @@ int wifi_start_supplicant(int p2p_supported)
             __system_property_read(pi, NULL, supp_status);
             if (strcmp(supp_status, "running") == 0) {
                 return 0;
-            } else if (pi->serial != serial &&
+            } else if (__system_property_serial(pi) != serial &&
                     strcmp(supp_status, "stopped") == 0) {
                 return -1;
             }
