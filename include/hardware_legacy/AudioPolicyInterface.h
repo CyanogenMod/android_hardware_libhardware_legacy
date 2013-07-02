@@ -22,6 +22,7 @@
 #include <utils/String8.h>
 
 #include <hardware_legacy/AudioSystemLegacy.h>
+#include <hardware/audio_policy.h>
 
 namespace android_audio_legacy {
     using android::Vector;
