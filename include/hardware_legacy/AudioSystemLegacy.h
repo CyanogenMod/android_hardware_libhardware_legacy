@@ -144,6 +144,8 @@ public:
         VORBIS              = 0x07000000,
         EVRC                = 0x08000000,
         QCELP               = 0x09000000,
+        EVRCB               = 0x10000000,
+        EVRCWB              = 0x11000000,
         MAIN_FORMAT_MASK    = 0xFF000000,
         SUB_FORMAT_MASK     = 0x00FFFFFF,
         // Aliases
