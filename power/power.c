@@ -124,7 +124,7 @@ release_wake_lock(const char* id)
     return len >= 0;
 }
 
-#ifdef EXYNOS4X12_ENHANCEMENTS
+#ifdef SAMSUNG_DVFS
 void acquire_dvfs_lock()
 {
 }
