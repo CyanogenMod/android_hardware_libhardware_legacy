@@ -37,21 +37,11 @@
 #include <sys/_system_properties.h>
 #endif
 
-/* PRIMARY refers to the connection on the primary interface
- * SECONDARY refers to an optional connection on a p2p interface
- *
- * For concurrency, we only support one active p2p connection and
- * one active STA connection at a time
- */
-#define PRIMARY     0
-#define SECONDARY   1
-#define MAX_CONNS   2
-
-static struct wpa_ctrl *ctrl_conn[MAX_CONNS];
-static struct wpa_ctrl *monitor_conn[MAX_CONNS];
+static struct wpa_ctrl *ctrl_conn;
+static struct wpa_ctrl *monitor_conn;
 
 /* socket pair used to exit from a blocking read */
-static int exit_sockets[MAX_CONNS][2];
+static int exit_sockets[2];
 
 extern int do_dhcp();
 extern int ifc_init();
@@ -60,7 +50,7 @@ extern char *dhcp_lasterror();
 extern void get_dhcp_info();
 extern int init_module(void *, unsigned long, const char *);
 extern int delete_module(const char *, unsigned int);
-void wifi_close_sockets(int index);
+void wifi_close_sockets();
 
 static char primary_iface[PROPERTY_VALUE_MAX];
 // TODO: use new ANDROID_SOCKET mechanism, once support for multiple
@@ -123,23 +113,6 @@ static unsigned char dummy_key[21] = { 0x02, 0x11, 0xbe, 0x33, 0x43, 0x35,
 static char supplicant_name[PROPERTY_VALUE_MAX];
 /* Is either SUPP_PROP_NAME or P2P_PROP_NAME */
 static char supplicant_prop_name[PROPERTY_KEY_MAX];
-
-static int is_primary_interface(const char *ifname)
-{
-    //Treat NULL as primary interface to allow control
-    //on STA without an interface
-    if (ifname == NULL || !strncmp(ifname, primary_iface, strlen(primary_iface))) {
-        return 1;
-    }
-    return 0;
-}
-
-static int wifi_interface_nomatch(int index, char *iface, char *match)
-{
-    int iflen = match - iface;
-
-    return ((strncmp(primary_iface, iface, iflen) == 0) ^ (index == PRIMARY));
-}
 
 static int insmod(const char *filename, const char *args)
 {
@@ -539,9 +512,7 @@ int wifi_start_supplicant(int p2p_supported)
     wpa_ctrl_cleanup();
 
     /* Reset sockets used for exiting from hung state */
-    for (i=0; i<MAX_CONNS; i++) {
-        exit_sockets[i][0] = exit_sockets[i][1] = -1;
-    }
+    exit_sockets[0] = exit_sockets[1] = -1;
 
 #ifdef HAVE_LIBC_SYSTEM_PROPERTIES
     /*
@@ -619,7 +590,7 @@ int wifi_stop_supplicant(int p2p_supported)
     return -1;
 }
 
-int wifi_connect_on_socket_path(int index, const char *path)
+int wifi_connect_on_socket_path(const char *path)
 {
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
 
@@ -630,29 +601,29 @@ int wifi_connect_on_socket_path(int index, const char *path)
         return -1;
     }
 
-    ctrl_conn[index] = wpa_ctrl_open(path);
-    if (ctrl_conn[index] == NULL) {
+    ctrl_conn = wpa_ctrl_open(path);
+    if (ctrl_conn == NULL) {
         ALOGE("Unable to open connection to supplicant on \"%s\": %s",
              path, strerror(errno));
         return -1;
     }
-    monitor_conn[index] = wpa_ctrl_open(path);
-    if (monitor_conn[index] == NULL) {
-        wpa_ctrl_close(ctrl_conn[index]);
-        ctrl_conn[index] = NULL;
+    monitor_conn = wpa_ctrl_open(path);
+    if (monitor_conn == NULL) {
+        wpa_ctrl_close(ctrl_conn);
+        ctrl_conn = NULL;
         return -1;
     }
-    if (wpa_ctrl_attach(monitor_conn[index]) != 0) {
-        wpa_ctrl_close(monitor_conn[index]);
-        wpa_ctrl_close(ctrl_conn[index]);
-        ctrl_conn[index] = monitor_conn[index] = NULL;
+    if (wpa_ctrl_attach(monitor_conn) != 0) {
+        wpa_ctrl_close(monitor_conn);
+        wpa_ctrl_close(ctrl_conn);
+        ctrl_conn = monitor_conn = NULL;
         return -1;
     }
 
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, exit_sockets[index]) == -1) {
-        wpa_ctrl_close(monitor_conn[index]);
-        wpa_ctrl_close(ctrl_conn[index]);
-        ctrl_conn[index] = monitor_conn[index] = NULL;
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, exit_sockets) == -1) {
+        wpa_ctrl_close(monitor_conn);
+        wpa_ctrl_close(ctrl_conn);
+        ctrl_conn = monitor_conn = NULL;
         return -1;
     }
 
@@ -660,35 +631,30 @@ int wifi_connect_on_socket_path(int index, const char *path)
 }
 
 /* Establishes the control and monitor socket connections on the interface */
-int wifi_connect_to_supplicant(const char *ifname)
+int wifi_connect_to_supplicant()
 {
     static char path[PATH_MAX];
 
-    if (is_primary_interface(ifname)) {
-        if (access(IFACE_DIR, F_OK) == 0) {
-            snprintf(path, sizeof(path), "%s/%s", IFACE_DIR, primary_iface);
-        } else {
-            snprintf(path, sizeof(path), "@android:wpa_%s", primary_iface);
-        }
-        return wifi_connect_on_socket_path(PRIMARY, path);
+    if (access(IFACE_DIR, F_OK) == 0) {
+        snprintf(path, sizeof(path), "%s/%s", IFACE_DIR, primary_iface);
     } else {
-        return wifi_connect_on_socket_path(SECONDARY, path);
+        snprintf(path, sizeof(path), "@android:wpa_%s", primary_iface);
     }
+    return wifi_connect_on_socket_path(path);
 }
 
-int wifi_send_command(int index, const char *cmd, char *reply, size_t *reply_len)
+int wifi_send_command(const char *cmd, char *reply, size_t *reply_len)
 {
     int ret;
-
-    if (ctrl_conn[index] == NULL) {
+    if (ctrl_conn == NULL) {
         ALOGV("Not connected to wpa_supplicant - \"%s\" command dropped.\n", cmd);
         return -1;
     }
-    ret = wpa_ctrl_request(ctrl_conn[index], cmd, strlen(cmd), reply, reply_len, NULL);
+    ret = wpa_ctrl_request(ctrl_conn, cmd, strlen(cmd), reply, reply_len, NULL);
     if (ret == -2) {
         ALOGD("'%s' command timed out.\n", cmd);
         /* unblocks the monitor receive socket for termination */
-        TEMP_FAILURE_RETRY(write(exit_sockets[index][0], "T", 1));
+        TEMP_FAILURE_RETRY(write(exit_sockets[0], "T", 1));
         return -2;
     } else if (ret < 0 || strncmp(reply, "FAIL", 4) == 0) {
         return -1;
@@ -699,16 +665,16 @@ int wifi_send_command(int index, const char *cmd, char *reply, size_t *reply_len
     return 0;
 }
 
-int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
+int wifi_ctrl_recv(char *reply, size_t *reply_len)
 {
     int res;
-    int ctrlfd = wpa_ctrl_get_fd(monitor_conn[index]);
+    int ctrlfd = wpa_ctrl_get_fd(monitor_conn);
     struct pollfd rfds[2];
 
     memset(rfds, 0, 2 * sizeof(struct pollfd));
     rfds[0].fd = ctrlfd;
     rfds[0].events |= POLLIN;
-    rfds[1].fd = exit_sockets[index][1];
+    rfds[1].fd = exit_sockets[1];
     rfds[1].events |= POLLIN;
     res = TEMP_FAILURE_RETRY(poll(rfds, 2, -1));
     if (res < 0) {
@@ -716,31 +682,26 @@ int wifi_ctrl_recv(int index, char *reply, size_t *reply_len)
         return res;
     }
     if (rfds[0].revents & POLLIN) {
-        return wpa_ctrl_recv(monitor_conn[index], reply, reply_len);
-    } else if (rfds[1].revents & POLLIN) {
-        /* Close only the p2p sockets on receive side
-         * see wifi_close_supplicant_connection()
-         */
-        if (index == SECONDARY) {
-            ALOGD("close sockets %d", index);
-            wifi_close_sockets(index);
-        }
+        return wpa_ctrl_recv(monitor_conn, reply, reply_len);
     }
+
+    /* it is not rfds[0], then it must be rfts[1] (i.e. the exit socket)
+     * or we timed out. In either case, this call has failed ..
+     */
     return -2;
 }
 
-int wifi_wait_on_socket(int index, char *buf, size_t buflen)
+int wifi_wait_on_socket(char *buf, size_t buflen)
 {
     size_t nread = buflen - 1;
     int result;
-    char *match;
+    char *match, *match2;
 
-    if (monitor_conn[index] == NULL) {
-        ALOGD("Connection closed\n");
+    if (monitor_conn == NULL) {
         return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");
     }
 
-    result = wifi_ctrl_recv(index, buf, &nread);
+    result = wifi_ctrl_recv(buf, &nread);
 
     /* Terminate reception on exit socket */
     if (result == -2) {
@@ -769,78 +730,69 @@ int wifi_wait_on_socket(int index, char *buf, size_t buflen)
      * etc.) and XXX is the event name. The level information is not useful
      * to us, so strip it off.
      */
+
     if (strncmp(buf, IFNAME, IFNAMELEN) == 0) {
         match = strchr(buf, ' ');
         if (match != NULL) {
-            if (wifi_interface_nomatch(index, buf+IFNAMELEN, match)) {
-                return snprintf(buf, buflen, "%s", WPA_EVENT_IGNORE);
+            if (match[1] == '<') {
+                match2 = strchr(match + 2, '>');
+                if (match2 != NULL) {
+                    nread -= (match2 - match);
+                    memmove(match + 1, match2 + 1, nread - (match - buf) + 1);
+                }
             }
-            nread -= (match+1-buf);
-            memmove(buf, match+1, nread+1);
         } else {
             return snprintf(buf, buflen, "%s", WPA_EVENT_IGNORE);
         }
-    }
-    if (buf[0] == '<') {
+    } else if (buf[0] == '<') {
         match = strchr(buf, '>');
         if (match != NULL) {
-            nread -= (match+1-buf);
-            memmove(buf, match+1, nread+1);
+            nread -= (match + 1 - buf);
+            memmove(buf, match + 1, nread + 1);
+            ALOGV("supplicant generated event without interface - %s\n", buf);
         }
+    } else {
+        /* let the event go as is! */
+        ALOGW("supplicant generated event without interface and without message level - %s\n", buf);
     }
 
     return nread;
 }
 
-int wifi_wait_for_event(const char *ifname, char *buf, size_t buflen)
+int wifi_wait_for_event(char *buf, size_t buflen)
 {
-    if (is_primary_interface(ifname)) {
-        return wifi_wait_on_socket(PRIMARY, buf, buflen);
-    } else {
-        return wifi_wait_on_socket(SECONDARY, buf, buflen);
+    return wifi_wait_on_socket(buf, buflen);
+}
+
+void wifi_close_sockets()
+{
+    if (ctrl_conn != NULL) {
+        wpa_ctrl_close(ctrl_conn);
+        ctrl_conn = NULL;
+    }
+
+    if (monitor_conn != NULL) {
+        wpa_ctrl_close(monitor_conn);
+        monitor_conn = NULL;
+    }
+
+    if (exit_sockets[0] >= 0) {
+        close(exit_sockets[0]);
+        exit_sockets[0] = -1;
+    }
+
+    if (exit_sockets[1] >= 0) {
+        close(exit_sockets[1]);
+        exit_sockets[1] = -1;
     }
 }
 
-void wifi_close_sockets(int index)
-{
-    if (ctrl_conn[index] != NULL) {
-        wpa_ctrl_close(ctrl_conn[index]);
-        ctrl_conn[index] = NULL;
-    }
-
-    if (monitor_conn[index] != NULL) {
-        wpa_ctrl_close(monitor_conn[index]);
-        monitor_conn[index] = NULL;
-    }
-
-    if (exit_sockets[index][0] >= 0) {
-        close(exit_sockets[index][0]);
-        exit_sockets[index][0] = -1;
-    }
-
-    if (exit_sockets[index][1] >= 0) {
-        close(exit_sockets[index][1]);
-        exit_sockets[index][1] = -1;
-    }
-}
-
-void wifi_close_supplicant_connection(const char *ifname)
+void wifi_close_supplicant_connection()
 {
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 50; /* wait at most 5 seconds to ensure init has stopped stupplicant */
 
-    if (is_primary_interface(ifname)) {
-        wifi_close_sockets(PRIMARY);
-    } else {
-        /* p2p socket termination needs unblocking the monitor socket
-         * STA connection does not need it since supplicant gets shutdown
-         */
-        TEMP_FAILURE_RETRY(write(exit_sockets[SECONDARY][0], "T", 1));
-        /* p2p sockets are closed after the monitor thread
-         * receives the terminate on the exit socket
-         */
-        return;
-    }
+    wifi_close_sockets();
 
     while (count-- > 0) {
         if (property_get(supplicant_prop_name, supp_status, NULL)) {
@@ -851,29 +803,9 @@ void wifi_close_supplicant_connection(const char *ifname)
     }
 }
 
-/*
- * Note: 'command' buffer should be preallocated with ~32 bytes free space
- */
-int wifi_command(const char *ifname, char *command, size_t commandlen,
-                 char *reply, size_t *reply_len)
+int wifi_command(const char *command, char *reply, size_t *reply_len)
 {
-    size_t cmdlen = strlen(command) + 1;
-    size_t iflen = strlen(ifname) + IFNAMELEN + 1;
-
-    if (strncmp(command, IFNAME, IFNAMELEN) != 0) {
-        if (commandlen >= cmdlen + iflen) {
-            memmove((&command[iflen]), command, cmdlen);
-            snprintf(command, iflen, "%s%s", IFNAME, ifname);
-            command[iflen - 1] = ' ';
-        } else {
-            ALOGE("CmdBuf is too small (%d) for %s", commandlen, command);
-        }
-    }
-    if (is_primary_interface(ifname)) {
-        return wifi_send_command(PRIMARY, command, reply, reply_len);
-    } else {
-        return wifi_send_command(SECONDARY, command, reply, reply_len);
-    }
+    return wifi_send_command(command, reply, reply_len);
 }
 
 const char *wifi_get_fw_path(int fw_type)
