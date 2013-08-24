@@ -959,7 +959,7 @@ status_t AudioPolicyManagerBase::startInput(audio_io_handle_t input)
 #endif //AUDIO_POLICY_TEST
     {
         // refuse 2 active AudioRecord clients at the same time
-        if (getActiveInput() != 0) {
+        if (!isVirtualInputDevice(inputDesc->mDevice) && getActiveInput(true) != 0) {
             ALOGW("startInput() input %d failed: other input already started", input);
             return INVALID_OPERATION;
         }
