@@ -15,7 +15,7 @@
  */
 
 #define LOG_TAG "AudioPolicyManagerBase"
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 
 //#define VERY_VERBOSE_LOGGING
 #ifdef VERY_VERBOSE_LOGGING
@@ -1377,7 +1377,14 @@ bool AudioPolicyManagerBase::isOffloadSupported(const audio_offload_info_t& offl
     // Check if stream type is music, then only allow offload as of now.
     if (offloadInfo.stream_type != AUDIO_STREAM_MUSIC)
     {
-        ALOGV("isOffloadSupported: stream_type != MUSIC returning false");
+        ALOGV("isOffloadSupported: stream_type != MUSIC, returning false");
+        return false;
+    }
+
+    //TODO: enable audio offloading with video when ready
+    if (offloadInfo.has_video)
+    {
+        ALOGV("isOffloadSupported: has_video == true, returning false");
         return false;
     }
 
