@@ -54,7 +54,7 @@ namespace android_audio_legacy {
 
 // Default minimum length allowed for offloading a compressed track
 // Can be overridden by the audio.offload.min.duration.secs property
-#define OFFLOAD_DEFAULT_MIN_DURATION_SECS 5
+#define OFFLOAD_DEFAULT_MIN_DURATION_SECS 60
 
 // ----------------------------------------------------------------------------
 // AudioPolicyManagerBase implements audio policy manager behavior common to all platforms.
