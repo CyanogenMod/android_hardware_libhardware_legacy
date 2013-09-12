@@ -958,10 +958,19 @@ status_t AudioPolicyManagerBase::startInput(audio_io_handle_t input)
     if (mTestInput == 0)
 #endif //AUDIO_POLICY_TEST
     {
-        // refuse 2 active AudioRecord clients at the same time
-        if (!isVirtualInputDevice(inputDesc->mDevice) && getActiveInput(true) != 0) {
-            ALOGW("startInput() input %d failed: other input already started", input);
-            return INVALID_OPERATION;
+        // refuse 2 active AudioRecord clients at the same time except if the active input
+        // uses AUDIO_SOURCE_HOTWORD in which case it is closed.
+        audio_io_handle_t activeInput = getActiveInput();
+        if (!isVirtualInputDevice(inputDesc->mDevice) && activeInput != 0) {
+            AudioInputDescriptor *activeDesc = mInputs.valueFor(activeInput);
+            if (activeDesc->mInputSource == AUDIO_SOURCE_HOTWORD) {
+                ALOGW("startInput() preempting already started low-priority input %d", activeInput);
+                stopInput(activeInput);
+                releaseInput(activeInput);
+            } else {
+                ALOGW("startInput() input %d failed: other input already started..", input);
+                return INVALID_OPERATION;
+            }
         }
     }
 
@@ -979,7 +988,10 @@ status_t AudioPolicyManagerBase::startInput(audio_io_handle_t input)
     AudioParameter param = AudioParameter();
     param.addInt(String8(AudioParameter::keyRouting), (int)inputDesc->mDevice);
 
-    param.addInt(String8(AudioParameter::keyInputSource), (int)inputDesc->mInputSource);
+    int aliasSource = (inputDesc->mInputSource == AUDIO_SOURCE_HOTWORD) ?
+                                        AUDIO_SOURCE_VOICE_RECOGNITION : inputDesc->mInputSource;
+
+    param.addInt(String8(AudioParameter::keyInputSource), aliasSource);
     ALOGV("AudioPolicyManager::startInput() input source = %d", inputDesc->mInputSource);
 
     mpClientInterface->setParameters(input, param.toString());
@@ -1256,14 +1268,15 @@ bool AudioPolicyManagerBase::isSourceActive(audio_source_t source) const
 {
     for (size_t i = 0; i < mInputs.size(); i++) {
         const AudioInputDescriptor * inputDescriptor = mInputs.valueAt(i);
-        if ((inputDescriptor->mInputSource == (int) source)
-                && (inputDescriptor->mRefCount > 0)) {
+        if ((inputDescriptor->mInputSource == (int)source ||
+                (source == (audio_source_t)AUDIO_SOURCE_VOICE_RECOGNITION &&
+                 inputDescriptor->mInputSource == AUDIO_SOURCE_HOTWORD))
+             && (inputDescriptor->mRefCount > 0)) {
             return true;
         }
     }
     return false;
 }
-
 
 
 status_t AudioPolicyManagerBase::dump(int fd)
@@ -2589,6 +2602,7 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
     case AUDIO_SOURCE_DEFAULT:
     case AUDIO_SOURCE_MIC:
     case AUDIO_SOURCE_VOICE_RECOGNITION:
+    case AUDIO_SOURCE_HOTWORD:
     case AUDIO_SOURCE_VOICE_COMMUNICATION:
         if (mForceUse[AudioSystem::FOR_RECORD] == AudioSystem::FORCE_BT_SCO &&
             mAvailableInputDevices & AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET) {
