@@ -128,7 +128,7 @@ public:
         // return the enabled output devices for the given stream type
         virtual audio_devices_t getDevicesForStream(AudioSystem::stream_type stream);
 
-        virtual audio_io_handle_t getOutputForEffect(const effect_descriptor_t *desc);
+        virtual audio_io_handle_t getOutputForEffect(const effect_descriptor_t *desc = NULL);
         virtual status_t registerEffect(const effect_descriptor_t *desc,
                                         audio_io_handle_t io,
                                         uint32_t strategy,
@@ -488,6 +488,9 @@ protected:
                                                        uint32_t format,
                                                        uint32_t channelMask,
                                                        audio_output_flags_t flags);
+
+        audio_io_handle_t selectOutputForEffects(const SortedVector<audio_io_handle_t>& outputs);
+
         //
         // Audio policy configuration file parsing (audio_policy.conf)
         //

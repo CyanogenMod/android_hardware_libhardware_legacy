@@ -632,7 +632,12 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
             delete outputDesc;
             return 0;
         }
+        audio_io_handle_t srcOutput = getOutputForEffect();
         addOutput(output, outputDesc);
+        audio_io_handle_t dstOutput = getOutputForEffect();
+        if (dstOutput == output) {
+            mpClientInterface->moveEffects(AUDIO_SESSION_OUTPUT_MIX, srcOutput, dstOutput);
+        }
         mPreviousOutputs = mOutputs;
         ALOGV("getOutput() returns new direct output %d", output);
         return output;
@@ -861,9 +866,16 @@ void AudioPolicyManagerBase::releaseOutput(audio_io_handle_t output)
         }
         if (--desc->mDirectOpenCount == 0) {
             closeOutput(output);
+            // If effects where present on the output, audioflinger moved them to the primary
+            // output by default: move them back to the appropriate output.
+            audio_io_handle_t dstOutput = getOutputForEffect();
+            if (dstOutput != mPrimaryOutput) {
+                mpClientInterface->moveEffects(AUDIO_SESSION_OUTPUT_MIX, mPrimaryOutput, dstOutput);
+            }
         }
     }
 }
+
 
 audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
                                     uint32_t samplingRate,
@@ -1117,22 +1129,60 @@ status_t AudioPolicyManagerBase::getStreamVolumeIndex(AudioSystem::stream_type s
     return NO_ERROR;
 }
 
+audio_io_handle_t AudioPolicyManagerBase::selectOutputForEffects(
+                                            const SortedVector<audio_io_handle_t>& outputs)
+{
+    // select one output among several suitable for global effects.
+    // The priority is as follows:
+    // 1: An offloaded output. If the effect ends up not being offloadable,
+    //    AudioFlinger will invalidate the track and the offloaded output
+    //    will be closed causing the effect to be moved to a PCM output.
+    // 2: A deep buffer output
+    // 3: the first output in the list
+
+    if (outputs.size() == 0) {
+        return 0;
+    }
+
+    audio_io_handle_t outputOffloaded = 0;
+    audio_io_handle_t outputDeepBuffer = 0;
+
+    for (size_t i = 0; i < outputs.size(); i++) {
+        AudioOutputDescriptor *desc = mOutputs.valueFor(outputs[i]);
+        ALOGV("selectOutputForEffects outputs[%d] flags %x", i, desc->mFlags);
+        if ((desc->mFlags & AUDIO_OUTPUT_FLAG_COMPRESS_OFFLOAD) != 0) {
+            outputOffloaded = outputs[i];
+        }
+        if ((desc->mFlags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) != 0) {
+            outputDeepBuffer = outputs[i];
+        }
+    }
+
+    ALOGV("selectOutputForEffects outputOffloaded %d outputDeepBuffer %d",
+          outputOffloaded, outputDeepBuffer);
+    if (outputOffloaded != 0) {
+        return outputOffloaded;
+    }
+    if (outputDeepBuffer != 0) {
+        return outputDeepBuffer;
+    }
+
+    return outputs[0];
+}
+
 audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(const effect_descriptor_t *desc)
 {
-    ALOGV("getOutputForEffect()");
     // apply simple rule where global effects are attached to the same output as MUSIC streams
 
     routing_strategy strategy = getStrategy(AudioSystem::MUSIC);
     audio_devices_t device = getDeviceForStrategy(strategy, false /*fromCache*/);
     SortedVector<audio_io_handle_t> dstOutputs = getOutputsForDevice(device, mOutputs);
-    int outIdx = 0;
-    for (size_t i = 0; i < dstOutputs.size(); i++) {
-        AudioOutputDescriptor *desc = mOutputs.valueFor(dstOutputs[i]);
-        if (desc->mFlags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) {
-            outIdx = i;
-        }
-    }
-    return dstOutputs[outIdx];
+
+    audio_io_handle_t output = selectOutputForEffects(dstOutputs);
+    ALOGV("getOutputForEffect() got output %d for fx %s flags %x",
+          output, (desc == NULL) ? "unspecified" : desc->name,  (desc == NULL) ? 0 : desc->flags);
+
+    return output;
 }
 
 status_t AudioPolicyManagerBase::registerEffect(const effect_descriptor_t *desc,
@@ -2017,26 +2067,20 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
 
         // Move effects associated to this strategy from previous output to new output
         if (strategy == STRATEGY_MEDIA) {
-            int outIdx = 0;
-            for (size_t i = 0; i < dstOutputs.size(); i++) {
-                AudioOutputDescriptor *desc = mOutputs.valueFor(dstOutputs[i]);
-                if (desc->mFlags & AUDIO_OUTPUT_FLAG_DEEP_BUFFER) {
-                    outIdx = i;
-                }
-            }
+            audio_io_handle_t fxOutput = selectOutputForEffects(dstOutputs);
             SortedVector<audio_io_handle_t> moved;
             for (size_t i = 0; i < mEffects.size(); i++) {
                 EffectDescriptor *desc = mEffects.valueAt(i);
                 if (desc->mSession == AUDIO_SESSION_OUTPUT_MIX &&
-                        desc->mIo != dstOutputs[outIdx]) {
+                        desc->mIo != fxOutput) {
                     if (moved.indexOf(desc->mIo) < 0) {
                         ALOGV("checkOutputForStrategy() moving effect %d to output %d",
-                              mEffects.keyAt(i), dstOutputs[outIdx]);
+                              mEffects.keyAt(i), fxOutput);
                         mpClientInterface->moveEffects(AUDIO_SESSION_OUTPUT_MIX, desc->mIo,
-                                                       dstOutputs[outIdx]);
+                                                       fxOutput);
                         moved.add(desc->mIo);
                     }
-                    desc->mIo = dstOutputs[outIdx];
+                    desc->mIo = fxOutput;
                 }
             }
         }
