@@ -1825,13 +1825,19 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
             ALOGV("opening output for device %08x", device);
             desc = new AudioOutputDescriptor(profile);
             desc->mDevice = device;
+            audio_offload_info_t offloadInfo = AUDIO_INFO_INITIALIZER;
+            offloadInfo.sample_rate = desc->mSamplingRate;
+            offloadInfo.format = desc->mFormat;
+            offloadInfo.channel_mask = desc->mChannelMask;
+
             audio_io_handle_t output = mpClientInterface->openOutput(profile->mModule->mHandle,
                                                                        &desc->mDevice,
                                                                        &desc->mSamplingRate,
                                                                        &desc->mFormat,
                                                                        &desc->mChannelMask,
                                                                        &desc->mLatency,
-                                                                       desc->mFlags);
+                                                                       desc->mFlags,
+                                                                       &offloadInfo);
             if (output != 0) {
                 if (desc->mFlags & AUDIO_OUTPUT_FLAG_DIRECT) {
                     String8 reply;
