@@ -318,84 +318,6 @@ int ensure_entropy_file_exists()
     return 0;
 }
 
-int update_ctrl_interface(const char *config_file) {
-
-    int srcfd, destfd;
-    int nread;
-    char ifc[PROPERTY_VALUE_MAX];
-    char *pbuf;
-    char *sptr;
-    struct stat sb;
-    int ret;
-
-    if (stat(config_file, &sb) != 0)
-        return -1;
-
-    pbuf = malloc(sb.st_size + PROPERTY_VALUE_MAX);
-    if (!pbuf)
-        return 0;
-    srcfd = TEMP_FAILURE_RETRY(open(config_file, O_RDONLY));
-    if (srcfd < 0) {
-        ALOGE("Cannot open \"%s\": %s", config_file, strerror(errno));
-        free(pbuf);
-        return 0;
-    }
-    nread = TEMP_FAILURE_RETRY(read(srcfd, pbuf, sb.st_size));
-    close(srcfd);
-    if (nread < 0) {
-        ALOGE("Cannot read \"%s\": %s", config_file, strerror(errno));
-        free(pbuf);
-        return 0;
-    }
-
-    if (!strcmp(config_file, SUPP_CONFIG_FILE)) {
-        property_get("wifi.interface", ifc, WIFI_TEST_INTERFACE);
-    } else {
-        strcpy(ifc, CONTROL_IFACE_PATH);
-    }
-    /* Assume file is invalid to begin with */
-    ret = -1;
-    /*
-     * if there is a "ctrl_interface=<value>" entry, re-write it ONLY if it is
-     * NOT a directory.  The non-directory value option is an Android add-on
-     * that allows the control interface to be exchanged through an environment
-     * variable (initialized by the "init" program when it starts a service
-     * with a "socket" option).
-     *
-     * The <value> is deemed to be a directory if the "DIR=" form is used or
-     * the value begins with "/".
-     */
-    if ((sptr = strstr(pbuf, "ctrl_interface="))) {
-        ret = 0;
-        if ((!strstr(pbuf, "ctrl_interface=DIR=")) &&
-                (!strstr(pbuf, "ctrl_interface=/"))) {
-            char *iptr = sptr + strlen("ctrl_interface=");
-            int ilen = 0;
-            int mlen = strlen(ifc);
-            int nwrite;
-            if (strncmp(ifc, iptr, mlen) != 0) {
-                ALOGE("ctrl_interface != %s", ifc);
-                while (((ilen + (iptr - pbuf)) < nread) && (iptr[ilen] != '\n'))
-                    ilen++;
-                mlen = ((ilen >= mlen) ? ilen : mlen) + 1;
-                memmove(iptr + mlen, iptr + ilen + 1, nread - (iptr + ilen + 1 - pbuf));
-                memset(iptr, '\n', mlen);
-                memcpy(iptr, ifc, strlen(ifc));
-                destfd = TEMP_FAILURE_RETRY(open(config_file, O_RDWR, 0660));
-                if (destfd < 0) {
-                    ALOGE("Cannot update \"%s\": %s", config_file, strerror(errno));
-                    free(pbuf);
-                    return -1;
-                }
-                TEMP_FAILURE_RETRY(write(destfd, pbuf, nread + mlen - ilen -1));
-                close(destfd);
-            }
-        }
-    }
-    free(pbuf);
-    return ret;
-}
-
 int ensure_config_file_exists(const char *config_file)
 {
     char buf[2048];
@@ -411,14 +333,7 @@ int ensure_config_file_exists(const char *config_file)
             ALOGE("Cannot set RW to \"%s\": %s", config_file, strerror(errno));
             return -1;
         }
-        /* return if we were able to update control interface properly */
-        if (update_ctrl_interface(config_file) >=0) {
-            return 0;
-        } else {
-            /* This handles the scenario where the file had bad data
-             * for some reason. We continue and recreate the file.
-             */
-        }
+        return 0;
     } else if (errno != ENOENT) {
         ALOGE("Cannot access \"%s\": %s", config_file, strerror(errno));
         return -1;
@@ -465,7 +380,7 @@ int ensure_config_file_exists(const char *config_file)
         unlink(config_file);
         return -1;
     }
-    return update_ctrl_interface(config_file);
+    return 0;
 }
 
 int wifi_start_supplicant(int p2p_supported)
