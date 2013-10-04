@@ -103,6 +103,7 @@ struct i802_bss {
 	u8 addr[ETH_ALEN];
 
 	int freq;
+	int if_dynamic;
 
 	void *ctx;
 	struct nl_handle *nl_preq, *nl_mgmt;
@@ -131,6 +132,11 @@ struct wpa_driver_nl80211_data {
 	int operstate;
 
 	int scan_complete_events;
+	enum scan_states {
+		NO_SCAN, SCAN_REQUESTED, SCAN_STARTED, SCAN_COMPLETED,
+		SCAN_ABORTED, SCHED_SCAN_STARTED, SCHED_SCAN_STOPPED,
+		SCHED_SCAN_RESULTS
+	} scan_state;
 
 	struct nl_cb *nl_cb;
 
