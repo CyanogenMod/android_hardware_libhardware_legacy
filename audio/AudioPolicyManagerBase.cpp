@@ -312,11 +312,19 @@ void AudioPolicyManagerBase::setPhoneState(int state)
         // force routing command to audio hardware when starting a call
         // even if no device change is needed
         force = true;
+        for (int j = 0; j < DEVICE_CATEGORY_CNT; j++) {
+            mStreams[AUDIO_STREAM_DTMF].mVolumeCurve[j] =
+                    sVolumeProfiles[AUDIO_STREAM_VOICE_CALL][j];
+        }
     } else if (isStateInCall(oldState) && !isStateInCall(state)) {
         ALOGV("  Exiting call in setPhoneState()");
         // force routing command to audio hardware when exiting a call
         // even if no device change is needed
         force = true;
+        for (int j = 0; j < DEVICE_CATEGORY_CNT; j++) {
+            mStreams[AUDIO_STREAM_DTMF].mVolumeCurve[j] =
+                    sVolumeProfiles[AUDIO_STREAM_DTMF][j];
+        }
     } else if (isStateInCall(state) && (state != oldState)) {
         ALOGV("  Switching between telephony and VoIP in setPhoneState()");
         // force routing command to audio hardware when switching between telephony and VoIP
@@ -2830,8 +2838,10 @@ const AudioPolicyManagerBase::VolumeCurvePoint
 };
 
 // AUDIO_STREAM_SYSTEM, AUDIO_STREAM_ENFORCED_AUDIBLE and AUDIO_STREAM_DTMF volume tracks
-// AUDIO_STREAM_RING on phones and AUDIO_STREAM_MUSIC on tablets (See AudioService.java).
+// AUDIO_STREAM_RING on phones and AUDIO_STREAM_MUSIC on tablets.
+// AUDIO_STREAM_DTMF tracks AUDIO_STREAM_VOICE_CALL while in call (See AudioService.java).
 // The range is constrained between -24dB and -6dB over speaker and -30dB and -18dB over headset.
+
 const AudioPolicyManagerBase::VolumeCurvePoint
     AudioPolicyManagerBase::sDefaultSystemVolumeCurve[AudioPolicyManagerBase::VOLCNT] = {
     {1, -24.0f}, {33, -18.0f}, {66, -12.0f}, {100, -6.0f}
