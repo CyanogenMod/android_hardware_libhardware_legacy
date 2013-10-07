@@ -490,6 +490,8 @@ void AudioPolicyManagerBase::setSystemProperty(const char* property, const char*
     ALOGV("setSystemProperty() property %s, value %s", property, value);
 }
 
+// Find a direct output profile compatible with the parameters passed, even if the input flags do
+// not explicitly request a direct output
 AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getProfileForDirectOutput(
                                                                audio_devices_t device,
                                                                uint32_t samplingRate,
@@ -511,7 +513,7 @@ AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getProfileForDirectOu
                         return mHwModules[i]->mOutputProfiles[j];
                     }
                 }
-            } else if (flags & AUDIO_OUTPUT_FLAG_DIRECT) {
+            } else {
                 if (profile->isCompatibleProfile(device, samplingRate, format,
                                            channelMask,
                                            AUDIO_OUTPUT_FLAG_DIRECT)) {
@@ -3483,57 +3485,54 @@ AudioPolicyManagerBase::IOProfile::~IOProfile()
 {
 }
 
-// checks if the IO profile is compatible with specified parameters. By convention a value of 0
-// means a parameter is don't care
+// checks if the IO profile is compatible with specified parameters.
+// Sampling rate, format and channel mask must be specified in order to
+// get a valid a match
 bool AudioPolicyManagerBase::IOProfile::isCompatibleProfile(audio_devices_t device,
                                                             uint32_t samplingRate,
                                                             uint32_t format,
                                                             uint32_t channelMask,
                                                             audio_output_flags_t flags) const
 {
-    if ((mSupportedDevices & device) != device) {
-        return false;
-    }
-    if ((mFlags & flags) != flags) {
-        return false;
-    }
-    if (samplingRate != 0) {
-        size_t i;
-        for (i = 0; i < mSamplingRates.size(); i++)
-        {
-            if (mSamplingRates[i] == samplingRate) {
-                break;
-            }
-        }
-        if (i == mSamplingRates.size()) {
-            return false;
-        }
-    }
-    if (format != 0) {
-        size_t i;
-        for (i = 0; i < mFormats.size(); i++)
-        {
-            if (mFormats[i] == format) {
-                break;
-            }
-        }
-        if (i == mFormats.size()) {
-            return false;
-        }
-    }
-    if (channelMask != 0) {
-        size_t i;
-        for (i = 0; i < mChannelMasks.size(); i++)
-        {
-            if (mChannelMasks[i] == channelMask) {
-                break;
-            }
-        }
-        if (i == mChannelMasks.size()) {
-            return false;
-        }
-    }
-    return true;
+    if (samplingRate == 0 || format == 0 || channelMask == 0) {
+         return false;
+     }
+
+     if ((mSupportedDevices & device) != device) {
+         return false;
+     }
+     if ((mFlags & flags) != flags) {
+         return false;
+     }
+     size_t i;
+     for (i = 0; i < mSamplingRates.size(); i++)
+     {
+         if (mSamplingRates[i] == samplingRate) {
+             break;
+         }
+     }
+     if (i == mSamplingRates.size()) {
+         return false;
+     }
+     for (i = 0; i < mFormats.size(); i++)
+     {
+         if (mFormats[i] == format) {
+             break;
+         }
+     }
+     if (i == mFormats.size()) {
+         return false;
+     }
+     for (i = 0; i < mChannelMasks.size(); i++)
+     {
+         if (mChannelMasks[i] == channelMask) {
+             break;
+         }
+     }
+     if (i == mChannelMasks.size()) {
+         return false;
+     }
+     return true;
 }
 
 void AudioPolicyManagerBase::IOProfile::dump(int fd)
