@@ -888,6 +888,13 @@ int wifi_stop_supplicant(int p2p_supported)
         return 0;
     }
 
+#ifdef USES_TI_MAC80211
+    if (p2p_supported && add_remove_p2p_interface(0) < 0) {
+        ALOGE("Wi-Fi - could not remove p2p interface");
+        return -1;
+    }
+#endif
+
     property_set("ctl.stop", supplicant_name);
     sched_yield();
 
