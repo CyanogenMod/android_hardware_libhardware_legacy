@@ -377,7 +377,9 @@ static int create_legacy_ap(const struct audio_policy_device *device,
     lap->policy.set_effect_enabled = ap_set_effect_enabled;
     lap->policy.is_stream_active = ap_is_stream_active;
 #ifndef ICS_AUDIO_BLOB
+#ifndef MR1_AUDIO_BLOB
     lap->policy.is_stream_active_remotely = ap_is_stream_active_remotely;
+#endif
     lap->policy.is_source_active = ap_is_source_active;
 #endif
     lap->policy.dump = ap_dump;
