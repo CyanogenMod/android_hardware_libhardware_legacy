@@ -491,6 +491,8 @@ protected:
 
         audio_io_handle_t selectOutputForEffects(const SortedVector<audio_io_handle_t>& outputs);
 
+        bool isNonOffloadableEffectEnabled();
+
         //
         // Audio policy configuration file parsing (audio_policy.conf)
         //
