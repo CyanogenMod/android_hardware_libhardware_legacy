@@ -365,8 +365,10 @@ static int create_legacy_ap(const struct audio_policy_device *device,
     lap->policy.init_stream_volume = ap_init_stream_volume;
     lap->policy.set_stream_volume_index = ap_set_stream_volume_index;
     lap->policy.get_stream_volume_index = ap_get_stream_volume_index;
+#ifndef ICS_AUDIO_BLOB
     lap->policy.set_stream_volume_index_for_device = ap_set_stream_volume_index_for_device;
     lap->policy.get_stream_volume_index_for_device = ap_get_stream_volume_index_for_device;
+#endif
     lap->policy.get_strategy_for_stream = ap_get_strategy_for_stream;
     lap->policy.get_devices_for_stream = ap_get_devices_for_stream;
     lap->policy.get_output_for_effect = ap_get_output_for_effect;
