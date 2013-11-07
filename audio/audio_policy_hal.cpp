@@ -453,21 +453,21 @@ static int legacy_ap_dev_open(const hw_module_t* module, const char* name,
 }
 
 static struct hw_module_methods_t legacy_ap_module_methods = {
-        open: legacy_ap_dev_open
+        .open = legacy_ap_dev_open
 };
 
 struct legacy_ap_module HAL_MODULE_INFO_SYM = {
-    module: {
-        common: {
-            tag: HARDWARE_MODULE_TAG,
-            version_major: 1,
-            version_minor: 0,
-            id: AUDIO_POLICY_HARDWARE_MODULE_ID,
-            name: "LEGACY Audio Policy HAL",
-            author: "The Android Open Source Project",
-            methods: &legacy_ap_module_methods,
-            dso : NULL,
-            reserved : {0},
+    .module = {
+        .common = {
+            .tag = HARDWARE_MODULE_TAG,
+            .version_major = 1,
+            .version_minor = 0,
+            .id = AUDIO_POLICY_HARDWARE_MODULE_ID,
+            .name = "LEGACY Audio Policy HAL",
+            .author = "The Android Open Source Project",
+            .methods: = &legacy_ap_module_methods,
+            .dso = NULL,
+            .reserved = {0},
         },
     },
 };
