@@ -540,6 +540,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
     uint32_t latency = 0;
     routing_strategy strategy = getStrategy((AudioSystem::stream_type)stream);
     audio_devices_t device = getDeviceForStrategy(strategy, false /*fromCache*/);
+    IOProfile *profile = NULL;
     ALOGV("getOutput() device %d, stream %d, samplingRate %d, format %x, channelMask %x, flags %x",
           device, stream, samplingRate, format, channelMask, flags);
 
@@ -584,11 +585,14 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         flags = (AudioSystem::output_flags)(flags | AUDIO_OUTPUT_FLAG_DIRECT);
     }
 
-    IOProfile *profile = getProfileForDirectOutput(device,
-                                                   samplingRate,
-                                                   format,
-                                                   channelMask,
-                                                   (audio_output_flags_t)flags);
+    if (flags & AUDIO_OUTPUT_FLAG_DIRECT) {
+        profile = getProfileForDirectOutput(device,
+                                            samplingRate,
+                                            format,
+                                            channelMask,
+                                            (audio_output_flags_t)flags);
+    }
+
     if (profile != NULL) {
         AudioOutputDescriptor *outputDesc = NULL;
 
