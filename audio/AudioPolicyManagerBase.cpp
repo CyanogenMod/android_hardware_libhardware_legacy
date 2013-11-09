@@ -3751,6 +3751,9 @@ const struct StringToEnum sFlagNameToEnumTable[] = {
 #ifdef AUDIO_EXTN_INCALL_MUSIC_ENABLED
     STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_INCALL_MUSIC),
 #endif
+#ifdef AUDIO_EXTN_COMPRESS_VOIP_ENABLED
+    STRING_TO_ENUM(AUDIO_OUTPUT_FLAG_VOIP_RX),
+#endif
 };
 
 const struct StringToEnum sFormatNameToEnumTable[] = {
