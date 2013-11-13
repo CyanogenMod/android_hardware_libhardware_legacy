@@ -46,6 +46,9 @@ LOCAL_CFLAGS += -DAUDIO_EXTN_FORMATS_ENABLED
 endif
 
 endif
+ifneq ($(strip $(AUDIO_FEATURE_DISABLED_DS1_DOLBY_DDP)),true)
+LOCAL_CFLAGS += -DAUDIO_EXTN_DS1_DOLBY_DDP_ENABLED
+endif
 
 LOCAL_STATIC_LIBRARIES := libmedia_helper
 LOCAL_MODULE := libaudiopolicy_legacy
