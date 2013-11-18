@@ -290,9 +290,10 @@ int is_wifi_driver_loaded() {
 
 int wifi_load_driver()
 {
-#ifdef WIFI_DRIVER_MODULE_PATH
-    char driver_status[PROPERTY_VALUE_MAX];
     int count = 100; /* wait at most 20 seconds for completion */
+    char driver_status[PROPERTY_VALUE_MAX];
+
+#ifdef WIFI_DRIVER_MODULE_PATH
     char module_arg2[256];
 #ifdef SAMSUNG_WIFI
     char* type = get_samsung_wifi_type();
@@ -323,6 +324,9 @@ int wifi_load_driver()
         return -1;
     }
 
+#endif
+
+#if defined(WIFI_FIRMWARE_LOADER) || defined(WIFI_DRIVER_MODULE_PATH)
     if (strcmp(FIRMWARE_LOADER,"") == 0) {
 #ifdef WIFI_DRIVER_LOADER_DELAY
         usleep(WIFI_DRIVER_LOADER_DELAY);
