@@ -99,6 +99,7 @@ struct i802_bss {
 	unsigned int added_bridge:1;
 	unsigned int in_deinit:1;
 	unsigned int wdev_id_set:1;
+	unsigned int added_if:1;
 
 	u8 addr[ETH_ALEN];
 
@@ -166,6 +167,10 @@ struct wpa_driver_nl80211_data {
 	unsigned int use_monitor:1;
 	unsigned int ignore_next_local_disconnect:1;
 	unsigned int allow_p2p_device:1;
+	unsigned int hostapd:1;
+	unsigned int start_mode_ap:1;
+	unsigned int start_iface_up:1;
+	unsigned int channel_switch_supported:1;
 
 	u64 remain_on_chan_cookie;
 	u64 send_action_cookie;
@@ -175,20 +180,15 @@ struct wpa_driver_nl80211_data {
 	struct wpa_driver_scan_filter *filter_ssids;
 	size_t num_filter_ssids;
 
-	struct i802_bss first_bss;
+	struct i802_bss *first_bss;
 
 	int eapol_tx_sock;
 
-#ifdef HOSTAPD
 	int eapol_sock; /* socket for EAPOL frames */
 
 	int default_if_indices[16];
 	int *if_indices;
 	int num_if_indices;
-
-	int last_freq;
-	int last_freq_ht;
-#endif /* HOSTAPD */
 
 	/* From failed authentication command */
 	int auth_freq;
