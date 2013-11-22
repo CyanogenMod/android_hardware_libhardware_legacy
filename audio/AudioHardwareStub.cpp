@@ -204,6 +204,10 @@ String8 AudioStreamInStub::getParameters(const String8& keys)
     return param.toString();
 }
 
+AudioHardwareInterface* createAudioHardware(void) {
+    return new AudioHardwareStub();
+}
+
 // ----------------------------------------------------------------------------
 
 }; // namespace android

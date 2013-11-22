@@ -52,6 +52,10 @@ namespace android_audio_legacy {
 
 #define NUM_VOL_CURVE_KNEES 2
 
+// Default minimum length allowed for offloading a compressed track
+// Can be overridden by the audio.offload.min.duration.secs property
+#define OFFLOAD_DEFAULT_MIN_DURATION_SECS 60
+
 // ----------------------------------------------------------------------------
 // AudioPolicyManagerBase implements audio policy manager behavior common to all platforms.
 // Each platform must implement an AudioPolicyManager class derived from AudioPolicyManagerBase
@@ -87,7 +91,8 @@ public:
                                             uint32_t format = AudioSystem::FORMAT_DEFAULT,
                                             uint32_t channels = 0,
                                             AudioSystem::output_flags flags =
-                                                    AudioSystem::OUTPUT_FLAG_INDIRECT);
+                                                    AudioSystem::OUTPUT_FLAG_INDIRECT,
+                                            const audio_offload_info_t *offloadInfo = NULL);
         virtual status_t startOutput(audio_io_handle_t output,
                                      AudioSystem::stream_type stream,
                                      int session = 0);
@@ -123,7 +128,7 @@ public:
         // return the enabled output devices for the given stream type
         virtual audio_devices_t getDevicesForStream(AudioSystem::stream_type stream);
 
-        virtual audio_io_handle_t getOutputForEffect(const effect_descriptor_t *desc);
+        virtual audio_io_handle_t getOutputForEffect(const effect_descriptor_t *desc = NULL);
         virtual status_t registerEffect(const effect_descriptor_t *desc,
                                         audio_io_handle_t io,
                                         uint32_t strategy,
@@ -140,6 +145,8 @@ public:
         virtual bool isSourceActive(audio_source_t source) const;
 
         virtual status_t dump(int fd);
+
+        virtual bool isOffloadSupported(const audio_offload_info_t& offloadInfo);
 
 protected:
 
@@ -247,6 +254,7 @@ protected:
 
             audio_devices_t device() const;
             void changeRefCount(AudioSystem::stream_type stream, int delta);
+
             bool isDuplicated() const { return (mOutput1 != NULL && mOutput2 != NULL); }
             audio_devices_t supportedDevices();
             uint32_t latency();
@@ -440,16 +448,6 @@ protected:
 
         void updateDevicesAndOutputs();
 
-        // true if current platform requires a specific output to be opened for this particular
-        // set of parameters. This function is called by getOutput() and is implemented by platform
-        // specific audio policy manager.
-        virtual bool needsDirectOuput(audio_stream_type_t stream,
-                                      uint32_t samplingRate,
-                                      audio_format_t format,
-                                      audio_channel_mask_t channelMask,
-                                      audio_output_flags_t flags,
-                                      audio_devices_t device);
-
         virtual uint32_t getMaxEffectsCpuLoad();
         virtual uint32_t getMaxEffectsMemory();
 #ifdef AUDIO_POLICY_TEST
@@ -490,6 +488,9 @@ protected:
                                                        uint32_t format,
                                                        uint32_t channelMask,
                                                        audio_output_flags_t flags);
+
+        audio_io_handle_t selectOutputForEffects(const SortedVector<audio_io_handle_t>& outputs);
+
         //
         // Audio policy configuration file parsing (audio_policy.conf)
         //

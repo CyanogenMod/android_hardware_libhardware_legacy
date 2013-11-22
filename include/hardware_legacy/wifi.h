@@ -58,25 +58,24 @@ int wifi_start_supplicant(int p2pSupported);
 int wifi_stop_supplicant(int p2pSupported);
 
 /**
- * Open a connection to supplicant on interface
+ * Open a connection to supplicant
  *
  * @return 0 on success, < 0 on failure.
  */
-int wifi_connect_to_supplicant(const char *ifname);
+int wifi_connect_to_supplicant();
 
 /**
- * Close connection to supplicant on interface
+ * Close connection to supplicant
  *
  * @return 0 on success, < 0 on failure.
  */
-void wifi_close_supplicant_connection(const char *ifname);
+void wifi_close_supplicant_connection();
 
 /**
  * wifi_wait_for_event() performs a blocking call to 
  * get a Wi-Fi event and returns a string representing 
  * a Wi-Fi event when it occurs.
  *
- * @param iface is the interface on which event is received
  * @param buf is the buffer that receives the event
  * @param len is the maximum length of the buffer
  *
@@ -84,7 +83,7 @@ void wifi_close_supplicant_connection(const char *ifname);
  * event (for instance, no connection), and less than 0
  * if there is an error.
  */
-int wifi_wait_for_event(const char *iface, char *buf, size_t len);
+int wifi_wait_for_event(char *buf, size_t len);
 
 /**
  * wifi_command() issues a command to the Wi-Fi driver.
@@ -96,8 +95,8 @@ int wifi_wait_for_event(const char *iface, char *buf, size_t len);
  * See wifi/java/android/net/wifi/WifiNative.java for the details of
  * driver commands that are supported
  *
- * @param iface is the interface on which command is sent
- * @param command is the string command
+ * @param command is the string command (preallocated with 32 bytes)
+ * @param commandlen is command buffer length
  * @param reply is a buffer to receive a reply string
  * @param reply_len on entry, this is the maximum length of
  *        the reply buffer. On exit, the number of
@@ -105,7 +104,7 @@ int wifi_wait_for_event(const char *iface, char *buf, size_t len);
  *
  * @return 0 if successful, < 0 if an error.
  */
-int wifi_command(const char *iface, const char *command, char *reply, size_t *reply_len);
+int wifi_command(const char *command, char *reply, size_t *reply_len);
 
 /**
  * do_dhcp_request() issues a dhcp request and returns the acquired

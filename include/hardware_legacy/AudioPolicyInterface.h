@@ -22,6 +22,7 @@
 #include <utils/String8.h>
 
 #include <hardware_legacy/AudioSystemLegacy.h>
+#include <hardware/audio_policy.h>
 
 namespace android_audio_legacy {
     using android::Vector;
@@ -92,7 +93,9 @@ public:
                                         uint32_t samplingRate = 0,
                                         uint32_t format = AudioSystem::FORMAT_DEFAULT,
                                         uint32_t channels = 0,
-                                        AudioSystem::output_flags flags = AudioSystem::OUTPUT_FLAG_INDIRECT) = 0;
+                                        AudioSystem::output_flags flags =
+                                                AudioSystem::OUTPUT_FLAG_INDIRECT,
+                                        const audio_offload_info_t *offloadInfo = NULL) = 0;
     // indicates to the audio policy manager that the output starts being used by corresponding stream.
     virtual status_t startOutput(audio_io_handle_t output,
                                  AudioSystem::stream_type stream,
@@ -162,6 +165,8 @@ public:
 
     //dump state
     virtual status_t    dump(int fd) = 0;
+
+    virtual bool isOffloadSupported(const audio_offload_info_t& offloadInfo) = 0;
 };
 
 
@@ -192,7 +197,8 @@ public:
                                          audio_format_t *pFormat,
                                          audio_channel_mask_t *pChannelMask,
                                          uint32_t *pLatencyMs,
-                                         audio_output_flags_t flags) = 0;
+                                         audio_output_flags_t flags,
+                                         const audio_offload_info_t *offloadInfo = NULL) = 0;
     // creates a special output that is duplicated to the two outputs passed as arguments. The duplication is performed by
     // a special mixer thread in the AudioFlinger.
     virtual audio_io_handle_t openDuplicateOutput(audio_io_handle_t output1, audio_io_handle_t output2) = 0;
