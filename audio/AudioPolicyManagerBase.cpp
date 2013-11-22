@@ -737,7 +737,7 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
     ALOGV("startOutput() output %d, stream %d, session %d", output, stream, session);
     ssize_t index = mOutputs.indexOfKey(output);
     if (index < 0) {
-        ALOGW("startOutput() unknow output %d", output);
+        ALOGW("startOutput() unknown output %d", output);
         return BAD_VALUE;
     }
 
@@ -805,7 +805,7 @@ status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
     ALOGV("stopOutput() output %d, stream %d, session %d", output, stream, session);
     ssize_t index = mOutputs.indexOfKey(output);
     if (index < 0) {
-        ALOGW("stopOutput() unknow output %d", output);
+        ALOGW("stopOutput() unknown output %d", output);
         return BAD_VALUE;
     }
 
@@ -935,7 +935,7 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
                                          format,
                                          channelMask);
     if (profile == NULL) {
-        ALOGW("getInput() could not find profile for device %04x, samplingRate %d, format %d,"
+        ALOGW("getInput() could not find profile for device %04x, samplingRate %d, format %d, "
                 "channelMask %04x",
                 device, samplingRate, format, channelMask);
         return 0;
@@ -982,7 +982,7 @@ status_t AudioPolicyManagerBase::startInput(audio_io_handle_t input)
     ALOGV("startInput() input %d", input);
     ssize_t index = mInputs.indexOfKey(input);
     if (index < 0) {
-        ALOGW("startInput() unknow input %d", input);
+        ALOGW("startInput() unknown input %d", input);
         return BAD_VALUE;
     }
     AudioInputDescriptor *inputDesc = mInputs.valueAt(index);
@@ -1001,7 +1001,7 @@ status_t AudioPolicyManagerBase::startInput(audio_io_handle_t input)
                 stopInput(activeInput);
                 releaseInput(activeInput);
             } else {
-                ALOGW("startInput() input %d failed: other input already started..", input);
+                ALOGW("startInput() input %d failed: other input already started", input);
                 return INVALID_OPERATION;
             }
         }
@@ -1038,7 +1038,7 @@ status_t AudioPolicyManagerBase::stopInput(audio_io_handle_t input)
     ALOGV("stopInput() input %d", input);
     ssize_t index = mInputs.indexOfKey(input);
     if (index < 0) {
-        ALOGW("stopInput() unknow input %d", input);
+        ALOGW("stopInput() unknown input %d", input);
         return BAD_VALUE;
     }
     AudioInputDescriptor *inputDesc = mInputs.valueAt(index);
