@@ -34,6 +34,7 @@
 #define ATTACHED_OUTPUT_DEVICES_TAG "attached_output_devices"
 #define DEFAULT_OUTPUT_DEVICE_TAG "default_output_device"
 #define ATTACHED_INPUT_DEVICES_TAG "attached_input_devices"
+#define SPEAKER_DRC_ENABLED_TAG "speaker_drc_enabled"
 
 // hw modules descriptions
 #define AUDIO_HW_MODULE_TAG "audio_hw_modules"
