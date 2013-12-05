@@ -24,7 +24,9 @@
 #include <poll.h>
 
 #include "hardware_legacy/wifi.h"
+#ifdef LIBWPA_CLIENT_EXISTS
 #include "libwpa_client/wpa_ctrl.h"
+#endif
 
 #define LOG_TAG "WifiHW"
 #include "cutils/log.h"
@@ -37,12 +39,6 @@
 #include <sys/_system_properties.h>
 #endif
 
-static struct wpa_ctrl *ctrl_conn;
-static struct wpa_ctrl *monitor_conn;
-
-/* socket pair used to exit from a blocking read */
-static int exit_sockets[2];
-
 extern int do_dhcp();
 extern int ifc_init();
 extern void ifc_close();
@@ -51,6 +47,28 @@ extern void get_dhcp_info();
 extern int init_module(void *, unsigned long, const char *);
 extern int delete_module(const char *, unsigned int);
 void wifi_close_sockets();
+
+#ifndef LIBWPA_CLIENT_EXISTS
+#define WPA_EVENT_TERMINATING "CTRL-EVENT-TERMINATING "
+struct wpa_ctrl {};
+void wpa_ctrl_cleanup(void) {}
+struct wpa_ctrl *wpa_ctrl_open(const char *ctrl_path) { return NULL; }
+void wpa_ctrl_close(struct wpa_ctrl *ctrl) {}
+int wpa_ctrl_request(struct wpa_ctrl *ctrl, const char *cmd, size_t cmd_len,
+	char *reply, size_t *reply_len, void (*msg_cb)(char *msg, size_t len))
+	{ return 0; }
+int wpa_ctrl_attach(struct wpa_ctrl *ctrl) { return 0; }
+int wpa_ctrl_detach(struct wpa_ctrl *ctrl) { return 0; }
+int wpa_ctrl_recv(struct wpa_ctrl *ctrl, char *reply, size_t *reply_len)
+	{ return 0; }
+int wpa_ctrl_get_fd(struct wpa_ctrl *ctrl) { return 0; }
+#endif
+
+static struct wpa_ctrl *ctrl_conn;
+static struct wpa_ctrl *monitor_conn;
+
+/* socket pair used to exit from a blocking read */
+static int exit_sockets[2];
 
 static char primary_iface[PROPERTY_VALUE_MAX];
 // TODO: use new ANDROID_SOCKET mechanism, once support for multiple
