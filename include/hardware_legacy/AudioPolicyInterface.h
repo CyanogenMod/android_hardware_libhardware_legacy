@@ -92,7 +92,7 @@ public:
     virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
                                         uint32_t samplingRate,
                                         audio_format_t format,
-                                        uint32_t channels,
+                                        audio_channel_mask_t channelMask,
                                         AudioSystem::output_flags flags,
                                         const audio_offload_info_t *offloadInfo) = 0;
     // indicates to the audio policy manager that the output starts being used by corresponding stream.
@@ -110,7 +110,7 @@ public:
     virtual audio_io_handle_t getInput(int inputSource,
                                     uint32_t samplingRate,
                                     audio_format_t format,
-                                    uint32_t channels,
+                                    audio_channel_mask_t channelMask,
                                     AudioSystem::audio_in_acoustics acoustics) = 0;
     // indicates to the audio policy manager that the input starts being used.
     virtual status_t startInput(audio_io_handle_t input) = 0;

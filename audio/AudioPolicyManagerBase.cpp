@@ -496,7 +496,7 @@ AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getProfileForDirectOu
                                                                audio_devices_t device,
                                                                uint32_t samplingRate,
                                                                audio_format_t format,
-                                                               uint32_t channelMask,
+                                                               audio_channel_mask_t channelMask,
                                                                audio_output_flags_t flags)
 {
     for (size_t i = 0; i < mHwModules.size(); i++) {
@@ -530,7 +530,7 @@ AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getProfileForDirectOu
 audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type stream,
                                     uint32_t samplingRate,
                                     audio_format_t format,
-                                    uint32_t channelMask,
+                                    audio_channel_mask_t channelMask,
                                     AudioSystem::output_flags flags,
                                     const audio_offload_info_t *offloadInfo)
 {
@@ -623,7 +623,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         outputDesc->mDevice = device;
         outputDesc->mSamplingRate = samplingRate;
         outputDesc->mFormat = (audio_format_t)format;
-        outputDesc->mChannelMask = (audio_channel_mask_t)channelMask;
+        outputDesc->mChannelMask = channelMask;
         outputDesc->mLatency = 0;
         outputDesc->mFlags =(audio_output_flags_t) (outputDesc->mFlags | flags);
         outputDesc->mRefCount[stream] = 0;
@@ -901,7 +901,7 @@ void AudioPolicyManagerBase::releaseOutput(audio_io_handle_t output)
 audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
                                     uint32_t samplingRate,
                                     audio_format_t format,
-                                    uint32_t channelMask,
+                                    audio_channel_mask_t channelMask,
                                     AudioSystem::audio_in_acoustics acoustics)
 {
     audio_io_handle_t input = 0;
@@ -918,13 +918,13 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
     // adapt channel selection to input source
     switch(inputSource) {
     case AUDIO_SOURCE_VOICE_UPLINK:
-        channelMask = AudioSystem::CHANNEL_IN_VOICE_UPLINK;
+        channelMask = AUDIO_CHANNEL_IN_VOICE_UPLINK;
         break;
     case AUDIO_SOURCE_VOICE_DOWNLINK:
-        channelMask = AudioSystem::CHANNEL_IN_VOICE_DNLINK;
+        channelMask = AUDIO_CHANNEL_IN_VOICE_DNLINK;
         break;
     case AUDIO_SOURCE_VOICE_CALL:
-        channelMask = (AudioSystem::CHANNEL_IN_VOICE_UPLINK | AudioSystem::CHANNEL_IN_VOICE_DNLINK);
+        channelMask = AUDIO_CHANNEL_IN_VOICE_UPLINK | AUDIO_CHANNEL_IN_VOICE_DNLINK;
         break;
     default:
         break;
@@ -952,7 +952,7 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
     inputDesc->mDevice = device;
     inputDesc->mSamplingRate = samplingRate;
     inputDesc->mFormat = (audio_format_t)format;
-    inputDesc->mChannelMask = (audio_channel_mask_t)channelMask;
+    inputDesc->mChannelMask = channelMask;
     inputDesc->mRefCount = 0;
     input = mpClientInterface->openInput(profile->mModule->mHandle,
                                     &inputDesc->mDevice,
@@ -965,7 +965,7 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
         (samplingRate != inputDesc->mSamplingRate) ||
         (format != inputDesc->mFormat) ||
         (channelMask != inputDesc->mChannelMask)) {
-        ALOGV("getInput() failed opening input: samplingRate %d, format %d, channelMask %d",
+        ALOGI("getInput() failed opening input: samplingRate %d, format %d, channelMask %x",
                 samplingRate, format, channelMask);
         if (input != 0) {
             mpClientInterface->closeInput(input);
@@ -2010,7 +2010,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                     }
                     if (profile->mChannelMasks[0] == 0) {
                         profile->mChannelMasks.clear();
-                        profile->mChannelMasks.add((audio_channel_mask_t)0);
+                        profile->mChannelMasks.add(0);
                     }
                 }
             }
@@ -2662,7 +2662,7 @@ uint32_t AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
 AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getInputProfile(audio_devices_t device,
                                                    uint32_t samplingRate,
                                                    audio_format_t format,
-                                                   uint32_t channelMask)
+                                                   audio_channel_mask_t channelMask)
 {
     // Choose an input profile based on the requested capture parameters: select the first available
     // profile supporting all requested parameters.
@@ -3249,7 +3249,7 @@ uint32_t AudioPolicyManagerBase::getMaxEffectsMemory()
 AudioPolicyManagerBase::AudioOutputDescriptor::AudioOutputDescriptor(
         const IOProfile *profile)
     : mId(0), mSamplingRate(0), mFormat((audio_format_t)0),
-      mChannelMask((audio_channel_mask_t)0), mLatency(0),
+      mChannelMask(0), mLatency(0),
     mFlags((audio_output_flags_t)0), mDevice(AUDIO_DEVICE_NONE),
     mOutput1(0), mOutput2(0), mProfile(profile), mDirectOpenCount(0)
 {
@@ -3400,7 +3400,7 @@ status_t AudioPolicyManagerBase::AudioOutputDescriptor::dump(int fd)
 // --- AudioInputDescriptor class implementation
 
 AudioPolicyManagerBase::AudioInputDescriptor::AudioInputDescriptor(const IOProfile *profile)
-    : mSamplingRate(0), mFormat((audio_format_t)0), mChannelMask((audio_channel_mask_t)0),
+    : mSamplingRate(0), mFormat((audio_format_t)0), mChannelMask(0),
       mDevice(AUDIO_DEVICE_NONE), mRefCount(0),
       mInputSource(0), mProfile(profile)
 {
@@ -3550,7 +3550,7 @@ AudioPolicyManagerBase::IOProfile::~IOProfile()
 bool AudioPolicyManagerBase::IOProfile::isCompatibleProfile(audio_devices_t device,
                                                             uint32_t samplingRate,
                                                             audio_format_t format,
-                                                            uint32_t channelMask,
+                                                            audio_channel_mask_t channelMask,
                                                             audio_output_flags_t flags) const
 {
     if (samplingRate == 0 || format == 0 || channelMask == 0) {
@@ -3810,7 +3810,7 @@ void AudioPolicyManagerBase::loadInChannels(char *name, IOProfile *profile)
     ALOGV("loadInChannels() %s", name);
 
     if (str != NULL && strcmp(str, DYNAMIC_VALUE_TAG) == 0) {
-        profile->mChannelMasks.add((audio_channel_mask_t)0);
+        profile->mChannelMasks.add(0);
         return;
     }
 
@@ -3837,7 +3837,7 @@ void AudioPolicyManagerBase::loadOutChannels(char *name, IOProfile *profile)
     // by convention, "0' in the first entry in mChannelMasks indicates the supported channel
     // masks should be read from the output stream after it is opened for the first time
     if (str != NULL && strcmp(str, DYNAMIC_VALUE_TAG) == 0) {
-        profile->mChannelMasks.add((audio_channel_mask_t)0);
+        profile->mChannelMasks.add(0);
         return;
     }
 

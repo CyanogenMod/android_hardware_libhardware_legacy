@@ -89,7 +89,7 @@ public:
         virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
                                             uint32_t samplingRate,
                                             audio_format_t format,
-                                            uint32_t channels,
+                                            audio_channel_mask_t channelMask,
                                             AudioSystem::output_flags flags,
                                             const audio_offload_info_t *offloadInfo);
         virtual status_t startOutput(audio_io_handle_t output,
@@ -102,7 +102,7 @@ public:
         virtual audio_io_handle_t getInput(int inputSource,
                                             uint32_t samplingRate,
                                             audio_format_t format,
-                                            uint32_t channels,
+                                            audio_channel_mask_t channelMask,
                                             AudioSystem::audio_in_acoustics acoustics);
 
         // indicates to the audio policy manager that the input starts being used.
@@ -209,7 +209,7 @@ protected:
             bool isCompatibleProfile(audio_devices_t device,
                                      uint32_t samplingRate,
                                      audio_format_t format,
-                                     uint32_t channelMask,
+                                     audio_channel_mask_t channelMask,
                                      audio_output_flags_t flags) const;
 
             void dump(int fd);
@@ -483,11 +483,11 @@ protected:
         IOProfile *getInputProfile(audio_devices_t device,
                                    uint32_t samplingRate,
                                    audio_format_t format,
-                                   uint32_t channelMask);
+                                   audio_channel_mask_t channelMask);
         IOProfile *getProfileForDirectOutput(audio_devices_t device,
                                                        uint32_t samplingRate,
                                                        audio_format_t format,
-                                                       uint32_t channelMask,
+                                                       audio_channel_mask_t channelMask,
                                                        audio_output_flags_t flags);
 
         audio_io_handle_t selectOutputForEffects(const SortedVector<audio_io_handle_t>& outputs);
