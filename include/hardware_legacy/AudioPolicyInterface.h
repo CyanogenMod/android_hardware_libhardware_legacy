@@ -90,12 +90,11 @@ public:
 
     // request an output appropriate for playback of the supplied stream type and parameters
     virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
-                                        uint32_t samplingRate = 0,
-                                        uint32_t format = AudioSystem::FORMAT_DEFAULT,
-                                        uint32_t channels = 0,
-                                        AudioSystem::output_flags flags =
-                                                AudioSystem::OUTPUT_FLAG_INDIRECT,
-                                        const audio_offload_info_t *offloadInfo = NULL) = 0;
+                                        uint32_t samplingRate,
+                                        audio_format_t format,
+                                        uint32_t channels,
+                                        AudioSystem::output_flags flags,
+                                        const audio_offload_info_t *offloadInfo) = 0;
     // indicates to the audio policy manager that the output starts being used by corresponding stream.
     virtual status_t startOutput(audio_io_handle_t output,
                                  AudioSystem::stream_type stream,
@@ -109,10 +108,10 @@ public:
 
     // request an input appropriate for record from the supplied device with supplied parameters.
     virtual audio_io_handle_t getInput(int inputSource,
-                                    uint32_t samplingRate = 0,
-                                    uint32_t Format = AudioSystem::FORMAT_DEFAULT,
-                                    uint32_t channels = 0,
-                                    AudioSystem::audio_in_acoustics acoustics = (AudioSystem::audio_in_acoustics)0) = 0;
+                                    uint32_t samplingRate,
+                                    audio_format_t format,
+                                    uint32_t channels,
+                                    AudioSystem::audio_in_acoustics acoustics) = 0;
     // indicates to the audio policy manager that the input starts being used.
     virtual status_t startInput(audio_io_handle_t input) = 0;
     // indicates to the audio policy manager that the input stops being used.

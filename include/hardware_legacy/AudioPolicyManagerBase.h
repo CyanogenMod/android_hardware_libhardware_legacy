@@ -87,12 +87,11 @@ public:
         virtual void setSystemProperty(const char* property, const char* value);
         virtual status_t initCheck();
         virtual audio_io_handle_t getOutput(AudioSystem::stream_type stream,
-                                            uint32_t samplingRate = 0,
-                                            uint32_t format = AudioSystem::FORMAT_DEFAULT,
-                                            uint32_t channels = 0,
-                                            AudioSystem::output_flags flags =
-                                                    AudioSystem::OUTPUT_FLAG_INDIRECT,
-                                            const audio_offload_info_t *offloadInfo = NULL);
+                                            uint32_t samplingRate,
+                                            audio_format_t format,
+                                            uint32_t channels,
+                                            AudioSystem::output_flags flags,
+                                            const audio_offload_info_t *offloadInfo);
         virtual status_t startOutput(audio_io_handle_t output,
                                      AudioSystem::stream_type stream,
                                      int session = 0);
@@ -102,7 +101,7 @@ public:
         virtual void releaseOutput(audio_io_handle_t output);
         virtual audio_io_handle_t getInput(int inputSource,
                                             uint32_t samplingRate,
-                                            uint32_t format,
+                                            audio_format_t format,
                                             uint32_t channels,
                                             AudioSystem::audio_in_acoustics acoustics);
 
@@ -209,7 +208,7 @@ protected:
 
             bool isCompatibleProfile(audio_devices_t device,
                                      uint32_t samplingRate,
-                                     uint32_t format,
+                                     audio_format_t format,
                                      uint32_t channelMask,
                                      audio_output_flags_t flags) const;
 
@@ -483,11 +482,11 @@ protected:
                                        AudioSystem::output_flags flags);
         IOProfile *getInputProfile(audio_devices_t device,
                                    uint32_t samplingRate,
-                                   uint32_t format,
+                                   audio_format_t format,
                                    uint32_t channelMask);
         IOProfile *getProfileForDirectOutput(audio_devices_t device,
                                                        uint32_t samplingRate,
-                                                       uint32_t format,
+                                                       audio_format_t format,
                                                        uint32_t channelMask,
                                                        audio_output_flags_t flags);
 

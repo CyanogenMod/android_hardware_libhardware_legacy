@@ -495,7 +495,7 @@ void AudioPolicyManagerBase::setSystemProperty(const char* property, const char*
 AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getProfileForDirectOutput(
                                                                audio_devices_t device,
                                                                uint32_t samplingRate,
-                                                               uint32_t format,
+                                                               audio_format_t format,
                                                                uint32_t channelMask,
                                                                audio_output_flags_t flags)
 {
@@ -529,7 +529,7 @@ AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getProfileForDirectOu
 
 audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type stream,
                                     uint32_t samplingRate,
-                                    uint32_t format,
+                                    audio_format_t format,
                                     uint32_t channelMask,
                                     AudioSystem::output_flags flags,
                                     const audio_offload_info_t *offloadInfo)
@@ -900,7 +900,7 @@ void AudioPolicyManagerBase::releaseOutput(audio_io_handle_t output)
 
 audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
                                     uint32_t samplingRate,
-                                    uint32_t format,
+                                    audio_format_t format,
                                     uint32_t channelMask,
                                     AudioSystem::audio_in_acoustics acoustics)
 {
@@ -2661,7 +2661,7 @@ uint32_t AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
 
 AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getInputProfile(audio_devices_t device,
                                                    uint32_t samplingRate,
-                                                   uint32_t format,
+                                                   audio_format_t format,
                                                    uint32_t channelMask)
 {
     // Choose an input profile based on the requested capture parameters: select the first available
@@ -3549,7 +3549,7 @@ AudioPolicyManagerBase::IOProfile::~IOProfile()
 // get a valid a match
 bool AudioPolicyManagerBase::IOProfile::isCompatibleProfile(audio_devices_t device,
                                                             uint32_t samplingRate,
-                                                            uint32_t format,
+                                                            audio_format_t format,
                                                             uint32_t channelMask,
                                                             audio_output_flags_t flags) const
 {

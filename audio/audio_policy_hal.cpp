@@ -145,7 +145,7 @@ static audio_io_handle_t ap_get_output(struct audio_policy *pol,
 
     ALOGV("%s: tid %d", __func__, gettid());
     return lap->apm->getOutput((AudioSystem::stream_type)stream,
-                               sampling_rate, (int) format, channelMask,
+                               sampling_rate, format, channelMask,
                                (AudioSystem::output_flags)flags,
                                offloadInfo);
 }
@@ -180,7 +180,7 @@ static audio_io_handle_t ap_get_input(struct audio_policy *pol, audio_source_t i
                                       audio_in_acoustics_t acoustics)
 {
     struct legacy_audio_policy *lap = to_lap(pol);
-    return lap->apm->getInput((int) inputSource, sampling_rate, (int) format, channelMask,
+    return lap->apm->getInput((int) inputSource, sampling_rate, format, channelMask,
                               (AudioSystem::audio_in_acoustics)acoustics);
 }
 
