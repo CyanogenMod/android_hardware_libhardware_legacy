@@ -1506,6 +1506,14 @@ bool AudioPolicyManagerBase::isOffloadSupported(const audio_offload_info_t& offl
                return false;
             }
         }
+        if(offloadInfo.is_streaming &&
+           property_get("av.streaming.offload.enable", propValue, "false")) {
+            bool prop_enabled = atoi(propValue) || !strncmp("true", propValue, 4);
+            if (!prop_enabled) {
+               ALOGW("offload disabled by av.streaming.offload.enable = %s ", propValue );
+               return false;
+            }
+        }
         ALOGV("isOffloadSupported: has_video == true, property\
                 set to enable offload");
     }
