@@ -52,7 +52,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
 {
     SortedVector <audio_io_handle_t> outputs;
 
-    ALOGV("setDeviceConnectionState() device: %x, state %d, address %s", device, state, device_address);
+    ALOGV("setDeviceConnectionState() device: 0x%X, state %d, address %s", device, state, device_address);
 
     // connect/disconnect only 1 device at a time
     if (!audio_is_output_device(device) && !audio_is_input_device(device)) return BAD_VALUE;
@@ -1889,80 +1889,93 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                     mpClientInterface->setParameters(output, paramStr);
                 }
 
-                if (desc->mFlags & AUDIO_OUTPUT_FLAG_DIRECT) {
-                    String8 reply;
-                    char *value;
-                    if (profile->mSamplingRates[0] == 0) {
-                        reply = mpClientInterface->getParameters(output,
-                                                String8(AUDIO_PARAMETER_STREAM_SUP_SAMPLING_RATES));
-                        ALOGV("checkOutputsForDevice() direct output sup sampling rates %s",
-                                  reply.string());
-                        value = strpbrk((char *)reply.string(), "=");
-                        if (value != NULL) {
-                            loadSamplingRates(value + 1, profile);
-                        }
+                String8 reply;
+                char *value;
+                if (profile->mSamplingRates[0] == 0) {
+                    reply = mpClientInterface->getParameters(output,
+                                            String8(AUDIO_PARAMETER_STREAM_SUP_SAMPLING_RATES));
+                    ALOGV("checkOutputsForDevice() direct output sup sampling rates %s",
+                              reply.string());
+                    value = strpbrk((char *)reply.string(), "=");
+                    if (value != NULL) {
+                        loadSamplingRates(value + 1, profile);
                     }
-                    if (profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) {
-                        reply = mpClientInterface->getParameters(output,
-                                                       String8(AUDIO_PARAMETER_STREAM_SUP_FORMATS));
-                        ALOGV("checkOutputsForDevice() direct output sup formats %s",
-                                  reply.string());
-                        value = strpbrk((char *)reply.string(), "=");
-                        if (value != NULL) {
-                            loadFormats(value + 1, profile);
-                        }
+                }
+                if (profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) {
+                    reply = mpClientInterface->getParameters(output,
+                                                   String8(AUDIO_PARAMETER_STREAM_SUP_FORMATS));
+                    ALOGV("checkOutputsForDevice() direct output sup formats %s",
+                              reply.string());
+                    value = strpbrk((char *)reply.string(), "=");
+                    if (value != NULL) {
+                        loadFormats(value + 1, profile);
                     }
-                    if (profile->mChannelMasks[0] == 0) {
-                        reply = mpClientInterface->getParameters(output,
-                                                      String8(AUDIO_PARAMETER_STREAM_SUP_CHANNELS));
-                        ALOGV("checkOutputsForDevice() direct output sup channel masks %s",
-                                  reply.string());
-                        value = strpbrk((char *)reply.string(), "=");
-                        if (value != NULL) {
-                            loadOutChannels(value + 1, profile);
-                        }
+                }
+                if (profile->mChannelMasks[0] == 0) {
+                    reply = mpClientInterface->getParameters(output,
+                                                  String8(AUDIO_PARAMETER_STREAM_SUP_CHANNELS));
+                    ALOGV("checkOutputsForDevice() direct output sup channel masks %s",
+                              reply.string());
+                    value = strpbrk((char *)reply.string(), "=");
+                    if (value != NULL) {
+                        loadOutChannels(value + 1, profile);
                     }
-                    if (((profile->mSamplingRates[0] == 0) &&
-                             (profile->mSamplingRates.size() < 2)) ||
-                         ((profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) &&
-                             (profile->mFormats.size() < 2)) ||
-                         ((profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) &&
-                             (profile->mChannelMasks.size() < 2))) {
-                        ALOGW("checkOutputsForDevice() direct output missing param");
-                        mpClientInterface->closeOutput(output);
-                        output = 0;
-                    } else {
-                        addOutput(output, desc);
-                    }
-                } else {
-                    audio_io_handle_t duplicatedOutput = 0;
-                    // add output descriptor
+                }
+                if (((profile->mSamplingRates[0] == 0) &&
+                         (profile->mSamplingRates.size() < 2)) ||
+                     ((profile->mFormats[0] == 0) &&
+                         (profile->mFormats.size() < 2)) ||
+                     ((profile->mChannelMasks[0] == 0) &&
+                         (profile->mChannelMasks.size() < 2))) {
+                    ALOGW("checkOutputsForDevice() direct output missing param");
+                    mpClientInterface->closeOutput(output);
+                    output = 0;
+                } else if (profile->mSamplingRates[0] == 0) {
+                    mpClientInterface->closeOutput(output);
+                    desc->mSamplingRate = profile->mSamplingRates[1];
+                    offloadInfo.sample_rate = desc->mSamplingRate;
+                    output = mpClientInterface->openOutput(
+                                                    profile->mModule->mHandle,
+                                                    &desc->mDevice,
+                                                    &desc->mSamplingRate,
+                                                    &desc->mFormat,
+                                                    &desc->mChannelMask,
+                                                    &desc->mLatency,
+                                                    desc->mFlags,
+                                                    &offloadInfo);
+                }
+
+                if (output != 0) {
                     addOutput(output, desc);
-                    // set initial stream volume for device
-                    applyStreamVolumes(output, device, 0, true);
+                    if ((desc->mFlags & AUDIO_OUTPUT_FLAG_DIRECT) == 0) {
+                        audio_io_handle_t duplicatedOutput = 0;
 
-                    //TODO: configure audio effect output stage here
+                        // set initial stream volume for device
+                        applyStreamVolumes(output, device, 0, true);
 
-                    // open a duplicating output thread for the new output and the primary output
-                    duplicatedOutput = mpClientInterface->openDuplicateOutput(output,
-                                                                              mPrimaryOutput);
-                    if (duplicatedOutput != 0) {
-                        // add duplicated output descriptor
-                        AudioOutputDescriptor *dupOutputDesc = new AudioOutputDescriptor(NULL);
-                        dupOutputDesc->mOutput1 = mOutputs.valueFor(mPrimaryOutput);
-                        dupOutputDesc->mOutput2 = mOutputs.valueFor(output);
-                        dupOutputDesc->mSamplingRate = desc->mSamplingRate;
-                        dupOutputDesc->mFormat = desc->mFormat;
-                        dupOutputDesc->mChannelMask = desc->mChannelMask;
-                        dupOutputDesc->mLatency = desc->mLatency;
-                        addOutput(duplicatedOutput, dupOutputDesc);
-                        applyStreamVolumes(duplicatedOutput, device, 0, true);
-                    } else {
-                        ALOGW("checkOutputsForDevice() could not open dup output for %d and %d",
-                                mPrimaryOutput, output);
-                        mpClientInterface->closeOutput(output);
-                        mOutputs.removeItem(output);
-                        output = 0;
+                        //TODO: configure audio effect output stage here
+
+                        // open a duplicating output thread for the new output and the primary output
+                        duplicatedOutput = mpClientInterface->openDuplicateOutput(output,
+                                                                                  mPrimaryOutput);
+                        if (duplicatedOutput != 0) {
+                            // add duplicated output descriptor
+                            AudioOutputDescriptor *dupOutputDesc = new AudioOutputDescriptor(NULL);
+                            dupOutputDesc->mOutput1 = mOutputs.valueFor(mPrimaryOutput);
+                            dupOutputDesc->mOutput2 = mOutputs.valueFor(output);
+                            dupOutputDesc->mSamplingRate = desc->mSamplingRate;
+                            dupOutputDesc->mFormat = desc->mFormat;
+                            dupOutputDesc->mChannelMask = desc->mChannelMask;
+                            dupOutputDesc->mLatency = desc->mLatency;
+                            addOutput(duplicatedOutput, dupOutputDesc);
+                            applyStreamVolumes(duplicatedOutput, device, 0, true);
+                        } else {
+                            ALOGW("checkOutputsForDevice() could not open dup output for %d and %d",
+                                    mPrimaryOutput, output);
+                            mpClientInterface->closeOutput(output);
+                            mOutputs.removeItem(output);
+                            output = 0;
+                        }
                     }
                 }
             }
@@ -1999,8 +2012,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
             for (size_t j = 0; j < mHwModules[i]->mOutputProfiles.size(); j++)
             {
                 IOProfile *profile = mHwModules[i]->mOutputProfiles[j];
-                if ((profile->mSupportedDevices & device) &&
-                        (profile->mFlags & AUDIO_OUTPUT_FLAG_DIRECT)) {
+                if (profile->mSupportedDevices & device) {
                     ALOGV("checkOutputsForDevice(): clearing direct output profile %d on module %d",
                           j, i);
                     if (profile->mSamplingRates[0] == 0) {
