@@ -622,7 +622,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         outputDesc = new AudioOutputDescriptor(profile);
         outputDesc->mDevice = device;
         outputDesc->mSamplingRate = samplingRate;
-        outputDesc->mFormat = (audio_format_t)format;
+        outputDesc->mFormat = format;
         outputDesc->mChannelMask = channelMask;
         outputDesc->mLatency = 0;
         outputDesc->mFlags =(audio_output_flags_t) (outputDesc->mFlags | flags);
@@ -641,7 +641,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
         // only accept an output with the requested parameters
         if (output == 0 ||
             (samplingRate != 0 && samplingRate != outputDesc->mSamplingRate) ||
-            (format != 0 && format != outputDesc->mFormat) ||
+            (format != AUDIO_FORMAT_DEFAULT && format != outputDesc->mFormat) ||
             (channelMask != 0 && channelMask != outputDesc->mChannelMask)) {
             ALOGV("getOutput() failed opening direct output: output %d samplingRate %d %d,"
                     "format %d %d, channelMask %04x %04x", output, samplingRate,
@@ -669,7 +669,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutput(AudioSystem::stream_type str
     // open a non direct output
 
     // for non direct outputs, only PCM is supported
-    if (audio_is_linear_pcm((audio_format_t)format)) {
+    if (audio_is_linear_pcm(format)) {
         // get which output is suitable for the specified stream. The actual
         // routing change will happen when startOutput() will be called
         SortedVector<audio_io_handle_t> outputs = getOutputsForDevice(device, mOutputs);
@@ -951,7 +951,7 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
     inputDesc->mInputSource = inputSource;
     inputDesc->mDevice = device;
     inputDesc->mSamplingRate = samplingRate;
-    inputDesc->mFormat = (audio_format_t)format;
+    inputDesc->mFormat = format;
     inputDesc->mChannelMask = channelMask;
     inputDesc->mRefCount = 0;
     input = mpClientInterface->openInput(profile->mModule->mHandle,
@@ -1899,7 +1899,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                             loadSamplingRates(value + 1, profile);
                         }
                     }
-                    if (profile->mFormats[0] == 0) {
+                    if (profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) {
                         reply = mpClientInterface->getParameters(output,
                                                        String8(AUDIO_PARAMETER_STREAM_SUP_FORMATS));
                         ALOGV("checkOutputsForDevice() direct output sup formats %s",
@@ -1921,9 +1921,9 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                     }
                     if (((profile->mSamplingRates[0] == 0) &&
                              (profile->mSamplingRates.size() < 2)) ||
-                         ((profile->mFormats[0] == 0) &&
+                         ((profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) &&
                              (profile->mFormats.size() < 2)) ||
-                         ((profile->mFormats[0] == 0) &&
+                         ((profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) &&
                              (profile->mChannelMasks.size() < 2))) {
                         ALOGW("checkOutputsForDevice() direct output missing param");
                         mpClientInterface->closeOutput(output);
@@ -2004,9 +2004,9 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                         profile->mSamplingRates.clear();
                         profile->mSamplingRates.add(0);
                     }
-                    if (profile->mFormats[0] == 0) {
+                    if (profile->mFormats[0] == AUDIO_FORMAT_DEFAULT) {
                         profile->mFormats.clear();
-                        profile->mFormats.add((audio_format_t)0);
+                        profile->mFormats.add(AUDIO_FORMAT_DEFAULT);
                     }
                     if (profile->mChannelMasks[0] == 0) {
                         profile->mChannelMasks.clear();
@@ -2676,7 +2676,7 @@ AudioPolicyManagerBase::IOProfile *AudioPolicyManagerBase::getInputProfile(audio
         {
             IOProfile *profile = mHwModules[i]->mInputProfiles[j];
             if (profile->isCompatibleProfile(device, samplingRate, format,
-                                             channelMask,(audio_output_flags_t)0)) {
+                                             channelMask, AUDIO_OUTPUT_FLAG_NONE)) {
                 return profile;
             }
         }
@@ -3248,7 +3248,7 @@ uint32_t AudioPolicyManagerBase::getMaxEffectsMemory()
 
 AudioPolicyManagerBase::AudioOutputDescriptor::AudioOutputDescriptor(
         const IOProfile *profile)
-    : mId(0), mSamplingRate(0), mFormat((audio_format_t)0),
+    : mId(0), mSamplingRate(0), mFormat(AUDIO_FORMAT_DEFAULT),
       mChannelMask(0), mLatency(0),
     mFlags((audio_output_flags_t)0), mDevice(AUDIO_DEVICE_NONE),
     mOutput1(0), mOutput2(0), mProfile(profile), mDirectOpenCount(0)
@@ -3400,7 +3400,7 @@ status_t AudioPolicyManagerBase::AudioOutputDescriptor::dump(int fd)
 // --- AudioInputDescriptor class implementation
 
 AudioPolicyManagerBase::AudioInputDescriptor::AudioInputDescriptor(const IOProfile *profile)
-    : mSamplingRate(0), mFormat((audio_format_t)0), mChannelMask(0),
+    : mSamplingRate(0), mFormat(AUDIO_FORMAT_DEFAULT), mChannelMask(0),
       mDevice(AUDIO_DEVICE_NONE), mRefCount(0),
       mInputSource(0), mProfile(profile)
 {
@@ -3553,7 +3553,7 @@ bool AudioPolicyManagerBase::IOProfile::isCompatibleProfile(audio_devices_t devi
                                                             audio_channel_mask_t channelMask,
                                                             audio_output_flags_t flags) const
 {
-    if (samplingRate == 0 || format == 0 || channelMask == 0) {
+    if (samplingRate == 0 || !audio_is_valid_format(format) || channelMask == 0) {
          return false;
      }
 
@@ -3787,7 +3787,7 @@ void AudioPolicyManagerBase::loadFormats(char *name, IOProfile *profile)
     // by convention, "0' in the first entry in mFormats indicates the supported formats
     // should be read from the output stream after it is opened for the first time
     if (str != NULL && strcmp(str, DYNAMIC_VALUE_TAG) == 0) {
-        profile->mFormats.add((audio_format_t)0);
+        profile->mFormats.add(AUDIO_FORMAT_DEFAULT);
         return;
     }
 
@@ -3795,7 +3795,7 @@ void AudioPolicyManagerBase::loadFormats(char *name, IOProfile *profile)
         audio_format_t format = (audio_format_t)stringToEnum(sFormatNameToEnumTable,
                                                              ARRAY_SIZE(sFormatNameToEnumTable),
                                                              str);
-        if (format != 0) {
+        if (format != AUDIO_FORMAT_DEFAULT) {
             profile->mFormats.add(format);
         }
         str = strtok(NULL, "|");
