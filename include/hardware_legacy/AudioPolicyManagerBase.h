@@ -415,7 +415,8 @@ protected:
         // transfers the audio tracks and effects from one output thread to another accordingly.
         status_t checkOutputsForDevice(audio_devices_t device,
                                        AudioSystem::device_connection_state state,
-                                       SortedVector<audio_io_handle_t>& outputs);
+                                       SortedVector<audio_io_handle_t>& outputs,
+                                       const String8 paramStr);
 
         // close an output and its companion duplicating output.
         void closeOutput(audio_io_handle_t output);

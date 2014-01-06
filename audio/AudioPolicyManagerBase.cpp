@@ -81,6 +81,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
         // save a copy of the opened output descriptors before any output is opened or closed
         // by checkOutputsForDevice(). This will be needed by checkOutputForAllStrategies()
         mPreviousOutputs = mOutputs;
+        String8 paramStr;
         switch (state)
         {
         // handle output device connection
@@ -91,7 +92,17 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
             }
             ALOGV("setDeviceConnectionState() connecting device %x", device);
 
-            if (checkOutputsForDevice(device, state, outputs) != NO_ERROR) {
+            if (mHasA2dp && audio_is_a2dp_device(device)) {
+                // handle A2DP device connection
+                AudioParameter param;
+                param.add(String8(AUDIO_PARAMETER_A2DP_SINK_ADDRESS), String8(device_address));
+                paramStr = param.toString();
+            } else if (mHasUsb && audio_is_usb_device(device)) {
+                // handle USB device connection
+                paramStr = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
+            }
+
+            if (checkOutputsForDevice(device, state, outputs, paramStr) != NO_ERROR) {
                 return INVALID_OPERATION;
             }
             ALOGV("setDeviceConnectionState() checkOutputsForDevice() returned %d outputs",
@@ -99,31 +110,18 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
             // register new device as available
             mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices | device);
 
-            if (!outputs.isEmpty()) {
-                String8 paramStr;
-                if (mHasA2dp && audio_is_a2dp_device(device)) {
-                    // handle A2DP device connection
-                    AudioParameter param;
-                    param.add(String8(AUDIO_PARAMETER_A2DP_SINK_ADDRESS), String8(device_address));
-                    paramStr = param.toString();
-                    mA2dpDeviceAddress = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
-                    mA2dpSuspended = false;
-                } else if (audio_is_bluetooth_sco_device(device)) {
-                    // handle SCO device connection
-                    mScoDeviceAddress = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
-                } else if (mHasUsb && audio_is_usb_device(device)) {
-                    // handle USB device connection
-                    mUsbCardAndDevice = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
-                    paramStr = mUsbCardAndDevice;
-                }
-                // not currently handling multiple simultaneous submixes: ignoring remote submix
-                //   case and address
-                if (!paramStr.isEmpty()) {
-                    for (size_t i = 0; i < outputs.size(); i++) {
-                        mpClientInterface->setParameters(outputs[i], paramStr);
-                    }
-                }
+            if (mHasA2dp && audio_is_a2dp_device(device)) {
+                // handle A2DP device connection
+                mA2dpDeviceAddress = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
+                mA2dpSuspended = false;
+            } else if (audio_is_bluetooth_sco_device(device)) {
+                // handle SCO device connection
+                mScoDeviceAddress = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
+            } else if (mHasUsb && audio_is_usb_device(device)) {
+                // handle USB device connection
+                mUsbCardAndDevice = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
             }
+
             break;
         // handle output device disconnection
         case AudioSystem::DEVICE_STATE_UNAVAILABLE: {
@@ -136,7 +134,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
             // remove device from available output devices
             mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices & ~device);
 
-            checkOutputsForDevice(device, state, outputs);
+            checkOutputsForDevice(device, state, outputs, paramStr);
             if (mHasA2dp && audio_is_a2dp_device(device)) {
                 // handle A2DP device disconnection
                 mA2dpDeviceAddress = "";
@@ -1818,7 +1816,8 @@ void AudioPolicyManagerBase::addOutput(audio_io_handle_t id, AudioOutputDescript
 
 status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                                                        AudioSystem::device_connection_state state,
-                                                       SortedVector<audio_io_handle_t>& outputs)
+                                                       SortedVector<audio_io_handle_t>& outputs,
+                                                       const String8 paramStr)
 {
     AudioOutputDescriptor *desc;
 
@@ -1869,7 +1868,7 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                 continue;
             }
 
-            ALOGV("opening output for device %08x", device);
+            ALOGV("opening output for device %08x with params %s", device, paramStr.string());
             desc = new AudioOutputDescriptor(profile);
             desc->mDevice = device;
             audio_offload_info_t offloadInfo = AUDIO_INFO_INITIALIZER;
@@ -1886,6 +1885,10 @@ status_t AudioPolicyManagerBase::checkOutputsForDevice(audio_devices_t device,
                                                                        desc->mFlags,
                                                                        &offloadInfo);
             if (output != 0) {
+                if (!paramStr.isEmpty()) {
+                    mpClientInterface->setParameters(output, paramStr);
+                }
+
                 if (desc->mFlags & AUDIO_OUTPUT_FLAG_DIRECT) {
                     String8 reply;
                     char *value;
