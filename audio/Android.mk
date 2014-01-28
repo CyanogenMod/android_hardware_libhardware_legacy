@@ -52,7 +52,7 @@ LOCAL_WHOLE_STATIC_LIBRARIES := \
     libaudiopolicy_legacy
 
 LOCAL_MODULE := audio_policy.default
-LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
+LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_SHARED_LIBRARY)
