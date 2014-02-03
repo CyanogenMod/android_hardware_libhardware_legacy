@@ -229,9 +229,8 @@ public:
     // for each output (destination device) it is attached to.
     virtual status_t setStreamVolume(AudioSystem::stream_type stream, float volume, audio_io_handle_t output, int delayMs = 0) = 0;
 
-    // FIXME ignores output, should be renamed to invalidateStreamOuput(stream)
-    // reroute a given stream type to the specified output
-    virtual status_t setStreamOutput(AudioSystem::stream_type stream, audio_io_handle_t output) = 0;
+    // invalidate a stream type, causing a reroute to an unspecified new output
+    virtual status_t invalidateStream(AudioSystem::stream_type stream) = 0;
 
     // function enabling to send proprietary informations directly from audio policy manager to audio hardware interface.
     virtual void setParameters(audio_io_handle_t ioHandle, const String8& keyValuePairs, int delayMs = 0) = 0;

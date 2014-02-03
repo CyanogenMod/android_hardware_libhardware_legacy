@@ -2143,9 +2143,7 @@ void AudioPolicyManagerBase::checkOutputForStrategy(routing_strategy strategy)
         // Move tracks associated to this strategy from previous output to new output
         for (int i = 0; i < (int)AudioSystem::NUM_STREAM_TYPES; i++) {
             if (getStrategy((AudioSystem::stream_type)i) == strategy) {
-                //FIXME see fixme on name change
-                mpClientInterface->setStreamOutput((AudioSystem::stream_type)i,
-                                                   dstOutputs[0] /* ignored */);
+                mpClientInterface->invalidateStream((AudioSystem::stream_type)i);
             }
         }
     }
