@@ -31,6 +31,7 @@
 #include "common.h"
 #include "eloop.h"
 #include "utils/list.h"
+#include "common/qca-vendor.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
 #include "l2_packet/l2_packet.h"
@@ -170,7 +171,6 @@ struct wpa_driver_nl80211_data {
 	unsigned int hostapd:1;
 	unsigned int start_mode_ap:1;
 	unsigned int start_iface_up:1;
-	unsigned int channel_switch_supported:1;
 
 	u64 remain_on_chan_cookie;
 	u64 send_action_cookie;
