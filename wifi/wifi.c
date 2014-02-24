@@ -511,7 +511,7 @@ int wifi_start_supplicant(int p2p_supported)
     }
 
     /* Check whether already running */
-    if (property_get(supplicant_name, supp_status, NULL)
+    if (property_get(supplicant_prop_name, supp_status, NULL)
             && strcmp(supp_status, "running") == 0) {
         return 0;
     }
