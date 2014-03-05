@@ -2528,9 +2528,7 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
         if (device2 == AUDIO_DEVICE_NONE) {
             device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_USB_DEVICE;
         }
-        if ((device2 == AUDIO_DEVICE_NONE) &&
-                (mForceUse[AudioSystem::FOR_DOCK] == AudioSystem::FORCE_DIGITAL_DOCK)
-                && (strategy != STRATEGY_SONIFICATION)) {
+        if ((device2 == AUDIO_DEVICE_NONE) && (strategy != STRATEGY_SONIFICATION)) {
             // no sonification on digital docks (e.g. USB DACs)
             device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET;
         }
