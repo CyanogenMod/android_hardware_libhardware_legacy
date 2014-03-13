@@ -556,12 +556,16 @@ int wifi_start_supplicant(int p2p_supported)
             pi = __system_property_find(supplicant_prop_name);
         }
         if (pi != NULL) {
-            __system_property_read(pi, NULL, supp_status);
-            if (strcmp(supp_status, "running") == 0) {
-                return 0;
-            } else if (__system_property_serial(pi) != serial &&
-                    strcmp(supp_status, "stopped") == 0) {
-                return -1;
+            /*
+             * property serial updated means that init process is scheduled
+             * after we sched_yield, further property status checking is based on this */
+            if (__system_property_serial(pi) != serial) {
+                __system_property_read(pi, NULL, supp_status);
+                if (strcmp(supp_status, "running") == 0) {
+                    return 0;
+                } else if (strcmp(supp_status, "stopped") == 0) {
+                    return -1;
+                }
             }
         }
 #else
