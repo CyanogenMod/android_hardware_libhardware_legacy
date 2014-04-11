@@ -44,7 +44,15 @@ typedef struct {
 } wifi_scan_result;
 
 typedef struct {
+    byte id;                            // element identifier
+    byte len;                           // number of bytes to follow
+    byte data[];
+} wifi_information_element;
+
+typedef struct {
     void (*on_scan_results_available) (wifi_request_id id, unsigned num_results_available);
+    void (*on_full_scan_result) (wifi_request_id id, wifi_scan_result result,
+                unsigned num, wifi_information_element *elements);
 } wifi_scan_result_handler;
 
 typedef struct {
@@ -60,7 +68,7 @@ typedef struct {
     int period;                         // desired period, in millisecond; if this is too
                                         // low, the firmware should choose to generate results as
                                         // fast as it can instead of failing the command
-    byte report_events;                 // 1 => report events after each scan
+    byte report_events;                 // 1 => report full_scan_result after each AP is discovered
     int num_channels;
     wifi_scan_channel_spec channels[8]; // channels to scan; these may include DFS channels
 } wifi_scan_bucket_spec;
