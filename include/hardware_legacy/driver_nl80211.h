@@ -1,6 +1,6 @@
 /*
  * Driver interaction with Linux nl80211/cfg80211
- * Copyright (c) 2002-2012, Jouni Malinen <j@w1.fi>
+ * Copyright (c) 2002-2014, Jouni Malinen <j@w1.fi>
  * Copyright (c) 2003-2004, Instant802 Networks, Inc.
  * Copyright (c) 2005-2006, Devicescape Software, Inc.
  * Copyright (c) 2007, Johannes Berg <johannes@sipsolutions.net>
@@ -167,10 +167,14 @@ struct wpa_driver_nl80211_data {
 	unsigned int retry_auth:1;
 	unsigned int use_monitor:1;
 	unsigned int ignore_next_local_disconnect:1;
+	unsigned int ignore_next_local_deauth:1;
 	unsigned int allow_p2p_device:1;
 	unsigned int hostapd:1;
 	unsigned int start_mode_ap:1;
 	unsigned int start_iface_up:1;
+	unsigned int test_use_roc_tx:1;
+	unsigned int ignore_deauth_event:1;
+	unsigned int dfs_vendor_cmd_avail:1;
 
 	u64 remain_on_chan_cookie;
 	u64 send_action_cookie;
