@@ -148,6 +148,17 @@ status_t AudioHardwareBase::dumpState(int fd, const Vector<String16>& args)
     return NO_ERROR;
 }
 
+// default implementation calls its "without flags" counterpart
+AudioStreamOut* AudioHardwareInterface::openOutputStreamWithFlags(uint32_t devices,
+                                          audio_output_flags_t flags,
+                                          int *format,
+                                          uint32_t *channels,
+                                          uint32_t *sampleRate,
+                                          status_t *status)
+{
+    return openOutputStream(devices, format, channels, sampleRate, status);
+}
+
 // ----------------------------------------------------------------------------
 
 }; // namespace android
