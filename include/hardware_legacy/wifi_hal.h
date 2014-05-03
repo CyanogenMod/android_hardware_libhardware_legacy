@@ -103,6 +103,7 @@ wifi_error wifi_reset_iface_event_handler(wifi_request_id id, wifi_interface_han
 
 #include "gscan.h"
 #include "rtt.h"
+#include "link_layer_stats.h"
 
 #endif
 
