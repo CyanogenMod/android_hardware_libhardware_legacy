@@ -821,6 +821,10 @@ status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
 
     AudioOutputDescriptor *outputDesc = mOutputs.valueAt(index);
 
+    // handle special case for sonification while in call
+    if (isInCall()) {
+        handleIncallSonification(stream, false, false);
+    }
 
     if (outputDesc->mRefCount[stream] > 0) {
         // decrement usage count of this stream on the output
@@ -850,10 +854,6 @@ status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
                                     true,
                                     outputDesc->mLatency*2);
                 }
-            }
-            // handle special case for sonification while in call
-            if (isInCall()) {
-                handleIncallSonification(stream, false, false);
             }
             // update the outputs if stopping one with a stream that can affect notification routing
             handleNotificationRoutingForStream(stream);
@@ -3248,7 +3248,7 @@ void AudioPolicyManagerBase::handleIncallSonification(int stream, bool starting,
         AudioOutputDescriptor *outputDesc = mOutputs.valueFor(mPrimaryOutput);
         ALOGV("handleIncallSonification() stream %d starting %d device %x stateChange %d",
                 stream, starting, outputDesc->mDevice, stateChange);
-        if (outputDesc->mRefCount[stream] >= 0) {
+        if (outputDesc->mRefCount[stream]) {
             int muteCount = 1;
             if (stateChange) {
                 muteCount = outputDesc->mRefCount[stream];
