@@ -67,7 +67,7 @@ typedef struct {
    u8 bssid[6];                  // bssid
    u8 ap_country_str[3];         // country string advertised by AP
    u8 country_str[3];            // country string for this association
-} wifi_interface_info;
+} wifi_interface_link_layer_info;
 
 /* channel information */
 typedef struct {
@@ -175,7 +175,7 @@ typedef struct {
 /* interface statistics */
 typedef struct {
    wifi_interface_handle iface;          // wifi interface
-   wifi_interface_info info;             // current state of the interface
+   wifi_interface_link_layer_info info;  // current state of the interface
    u32 beacon_rx;                        // access point beacon received count from connected AP
    u32 mgmt_rx;                          // access point mgmt frames received count from connected AP (including Beacon)
    u32 mgmt_action_rx;                   // action frames received count
