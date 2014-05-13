@@ -720,26 +720,30 @@ int wifi_wait_on_socket(char *buf, size_t buflen)
     char *match, *match2;
 
     if (monitor_conn == NULL) {
-        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");
+        return snprintf(buf, buflen, "IFNAME=%s %s - connection closed",
+                        primary_iface, WPA_EVENT_TERMINATING);
     }
 
     result = wifi_ctrl_recv(buf, &nread);
 
     /* Terminate reception on exit socket */
     if (result == -2) {
-        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - connection closed");
+        return snprintf(buf, buflen, "IFNAME=%s %s - connection closed",
+                        primary_iface, WPA_EVENT_TERMINATING);
     }
 
     if (result < 0) {
         ALOGD("wifi_ctrl_recv failed: %s\n", strerror(errno));
-        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - recv error");
+        return snprintf(buf, buflen, "IFNAME=%s %s - recv error",
+                        primary_iface, WPA_EVENT_TERMINATING);
     }
     buf[nread] = '\0';
     /* Check for EOF on the socket */
     if (result == 0 && nread == 0) {
         /* Fabricate an event to pass up */
         ALOGD("Received EOF on supplicant socket\n");
-        return snprintf(buf, buflen, WPA_EVENT_TERMINATING " - signal 0 received");
+        return snprintf(buf, buflen, "IFNAME=%s %s - signal 0 received",
+                        primary_iface, WPA_EVENT_TERMINATING);
     }
     /*
      * Events strings are in the format
