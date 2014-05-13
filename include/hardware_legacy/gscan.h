@@ -39,7 +39,10 @@ typedef struct {
     wifi_rssi rssi;                     // in db
     wifi_timespan rtt;                  // in nanoseconds
     wifi_timespan rtt_sd;               // standard deviation in rtt
-
+    unsigned short beacon_period;
+    unsigned short capability;
+    unsigned int ie_length;
+    char   ie_data[1];
     // other fields
 } wifi_scan_result;
 
@@ -51,8 +54,7 @@ typedef struct {
 
 typedef struct {
     void (*on_scan_results_available) (wifi_request_id id, unsigned num_results_available);
-    void (*on_full_scan_result) (wifi_request_id id, wifi_scan_result result,
-                unsigned num, wifi_information_element *elements);
+    void (*on_full_scan_result) (wifi_request_id id, wifi_scan_result *result);
 } wifi_scan_result_handler;
 
 typedef struct {
