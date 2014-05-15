@@ -602,6 +602,18 @@ int wifi_send_command(const char *cmd, char *reply, size_t *reply_len)
     return 0;
 }
 
+int wifi_supplicant_connection_active()
+{
+    char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
+
+    if (property_get(supplicant_prop_name, supp_status, NULL)) {
+        if (strcmp(supp_status, "stopped") == 0)
+            return -1;
+    }
+
+    return 0;
+}
+
 int wifi_ctrl_recv(char *reply, size_t *reply_len)
 {
     int res;
@@ -613,11 +625,21 @@ int wifi_ctrl_recv(char *reply, size_t *reply_len)
     rfds[0].events |= POLLIN;
     rfds[1].fd = exit_sockets[1];
     rfds[1].events |= POLLIN;
-    res = TEMP_FAILURE_RETRY(poll(rfds, 2, -1));
-    if (res < 0) {
-        ALOGE("Error poll = %d", res);
-        return res;
-    }
+    do {
+        res = TEMP_FAILURE_RETRY(poll(rfds, 2, 30000));
+        if (res < 0) {
+            ALOGE("Error poll = %d", res);
+            return res;
+        } else if (res == 0) {
+            /* timed out, check if supplicant is active
+             * or not ..
+             */
+            res = wifi_supplicant_connection_active();
+            if (res < 0)
+                return -2;
+        }
+    } while (res == 0);
+
     if (rfds[0].revents & POLLIN) {
         return wpa_ctrl_recv(monitor_conn, reply, reply_len);
     }
