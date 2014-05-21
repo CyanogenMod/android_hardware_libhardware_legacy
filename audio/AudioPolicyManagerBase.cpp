@@ -67,7 +67,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
     if (audio_is_output_device(device)) {
         SortedVector <audio_io_handle_t> outputs;
 
-        if (!mHasA2dp && audio_is_a2dp_device(device)) {
+        if (!mHasA2dp && audio_is_a2dp_out_device(device)) {
             ALOGE("setDeviceConnectionState() invalid A2DP device: %x", device);
             return BAD_VALUE;
         }
@@ -94,7 +94,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
             }
             ALOGV("setDeviceConnectionState() connecting device %x", device);
 
-            if (mHasA2dp && audio_is_a2dp_device(device)) {
+            if (mHasA2dp && audio_is_a2dp_out_device(device)) {
                 // handle A2DP device connection
                 AudioParameter param;
                 param.add(String8(AUDIO_PARAMETER_A2DP_SINK_ADDRESS), String8(device_address));
@@ -112,7 +112,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
             // register new device as available
             mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices | device);
 
-            if (mHasA2dp && audio_is_a2dp_device(device)) {
+            if (mHasA2dp && audio_is_a2dp_out_device(device)) {
                 // handle A2DP device connection
                 mA2dpDeviceAddress = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
                 mA2dpSuspended = false;
@@ -137,7 +137,7 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
             mAvailableOutputDevices = (audio_devices_t)(mAvailableOutputDevices & ~device);
             checkOutputsForDevice(device, state, outputs, paramStr);
 
-            if (mHasA2dp && audio_is_a2dp_device(device)) {
+            if (mHasA2dp && audio_is_a2dp_out_device(device)) {
                 // handle A2DP device disconnection
                 mA2dpDeviceAddress = "";
                 mA2dpSuspended = false;
@@ -212,6 +212,11 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
             if (mHasUsb && audio_is_usb_in_device(device)) {
                 // handle USB device connection
                 paramStr = String8(device_address, MAX_DEVICE_ADDRESS_LEN);
+            } else if (mHasA2dp && audio_is_a2dp_in_device(device)) {
+                // handle A2DP device connection
+                AudioParameter param;
+                param.add(String8(AUDIO_PARAMETER_A2DP_SOURCE_ADDRESS), String8(device_address));
+                paramStr = param.toString();
             }
 
             if (checkInputsForDevice(device, state, inputs, paramStr) != NO_ERROR) {
@@ -252,7 +257,7 @@ AudioSystem::device_connection_state AudioPolicyManagerBase::getDeviceConnection
     String8 address = String8(device_address);
     if (audio_is_output_device(device)) {
         if (device & mAvailableOutputDevices) {
-            if (audio_is_a2dp_device(device) &&
+            if (audio_is_a2dp_out_device(device) &&
                 (!mHasA2dp || (address != "" && mA2dpDeviceAddress != address))) {
                 return state;
             }
@@ -2910,6 +2915,12 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
 
     case AUDIO_SOURCE_DEFAULT:
     case AUDIO_SOURCE_MIC:
+    if (mAvailableInputDevices & AUDIO_DEVICE_IN_BLUETOOTH_A2DP) {
+        device = AUDIO_DEVICE_IN_BLUETOOTH_A2DP;
+        break;
+    }
+    // FALL THROUGH
+
     case AUDIO_SOURCE_VOICE_RECOGNITION:
     case AUDIO_SOURCE_HOTWORD:
     case AUDIO_SOURCE_VOICE_COMMUNICATION:
@@ -3911,6 +3922,7 @@ const struct StringToEnum sDeviceNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_DEVICE_IN_DGTL_DOCK_HEADSET),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_USB_ACCESSORY),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_USB_DEVICE),
+    STRING_TO_ENUM(AUDIO_DEVICE_IN_BLUETOOTH_A2DP),
 };
 
 const struct StringToEnum sFlagNameToEnumTable[] = {

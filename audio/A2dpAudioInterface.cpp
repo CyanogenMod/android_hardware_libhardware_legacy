@@ -63,7 +63,7 @@ status_t A2dpAudioInterface::initCheck()
 AudioStreamOut* A2dpAudioInterface::openOutputStream(
         uint32_t devices, int *format, uint32_t *channels, uint32_t *sampleRate, status_t *status)
 {
-    if (!audio_is_a2dp_device(devices)) {
+    if (!audio_is_a2dp_out_device(devices)) {
         ALOGV("A2dpAudioInterface::openOutputStream() open HW device: %x", devices);
         return mHardwareInterface->openOutputStream(devices, format, channels, sampleRate, status);
     }
@@ -398,7 +398,7 @@ status_t A2dpAudioInterface::A2dpAudioStreamOut::setParameters(const String8& ke
     }
     key = AudioParameter::keyRouting;
     if (param.getInt(key, device) == NO_ERROR) {
-        if (audio_is_a2dp_device(device)) {
+        if (audio_is_a2dp_out_device(device)) {
             mDevice = device;
             status = NO_ERROR;
         } else {
