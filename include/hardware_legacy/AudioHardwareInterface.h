@@ -258,7 +258,7 @@ public:
                                 int *format=0,
                                 uint32_t *channels=0,
                                 uint32_t *sampleRate=0,
-                                status_t *status=0);
+                                status_t *status=0) = 0;
     virtual    void        closeOutputStream(AudioStreamOut* out) = 0;
 
     /** This method creates and opens the audio hardware input stream */
