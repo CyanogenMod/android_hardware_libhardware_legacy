@@ -5,16 +5,6 @@
 #define __WIFI_HAL_RTT_H__
 
 /* channel operating width */
-typedef enum {
-   WIFI_CHAN_WIDTH_INVALID = 0,
-   WIFI_CHAN_WIDTH_20      = 1,
-   WIFI_CHAN_WIDTH_40      = 2,
-   WIFI_CHAN_WIDTH_80      = 3,
-   WIFI_CHAN_WIDTH_160     = 4,
-   WIFI_CHAN_WIDTH_80_80   = 5,
-   WIFI_CHAN_WIDTH_5       = 6,
-   WIFI_CHAN_WIDTH_10      = 7
-} wifi_channel_width;
 
 /* Ranging status */
 typedef enum {
@@ -29,24 +19,6 @@ typedef enum {
     RTT_STATUS_ABORTED
 } wifi_rtt_status;
 
-/* channel information */
-typedef struct {
-   wifi_channel_width width;            // channel width (20, 40, 80, 80+80, 160)
-   wifi_channel center_freq;            // primary 20 MHz channel
-   wifi_channel center_freq1;           // center frequency (MHz) first segment
-   wifi_channel center_freq2;           // center frequency (MHz) second segment, valid for 80+80
-} wifi_channel_info;
-
-/* wifi rate */
-typedef struct {
-   u32 preamble   :3;           // 0: OFDM, 1:CCK, 2:HT 3:VHT 4..7 reserved
-   u32 nss        :2;           // 0:1x1, 1:2x2, 3:3x3, 4:4x4
-   u32 bw         :3;           // 0:20MHz, 1:40Mhz, 2:80Mhz, 3:160Mhz
-   u32 rateMcsIdx :8;           // OFDM/CCK rate code would be as per ieee std in the units of 0.5mbps
-                                // HT/VHT it would be mcs index
-   u32 reserved  :16;           // reserved
-   u32 bitrate;                 // units of 100 Kbps
-} wifi_rate;
 
 /* RTT Type */
 typedef enum {
@@ -55,16 +27,6 @@ typedef enum {
     RTT_TYPE_2_SIDED,
     RTT_TYPE_AUTO,              // Two sided if remote supports; one sided otherwise
 } wifi_rtt_type;
-
-/* wifi peer device */
-typedef enum
-{
-   WIFI_PEER_STA,
-   WIFI_PEER_AP,
-   WIFI_PEER_P2P,
-   WIFI_PEER_NBD,
-   WIFI_PEER_INVALID,
-} wifi_peer_type;
 
 /* RTT configuration */
 typedef struct {

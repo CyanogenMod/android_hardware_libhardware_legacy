@@ -24,6 +24,7 @@ typedef enum {
    WIFI_CHAN_WIDTH_80P80 = 4,
    WIFI_CHAN_WIDTH_5     = 5,
    WIFI_CHAN_WIDTH_10    = 6,
+   WIFI_CHAN_WIDTH_INVALID = -1
 } wifi_channel_width;
 
 typedef enum {
