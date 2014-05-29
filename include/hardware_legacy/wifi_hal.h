@@ -18,6 +18,7 @@ typedef enum {
 
 typedef unsigned char byte;
 typedef unsigned char u8;
+typedef signed char s8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
@@ -44,20 +45,22 @@ void wifi_event_loop(wifi_handle handle);
 void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer to a static string
 
 /* Feature enums */
-#define WIFI_FEATURE_INFRA          0x0001      // Basic infrastructure mode
-#define WIFI_FEATURE_INFRA_5G       0x0002      // Support for 5 GHz Band
-#define WIFI_FEATURE_HOTSPOT        0x0004      // Support for GAS/ANQP
-#define WIFI_FEATURE_P2P            0x0008      // Wifi-Direct
-#define WIFI_FEATURE_SOFT_AP        0x0010      // Soft AP
-#define WIFI_FEATURE_GSCAN          0x0020      // Google-Scan APIs
-#define WIFI_FEATURE_NBD            0x0040      // NearBy discovery
-#define WIFI_FEATURE_D2D_RTT        0x0080      // Device-to-device RTT
-#define WIFI_FEATURE_D2AP_RTT       0x0100      // Device-to-AP RTT
-#define WIFI_FEATURE_BATCH_GSCAN    0x0200      // Batched G-Scan
-#define WIFI_FEATURE_PNO            0x0400      // Preferred network offload
-#define WIFI_FEATURE_ADDITIONAL_STA 0x0800      // Support for two STAs
-#define WIFI_FEATURE_TDLS           0x1000      // Tunnel directed link setup
-
+#define WIFI_FEATURE_INFRA              0x0001      // Basic infrastructure mode
+#define WIFI_FEATURE_INFRA_5G           0x0002      // Support for 5 GHz Band
+#define WIFI_FEATURE_HOTSPOT            0x0004      // Support for GAS/ANQP
+#define WIFI_FEATURE_P2P                0x0008      // Wifi-Direct
+#define WIFI_FEATURE_SOFT_AP            0x0010      // Soft AP
+#define WIFI_FEATURE_GSCAN              0x0020      // Google-Scan APIs
+#define WIFI_FEATURE_NAN                0x0040      // Neighbor Awareness Networking
+#define WIFI_FEATURE_D2D_RTT            0x0080      // Device-to-device RTT
+#define WIFI_FEATURE_D2AP_RTT           0x0100      // Device-to-AP RTT
+#define WIFI_FEATURE_BATCH_SCAN         0x0200      // Batched Scan (legacy)
+#define WIFI_FEATURE_PNO                0x0400      // Preferred network offload
+#define WIFI_FEATURE_ADDITIONAL_STA     0x0800      // Support for two STAs
+#define WIFI_FEATURE_TDLS               0x1000      // Tunnel directed link setup
+#define WIFI_FEATURE_TDLS_OFFCHANNEL    0x2000      // Support for TDLS off channel
+#define WIFI_FEATURE_EPR                0x4000      // Enhanced power reporting
+#define WIFI_FEATURE_AP_STA             0x8000      // Support for AP STA Concurrency
 // Add more features here
 
 typedef int feature_set;
@@ -76,12 +79,6 @@ wifi_error wifi_get_supported_feature_set(wifi_handle handle, feature_set *set);
  * all other combinations are invalid!
  */
 wifi_error wifi_get_concurrency_matrix(wifi_handle handle, int *size, feature_set **matrix);
-
-/* List of all supported channels, including 5GHz channels */
-wifi_error wifi_get_supported_channels(wifi_handle handle, int *size, wifi_channel *list);
-
-/* Enhanced power reporting */
-wifi_error wifi_is_epr_supported(wifi_handle handle);
 
 /* multiple interface support */
 

@@ -49,6 +49,7 @@ typedef enum {
     WIFI_INTERFACE_P2P_GO = 4,
     WIFI_INTERFACE_NAN = 5,
     WIFI_INTERFACE_MESH = 6,
+    WIFI_INTERFACE_UNKNOWN = -1
  } wifi_interface_mode;
 
 #define WIFI_CAPABILITY_QOS          0x00000001     // set for QOS association
