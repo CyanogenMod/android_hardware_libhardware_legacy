@@ -32,6 +32,7 @@
 #include "eloop.h"
 #include "utils/list.h"
 #include "common/qca-vendor.h"
+#include "common/qca-vendor-attr.h"
 #include "common/ieee802_11_defs.h"
 #include "common/ieee802_11_common.h"
 #include "l2_packet/l2_packet.h"
@@ -105,6 +106,7 @@ struct i802_bss {
 	u8 addr[ETH_ALEN];
 
 	int freq;
+	int bandwidth;
 	int if_dynamic;
 
 	void *ctx;
