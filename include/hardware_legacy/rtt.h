@@ -71,7 +71,8 @@ wifi_error wifi_rtt_range_request(wifi_request_id id, wifi_interface_handle ifac
         unsigned num_rtt_config, wifi_rtt_config rtt_config[], wifi_rtt_event_handler handler);
 
 /* API to cancel RTT measurements */
-wifi_error wifi_rtt_range_cancel(wifi_request_id id, unsigned num_devices, mac_addr addr[]);
+wifi_error wifi_rtt_range_cancel(wifi_request_id id,  wifi_interface_handle iface,
+        unsigned num_devices, mac_addr addr[]);
 
 /* NBD ranging channel map */
 typedef struct {
