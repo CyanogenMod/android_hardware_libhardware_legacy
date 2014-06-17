@@ -17,6 +17,8 @@
 #ifndef __WIFI_HAL_H__
 #define __WIFI_HAL_H__
 
+#include <stdint.h>
+
 typedef enum {
     WIFI_SUCCESS = 0,
     WIFI_ERROR_NONE = 0,
