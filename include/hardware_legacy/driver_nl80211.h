@@ -177,6 +177,7 @@ struct wpa_driver_nl80211_data {
 	unsigned int test_use_roc_tx:1;
 	unsigned int ignore_deauth_event:1;
 	unsigned int dfs_vendor_cmd_avail:1;
+	unsigned int have_low_prio_scan:1;
 
 	u64 remain_on_chan_cookie;
 	u64 send_action_cookie;
