@@ -87,13 +87,14 @@ typedef int feature_set;
 #define IS_UNSUPPORTED_FEATURE(feature, featureSet)     IS_MASK_RESET(feature, fetureSet)
 
 /* Feature set */
-wifi_error wifi_get_supported_feature_set(wifi_handle handle, feature_set *set);
+wifi_error wifi_get_supported_feature_set(wifi_interface_handle handle, feature_set *set);
 
 /*
  * Each row represents a valid feature combination;
  * all other combinations are invalid!
  */
-wifi_error wifi_get_concurrency_matrix(wifi_handle handle, int *size, feature_set **matrix);
+wifi_error wifi_get_concurrency_matrix(wifi_interface_handle handle, int set_size_max,
+       feature_set set[], int *set_size);
 
 /* multiple interface support */
 
