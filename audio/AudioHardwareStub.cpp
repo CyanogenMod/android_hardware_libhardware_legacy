@@ -128,7 +128,8 @@ status_t AudioStreamOutStub::set(int *pFormat, uint32_t *pChannels, uint32_t *pR
 ssize_t AudioStreamOutStub::write(const void* buffer, size_t bytes)
 {
     // fake timing for audio output
-    usleep(bytes * 1000000 / sizeof(int16_t) / AudioSystem::popCount(channels()) / sampleRate());
+    usleep(bytes * 1000000 / sizeof(int16_t) /
+               audio_channel_count_from_out_mask(channels()) / sampleRate());
     return bytes;
 }
 
@@ -174,7 +175,8 @@ status_t AudioStreamInStub::set(int *pFormat, uint32_t *pChannels, uint32_t *pRa
 ssize_t AudioStreamInStub::read(void* buffer, ssize_t bytes)
 {
     // fake timing for audio input
-    usleep(bytes * 1000000 / sizeof(int16_t) / AudioSystem::popCount(channels()) / sampleRate());
+    usleep(bytes * 1000000 / sizeof(int16_t) /
+           audio_channel_count_from_in_mask(channels()) / sampleRate());
     memset(buffer, 0, bytes);
     return bytes;
 }

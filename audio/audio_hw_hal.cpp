@@ -480,7 +480,7 @@ static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
 {
     const struct legacy_audio_device *ladev = to_cladev(dev);
     return ladev->hwif->getInputBufferSize(config->sample_rate, (int) config->format,
-                                           popcount(config->channel_mask));
+                                           audio_channel_count_from_in_mask(config->channel_mask));
 }
 
 static int adev_open_output_stream(struct audio_hw_device *dev,
