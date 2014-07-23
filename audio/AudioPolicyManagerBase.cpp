@@ -2845,7 +2845,22 @@ uint32_t AudioPolicyManagerBase::setOutputDevice(audio_io_handle_t output,
 
     if (device != AUDIO_DEVICE_NONE) {
         outputDesc->mDevice = device;
+
+        // Force routing if previously asked for this output
+        if (outputDesc->mForceRouting) {
+            ALOGV("Force routing to current device as previous device was null for this output");
+            force = true;
+
+            // Request consumed. Reset mForceRouting to false
+            outputDesc->mForceRouting = false;
+        }
     }
+    else {
+        // Device is null and does not reflect the routing. Save the necessity to force
+        // re-routing upon next attempt to select a non-null device for this output
+        outputDesc->mForceRouting = true;
+    }
+
     muteWaitMs = checkDeviceMuteStrategies(outputDesc, prevDevice, delayMs);
 
     // Do not change the routing if:
@@ -3466,7 +3481,8 @@ AudioPolicyManagerBase::AudioOutputDescriptor::AudioOutputDescriptor(
     : mId(0), mSamplingRate(0), mFormat(AUDIO_FORMAT_DEFAULT),
       mChannelMask(0), mLatency(0),
     mFlags((audio_output_flags_t)0), mDevice(AUDIO_DEVICE_NONE),
-    mOutput1(0), mOutput2(0), mProfile(profile), mDirectOpenCount(0)
+    mOutput1(0), mOutput2(0), mProfile(profile), mDirectOpenCount(0),
+    mForceRouting(false)
 {
     // clear usage count for all stream types
     for (int i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
