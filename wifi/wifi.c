@@ -31,7 +31,7 @@
 #include <netlink/genl/ctrl.h>
 #include <netlink/msg.h>
 #include <netlink/attr.h>
-#include "nl80211.h"
+#include <nl80211.h>
 #endif
 
 #include "hardware_legacy/wifi.h"
