@@ -43,6 +43,7 @@ typedef int wifi_request_id;
 typedef int wifi_channel;                       // indicates channel frequency in MHz
 typedef int wifi_rssi;
 typedef byte mac_addr[6];
+typedef byte oui[3];
 typedef int64_t wifi_timestamp;                 // In microseconds (us)
 typedef int64_t wifi_timespan;                  // In nanoseconds  (ns)
 
