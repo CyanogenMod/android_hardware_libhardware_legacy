@@ -134,6 +134,8 @@ wifi_error wifi_get_cached_gscan_results(wifi_interface_handle iface, byte flush
 typedef struct {
     void (*on_hotlist_ap_found)(wifi_request_id id,
             unsigned num_results, wifi_scan_result *results);
+    void (*on_hotlist_ap_lost)(wifi_request_id id,
+            unsigned num_results, wifi_scan_result *results);
 } wifi_hotlist_ap_found_handler;
 
 typedef struct {
@@ -144,6 +146,7 @@ typedef struct {
 } ap_threshold_param;
 
 typedef struct {
+    int lost_ap_sample_size;
     int num_ap;                                 // number of hotlist APs
     ap_threshold_param ap[MAX_HOTLIST_APS];     // hotlist APs
 } wifi_bssid_hotlist_params;
@@ -182,6 +185,9 @@ wifi_error wifi_set_significant_change_handler(wifi_request_id id, wifi_interfac
 
 /* Clear the Signifcant AP change list */
 wifi_error wifi_reset_significant_change_handler(wifi_request_id id, wifi_interface_handle iface);
+
+/* Random MAC OUI for PNO */
+wifi_error wifi_set_scanning_mac_oui(wifi_interface_handle handle, oui scan_oui);
 
 #endif
 
