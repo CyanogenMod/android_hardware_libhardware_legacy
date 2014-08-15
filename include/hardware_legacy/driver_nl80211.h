@@ -102,6 +102,7 @@ struct i802_bss {
 	unsigned int in_deinit:1;
 	unsigned int wdev_id_set:1;
 	unsigned int added_if:1;
+	unsigned int static_ap:1;
 
 	u8 addr[ETH_ALEN];
 
