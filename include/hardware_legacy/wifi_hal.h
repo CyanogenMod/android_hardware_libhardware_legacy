@@ -115,6 +115,8 @@ typedef struct {
 wifi_error wifi_set_iface_event_handler(wifi_request_id id, wifi_interface_handle iface, wifi_event_handler eh);
 wifi_error wifi_reset_iface_event_handler(wifi_request_id id, wifi_interface_handle iface);
 
+wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
+
 /* include various feature headers */
 
 #include "gscan.h"
