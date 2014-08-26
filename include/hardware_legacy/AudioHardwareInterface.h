@@ -279,6 +279,8 @@ public:
     /**This method dumps the state of the audio hardware */
     virtual status_t dumpState(int fd, const Vector<String16>& args) = 0;
 
+    virtual status_t setMasterMute(bool muted) = 0;
+
     static AudioHardwareInterface* create();
 
     virtual int createAudioPatch(unsigned int num_sources,
