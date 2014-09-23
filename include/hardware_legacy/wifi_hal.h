@@ -79,6 +79,7 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 #define WIFI_FEATURE_TDLS_OFFCHANNEL    0x2000      // Support for TDLS off channel
 #define WIFI_FEATURE_EPR                0x4000      // Enhanced power reporting
 #define WIFI_FEATURE_AP_STA             0x8000      // Support for AP STA Concurrency
+#define WIFI_FEATURE_LINK_LAYER_STATS  0x10000      // Link layer stats collection
 // Add more features here
 
 typedef int feature_set;
