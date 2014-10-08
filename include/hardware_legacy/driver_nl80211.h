@@ -201,7 +201,7 @@ struct wpa_driver_nl80211_data {
 
 	int eapol_sock; /* socket for EAPOL frames */
 
-	struct nl_sock *rtnl_sk; /* nl_sock for NETLINK_ROUTE */
+	struct nl_handle *rtnl_sk; /* nl_sock for NETLINK_ROUTE */
 
 	int default_if_indices[16];
 	int *if_indices;
