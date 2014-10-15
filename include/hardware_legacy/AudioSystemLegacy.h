@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,14 +61,18 @@ enum audio_source {
     AUDIO_SOURCE_CAMCORDER = 5,
     AUDIO_SOURCE_VOICE_RECOGNITION = 6,
     AUDIO_SOURCE_VOICE_COMMUNICATION = 7,
+#ifdef LEGACY_ALSA_AUDIO
+    AUDIO_SOURCE_REMOTE_SUBMIX = 8,
+    AUDIO_SOURCE_MAX = AUDIO_SOURCE_REMOTE_SUBMIX,
+#else
     AUDIO_SOURCE_MAX = AUDIO_SOURCE_VOICE_COMMUNICATION,
+#endif
 
     AUDIO_SOURCE_LIST_END  // must be last - used to validate audio source type
 };
 
 class AudioSystem {
 public:
-#if 1
     enum stream_type {
         DEFAULT          =-1,
         VOICE_CALL       = 0,
@@ -80,6 +85,9 @@ public:
         ENFORCED_AUDIBLE = 7, // Sounds that cannot be muted by user and must be routed to speaker
         DTMF             = 8,
         TTS              = 9,
+#ifdef LEGACY_ALSA_AUDIO
+        INCALL_MUSIC     = 10,
+#endif
         NUM_STREAM_TYPES
     };
 
@@ -242,17 +250,51 @@ public:
         DEVICE_OUT_AUX_DIGITAL = 0x400,
         DEVICE_OUT_ANLG_DOCK_HEADSET = 0x800,
         DEVICE_OUT_DGTL_DOCK_HEADSET = 0x1000,
+#ifdef LEGACY_ALSA_AUDIO
+        DEVICE_OUT_USB_ACCESSORY = 0x2000,
+        DEVICE_OUT_USB_DEVICE = 0x4000,
+        DEVICE_OUT_FM = 0x10000,
+        DEVICE_OUT_ANC_HEADSET = 0x20000,
+        DEVICE_OUT_ANC_HEADPHONE = 0x40000,
+        DEVICE_OUT_PROXY = 0x80000,
+        DEVICE_OUT_DEFAULT = DEVICE_OUT_SPEAKER,
+#else
         DEVICE_OUT_DEFAULT = 0x8000,
+#endif
         DEVICE_OUT_ALL = (DEVICE_OUT_EARPIECE | DEVICE_OUT_SPEAKER | DEVICE_OUT_WIRED_HEADSET |
                 DEVICE_OUT_WIRED_HEADPHONE | DEVICE_OUT_BLUETOOTH_SCO | DEVICE_OUT_BLUETOOTH_SCO_HEADSET |
                 DEVICE_OUT_BLUETOOTH_SCO_CARKIT | DEVICE_OUT_BLUETOOTH_A2DP | DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES |
                 DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER | DEVICE_OUT_AUX_DIGITAL |
                 DEVICE_OUT_ANLG_DOCK_HEADSET | DEVICE_OUT_DGTL_DOCK_HEADSET |
+#ifdef LEGACY_ALSA_AUDIO
+                DEVICE_OUT_USB_ACCESSORY | DEVICE_OUT_USB_DEVICE |
+                DEVICE_OUT_ANC_HEADSET | DEVICE_OUT_ANC_HEADPHONE |
+                DEVICE_OUT_FM | DEVICE_OUT_PROXY | DEVICE_OUT_DEFAULT),
+#else
                 DEVICE_OUT_DEFAULT),
+#endif
         DEVICE_OUT_ALL_A2DP = (DEVICE_OUT_BLUETOOTH_A2DP | DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES |
                 DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER),
+#ifdef LEGACY_ALSA_AUDIO
+        DEVICE_OUT_ALL_USB = (DEVICE_OUT_USB_ACCESSORY | DEVICE_OUT_USB_DEVICE),
+#endif
 
         // input devices
+#ifdef LEGACY_ALSA_AUDIO
+        DEVICE_IN_COMMUNICATION = 0x100000,
+        DEVICE_IN_AMBIENT = 0x200000,
+        DEVICE_IN_BUILTIN_MIC = 0x400000,
+        DEVICE_IN_BLUETOOTH_SCO_HEADSET = 0x800000,
+        DEVICE_IN_WIRED_HEADSET = 0x1000000,
+        DEVICE_IN_AUX_DIGITAL = 0x2000000,
+        DEVICE_IN_VOICE_CALL = 0x4000000,
+        DEVICE_IN_BACK_MIC = 0x8000000,
+        DEVICE_IN_ANC_HEADSET = 0x10000000,
+        DEVICE_IN_FM_TUNER = 0x20000000,
+        DEVICE_IN_DEFAULT = DEVICE_IN_BUILTIN_MIC,
+        DEVICE_IN_ANLG_DOCK_HEADSET = 0x80000000,
+        DEVICE_IN_PROXY = DEVICE_IN_ANLG_DOCK_HEADSET,
+#else
         DEVICE_IN_COMMUNICATION = 0x10000,
         DEVICE_IN_AMBIENT = 0x20000,
         DEVICE_IN_BUILTIN_MIC = 0x40000,
@@ -262,10 +304,17 @@ public:
         DEVICE_IN_VOICE_CALL = 0x400000,
         DEVICE_IN_BACK_MIC = 0x800000,
         DEVICE_IN_DEFAULT = 0x80000000,
+#endif
 
         DEVICE_IN_ALL = (DEVICE_IN_COMMUNICATION | DEVICE_IN_AMBIENT | DEVICE_IN_BUILTIN_MIC |
                 DEVICE_IN_BLUETOOTH_SCO_HEADSET | DEVICE_IN_WIRED_HEADSET | DEVICE_IN_AUX_DIGITAL |
+#ifdef LEGACY_ALSA_AUDIO
+                DEVICE_IN_VOICE_CALL | DEVICE_IN_BACK_MIC | DEVICE_IN_ANC_HEADSET |
+                DEVICE_IN_FM_TUNER | DEVICE_IN_DEFAULT |
+                DEVICE_IN_ANLG_DOCK_HEADSET | DEVICE_IN_PROXY)
+#else
                 DEVICE_IN_VOICE_CALL | DEVICE_IN_BACK_MIC | DEVICE_IN_DEFAULT)
+#endif
     };
 
     // request to open a direct output with getOutput() (by opposition to sharing an output with other AudioTracks)
@@ -313,13 +362,10 @@ public:
         NUM_DEVICE_STATES
     };
 
-#endif
-
     static uint32_t popCount(uint32_t u) {
         return popcount(u);
     }
 
-#if 1
     static bool isOutputDevice(audio_devices device) {
         if ((popcount(device) == 1) && ((device & ~DEVICE_OUT_ALL) == 0))
              return true;
@@ -353,8 +399,6 @@ public:
     static bool isInputChannel(uint32_t channel) {
         return audio_is_input_channel(channel);
     }
-
-#endif
 };
 
 };  // namespace android
