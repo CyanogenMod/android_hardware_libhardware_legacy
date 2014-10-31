@@ -103,7 +103,8 @@ typedef struct {
      *  1 => same as 0 + report a scan completion event after scanning this bucket
      *  2 => same as 1 + forward scan results (beacons/probe responses + IEs) in real time to HAL
      *  3 => same as 2 + forward scan results (beacons/probe responses + IEs) in real time to
-             supplicant as well (optional) . */
+             supplicant as well (optional) .
+     */
     byte report_events;
 
     int num_channels;
@@ -114,7 +115,8 @@ typedef struct {
     int base_period;                    // base timer period in ms
     int max_ap_per_scan;                // number of APs to store in each scan in the
                                         // BSSID/RSSI history buffer (keep the highest RSSI APs)
-    int report_threshold;               // in %, when scan buffer is this much full, wake up AP
+    int report_threshold_percent;       // in %, when scan buffer is this much full, wake up AP
+    int report_threshold_num_scans;     // in number of scans, wake up AP after these many scans
     int num_buckets;
     wifi_scan_bucket_spec buckets[MAX_BUCKETS];
 } wifi_scan_cmd_params;
@@ -126,9 +128,21 @@ wifi_error wifi_start_gscan(wifi_request_id id, wifi_interface_handle iface,
 /* Stop periodic GSCAN */
 wifi_error wifi_stop_gscan(wifi_request_id id, wifi_interface_handle iface);
 
+typedef enum {
+    WIFI_SCAN_FLAG_INTERRUPTED = 1      // Indicates that scan results are not complete because
+                                        // probes were not sent on some channels
+} wifi_scan_flags;
+
 /* Get the GSCAN cached scan results */
+typedef struct {
+    int scan_id;                        // a unique identifier for the scan unit
+    int flags;                          // a bitmask with additional information about scan
+    int num_results;                    // number of bssids retrieved by the scan
+    wifi_scan_result *results;          // scan results - one for each bssid
+} wifi_cached_scan_results;
+
 wifi_error wifi_get_cached_gscan_results(wifi_interface_handle iface, byte flush,
-        int max, wifi_scan_result *results, int *num);
+        int max, wifi_cached_scan_results *results, int *num);
 
 /* BSSID Hotlist */
 typedef struct {
