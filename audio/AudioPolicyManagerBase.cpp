@@ -53,6 +53,11 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
                                                   AudioSystem::device_connection_state state,
                                                   const char *device_address)
 {
+    // device_address can be NULL and should be handled as an empty string in this case,
+    // and it is not checked by AudioPolicyInterfaceImpl.cpp
+    if (device_address == NULL) {
+        device_address = "";
+    }
     ALOGV("setDeviceConnectionState() device: 0x%X, state %d, address %s", device, state, device_address);
 
     // connect/disconnect only 1 device at a time
@@ -245,6 +250,10 @@ status_t AudioPolicyManagerBase::setDeviceConnectionState(audio_devices_t device
 AudioSystem::device_connection_state AudioPolicyManagerBase::getDeviceConnectionState(audio_devices_t device,
                                                   const char *device_address)
 {
+    // similar to setDeviceConnectionState
+    if (device_address == NULL) {
+        device_address = "";
+    }
     AudioSystem::device_connection_state state = AudioSystem::DEVICE_STATE_UNAVAILABLE;
     String8 address = String8(device_address);
     if (audio_is_output_device(device)) {
