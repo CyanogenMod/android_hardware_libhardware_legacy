@@ -3138,7 +3138,7 @@ const AudioPolicyManagerBase::VolumeCurvePoint
 };
 
 const AudioPolicyManagerBase::VolumeCurvePoint
-            *AudioPolicyManagerBase::sVolumeProfiles[AUDIO_STREAM_CNT]
+            *AudioPolicyManagerBase::sVolumeProfiles[AudioSystem::NUM_STREAM_TYPES]
                                                    [AudioPolicyManagerBase::DEVICE_CATEGORY_CNT] = {
     { // AUDIO_STREAM_VOICE_CALL
         sDefaultVoiceVolumeCurve, // DEVICE_CATEGORY_HEADSET
@@ -3194,7 +3194,7 @@ const AudioPolicyManagerBase::VolumeCurvePoint
 
 void AudioPolicyManagerBase::initializeVolumeCurves()
 {
-    for (int i = 0; i < AUDIO_STREAM_CNT; i++) {
+    for (int i = 0; i < AudioSystem::NUM_STREAM_TYPES; i++) {
         for (int j = 0; j < DEVICE_CATEGORY_CNT; j++) {
             mStreams[i].mVolumeCurve[j] =
                     sVolumeProfiles[i][j];
