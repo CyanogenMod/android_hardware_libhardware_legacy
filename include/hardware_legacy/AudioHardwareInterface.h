@@ -118,6 +118,7 @@ public:
      * presented
      */
     virtual status_t    getNextWriteTimestamp(int64_t *timestamp);
+#ifdef QCOM_DIRECTTRACK
     virtual status_t    start() {return INVALID_OPERATION;}
     virtual status_t    pause()  {return INVALID_OPERATION;}
     virtual status_t    flush()  {return INVALID_OPERATION;}
@@ -128,6 +129,7 @@ public:
         *isAvail = true;
         return NO_ERROR;
     }
+#endif
 
     /**
      * Return a recent count of the number of audio frames presented to an external observer.
