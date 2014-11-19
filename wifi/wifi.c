@@ -176,6 +176,14 @@ char* get_samsung_wifi_type()
     if (strncmp(buf, "semcosh", 7) == 0)
         return "_semcosh";
 
+    if (strncmp(buf, "semco3rd", 8) == 0)
+        return "_semco3rd";
+
+    if (strncmp(buf, "wisol", 5) == 0)
+        return "_wisol";
+
+    ALOGI("Unknown wifi type found in /data/.cid.info\n");
+
     return NULL;
 }
 #endif
