@@ -154,10 +154,13 @@ char* get_samsung_wifi_type()
 {
     char buf[10];
     int fd = open("/data/.cid.info", O_RDONLY);
-    if (fd < 0)
+    if (fd < 0) {
+        ALOGE("Failed to open /data/.cid.info: %s\n", strerror(errno));
         return NULL;
+    }
 
     if (read(fd, buf, sizeof(buf)) < 0) {
+        ALOGE("Failed to read /data/.cid.info: %s\n", strerror(errno));
         close(fd);
         return NULL;
     }
