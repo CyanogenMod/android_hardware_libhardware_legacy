@@ -255,6 +255,10 @@ public:
     virtual status_t    setParameters(const String8& keyValuePairs) = 0;
     virtual String8     getParameters(const String8& keys) = 0;
 
+#ifdef MTK_HARDWARE
+    virtual status_t SetAudioData(int par1,size_t len,void *ptr)=0;
+    virtual status_t GetAudioData(int par1,size_t len,void *ptr)=0;
+#endif
     // Returns audio input buffer size according to parameters passed or 0 if one of the
     // parameters is not supported
     virtual size_t    getInputBufferSize(uint32_t sampleRate, int format, int channelCount) = 0;

@@ -98,6 +98,17 @@ status_t AudioHardwareBase::setMode(int mode)
     return NO_ERROR;
 }
 
+#ifdef MTK_HARDWARE
+status_t AudioHardwareBase::SetAudioData(int par1,size_t len,void *ptr)
+{
+    return NO_ERROR;
+}
+status_t AudioHardwareBase::GetAudioData(int par1,size_t len,void *ptr)
+{
+    return NO_ERROR;
+}
+#endif
+
 // default implementation
 status_t AudioHardwareBase::setParameters(const String8& keyValuePairs)
 {

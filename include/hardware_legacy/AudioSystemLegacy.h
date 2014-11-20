@@ -65,6 +65,9 @@ enum audio_source {
     AUDIO_SOURCE_CAMCORDER = 5,
     AUDIO_SOURCE_VOICE_RECOGNITION = 6,
     AUDIO_SOURCE_VOICE_COMMUNICATION = 7,
+#ifdef MTK_HARDWARE
+    AUDIO_SOURCE_FM_RX = 9,
+#endif
 #ifdef QCOM_HARDWARE
     AUDIO_SOURCE_REMOTE_SUBMIX = 8,
     AUDIO_SOURCE_FM_RX = 9,
@@ -313,6 +316,9 @@ public:
         DEVICE_IN_AUX_DIGITAL = 0x200000,
         DEVICE_IN_VOICE_CALL = 0x400000,
         DEVICE_IN_BACK_MIC = 0x800000,
+#ifdef MTK_HARDWARE
+        DEVICE_IN_FM = 0x20000000,
+#endif
         DEVICE_IN_DEFAULT = 0x80000000,
 #endif
 
@@ -323,6 +329,9 @@ public:
                 DEVICE_IN_FM_RX | DEVICE_IN_FM_RX_A2DP | DEVICE_IN_DEFAULT |
                 DEVICE_IN_ANLG_DOCK_HEADSET | DEVICE_IN_PROXY)
 #else
+#ifdef MTK_HARDWARE
+                DEVICE_IN_FM |
+#endif
                 DEVICE_IN_VOICE_CALL | DEVICE_IN_BACK_MIC | DEVICE_IN_DEFAULT)
 #endif
     };

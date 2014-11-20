@@ -51,6 +51,11 @@ public:
     /**This method dumps the state of the audio hardware */
     virtual status_t dumpState(int fd, const Vector<String16>& args);
 
+#ifdef MTK_HARDWARE
+    virtual status_t SetAudioData(int par1, size_t len, void *ptr);
+    virtual status_t GetAudioData(int par1, size_t len, void *ptr);
+#endif
+
 protected:
     /** returns true if the given mode maps to a telephony or VoIP call is in progress */
     virtual bool     isModeInCall(int mode)

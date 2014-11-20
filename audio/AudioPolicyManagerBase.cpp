@@ -17,9 +17,9 @@
  */
 
 #define LOG_TAG "AudioPolicyManagerBase"
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 
-//#define VERY_VERBOSE_LOGGING
+#define VERY_VERBOSE_LOGGING
 #ifdef VERY_VERBOSE_LOGGING
 #define ALOGVV ALOGV
 #else
@@ -424,7 +424,13 @@ void AudioPolicyManagerBase::setForceUse(AudioSystem::force_use usage, AudioSyst
             config != AudioSystem::FORCE_WIRED_ACCESSORY &&
             config != AudioSystem::FORCE_ANALOG_DOCK &&
             config != AudioSystem::FORCE_DIGITAL_DOCK && config != AudioSystem::FORCE_NONE &&
-            config != AudioSystem::FORCE_NO_BT_A2DP) {
+            config != AudioSystem::FORCE_NO_BT_A2DP
+#ifdef MTK_HARDWARE
+            // FM-radio uses the media channel and the app can force the use of the speaker
+            // on-demand.
+            && config != AudioSystem::FORCE_SPEAKER
+#endif
+            ) {
             ALOGW("setForceUse() invalid config %d for FOR_MEDIA", config);
             return;
         }
@@ -2557,6 +2563,13 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy st
                 device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER;
             }
         }
+
+#ifdef MTK_HARDWARE
+        if (!isInCall() && device2 == AUDIO_DEVICE_NONE
+            && mForceUse[AudioSystem::FOR_MEDIA] == AudioSystem::FORCE_SPEAKER) {
+            device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_SPEAKER;
+        }
+#endif
         if (device2 == AUDIO_DEVICE_NONE) {
             device2 = mAvailableOutputDevices & AUDIO_DEVICE_OUT_WIRED_HEADPHONE;
         }
@@ -2814,6 +2827,11 @@ audio_devices_t AudioPolicyManagerBase::getDeviceForInputSource(int inputSource)
             device = AUDIO_DEVICE_IN_VOICE_CALL;
         }
         break;
+#ifdef MTK_HARDWARE
+    case AUDIO_SOURCE_FM_RX:
+        device = AUDIO_DEVICE_IN_FM;
+        break;
+#endif
     case AUDIO_SOURCE_REMOTE_SUBMIX:
         if (mAvailableInputDevices & AUDIO_DEVICE_IN_REMOTE_SUBMIX) {
             device = AUDIO_DEVICE_IN_REMOTE_SUBMIX;
@@ -3453,13 +3471,19 @@ bool AudioPolicyManagerBase::AudioOutputDescriptor::isStreamActive(AudioSystem::
     if (mRefCount[stream] != 0) {
         return true;
     }
+#ifndef MTK_HARDWARE
     if (inPastMs == 0) {
         return false;
     }
+#endif
     if (sysTime == 0) {
         sysTime = systemTime();
     }
+#ifdef MTK_HARDWARE
+    if (ns2ms(sysTime - mStopTime[stream])) {
+#else
     if (ns2ms(sysTime - mStopTime[stream]) < inPastMs) {
+#endif
         return true;
     }
     return false;
@@ -3778,6 +3802,9 @@ const struct StringToEnum sDeviceNameToEnumTable[] = {
     STRING_TO_ENUM(AUDIO_DEVICE_IN_ANLG_DOCK_HEADSET),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_DGTL_DOCK_HEADSET),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_USB_ACCESSORY),
+#ifdef MTK_HARDWARE
+    STRING_TO_ENUM(AUDIO_DEVICE_IN_FM),
+#endif
 #ifdef AUDIO_EXTN_FM_ENABLED
     STRING_TO_ENUM(AUDIO_DEVICE_IN_FM_RX),
     STRING_TO_ENUM(AUDIO_DEVICE_IN_FM_RX_A2DP),
