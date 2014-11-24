@@ -17,9 +17,9 @@
  */
 
 #define LOG_TAG "AudioPolicyManagerBase"
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 
-#define VERY_VERBOSE_LOGGING
+//#define VERY_VERBOSE_LOGGING
 #ifdef VERY_VERBOSE_LOGGING
 #define ALOGVV ALOGV
 #else
@@ -2328,7 +2328,11 @@ audio_devices_t AudioPolicyManagerBase::getNewDevice(audio_io_handle_t output, b
         device = getDeviceForStrategy(STRATEGY_SONIFICATION, fromCache);
     } else if (outputDesc->isStrategyActive(STRATEGY_SONIFICATION_RESPECTFUL)) {
         device = getDeviceForStrategy(STRATEGY_SONIFICATION_RESPECTFUL, fromCache);
-    } else if (outputDesc->isStrategyActive(STRATEGY_MEDIA)) {
+    } else if (outputDesc->isStrategyActive(STRATEGY_MEDIA)
+#ifdef MTK_HARDWARE
+        || outputDesc->isStrategyActive(STRATEGY_MEDIA, SONIFICATION_HEADSET_MUSIC_DELAY)
+#endif
+        ) {
         device = getDeviceForStrategy(STRATEGY_MEDIA, fromCache);
     } else if (outputDesc->isStrategyActive(STRATEGY_DTMF)) {
         device = getDeviceForStrategy(STRATEGY_DTMF, fromCache);
@@ -3471,19 +3475,13 @@ bool AudioPolicyManagerBase::AudioOutputDescriptor::isStreamActive(AudioSystem::
     if (mRefCount[stream] != 0) {
         return true;
     }
-#ifndef MTK_HARDWARE
     if (inPastMs == 0) {
         return false;
     }
-#endif
     if (sysTime == 0) {
         sysTime = systemTime();
     }
-#ifdef MTK_HARDWARE
-    if (ns2ms(sysTime - mStopTime[stream])) {
-#else
     if (ns2ms(sysTime - mStopTime[stream]) < inPastMs) {
-#endif
         return true;
     }
     return false;
