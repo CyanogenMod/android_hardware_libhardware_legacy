@@ -17,6 +17,10 @@
 #ifndef __WIFI_HAL_H__
 #define __WIFI_HAL_H__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #include <stdint.h>
 
 typedef enum {
@@ -47,10 +51,8 @@ typedef byte oui[3];
 typedef int64_t wifi_timestamp;                 // In microseconds (us)
 typedef int64_t wifi_timespan;                  // In nanoseconds  (ns)
 
-struct wifi_info;
-typedef wifi_info *wifi_handle;
-struct wifi_interface_info;
-typedef wifi_interface_info *wifi_interface_handle;
+typedef struct wifi_info *wifi_handle;
+typedef struct wifi_interface_info *wifi_interface_handle;
 
 /* Initialize/Cleanup */
 
@@ -124,6 +126,8 @@ wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
 #include "link_layer_stats.h"
 #include "rtt.h"
 #include "tdls.h"
-
+#ifdef __cplusplus
+}
+#endif
 #endif
 

@@ -16,10 +16,10 @@ typedef enum {
     WIFI_BAND_ABG_WITH_DFS = 7,             // 2.4 GHz + 5 GHz with DFS
 } wifi_band;
 
-const unsigned MAX_CHANNELS                = 16;
-const unsigned MAX_BUCKETS                 = 16;
-const unsigned MAX_HOTLIST_APS             = 128;
-const unsigned MAX_SIGNIFICANT_CHANGE_APS  = 64;
+#define MAX_CHANNELS                16
+#define MAX_BUCKETS                 16
+#define MAX_HOTLIST_APS             128
+#define MAX_SIGNIFICANT_CHANGE_APS  64
 
 wifi_error wifi_get_valid_channels(wifi_interface_handle handle,
         int band, int max_channels, wifi_channel *channels, int *num_channels);
