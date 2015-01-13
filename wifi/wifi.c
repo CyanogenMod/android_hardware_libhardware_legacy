@@ -34,10 +34,9 @@
 #include "cutils/misc.h"
 #include "cutils/properties.h"
 #include "private/android_filesystem_config.h"
-#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
+
 #define _REALLY_INCLUDE_SYS__SYSTEM_PROPERTIES_H_
 #include <sys/_system_properties.h>
-#endif
 
 extern int do_dhcp();
 extern int ifc_init();
@@ -405,10 +404,8 @@ int wifi_start_supplicant(int p2p_supported)
 {
     char supp_status[PROPERTY_VALUE_MAX] = {'\0'};
     int count = 200; /* wait at most 20 seconds for completion */
-#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
     const prop_info *pi;
     unsigned serial = 0, i;
-#endif
 
     if (p2p_supported) {
         strcpy(supplicant_name, P2P_SUPPLICANT_NAME);
@@ -447,7 +444,6 @@ int wifi_start_supplicant(int p2p_supported)
     /* Reset sockets used for exiting from hung state */
     exit_sockets[0] = exit_sockets[1] = -1;
 
-#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
     /*
      * Get a reference to the status property, so we can distinguish
      * the case where it goes stopped => running => stopped (i.e.,
@@ -459,14 +455,12 @@ int wifi_start_supplicant(int p2p_supported)
     if (pi != NULL) {
         serial = __system_property_serial(pi);
     }
-#endif
     property_get("wifi.interface", primary_iface, WIFI_TEST_INTERFACE);
 
     property_set("ctl.start", supplicant_name);
     sched_yield();
 
     while (count-- > 0) {
-#ifdef HAVE_LIBC_SYSTEM_PROPERTIES
         if (pi == NULL) {
             pi = __system_property_find(supplicant_prop_name);
         }
@@ -483,12 +477,6 @@ int wifi_start_supplicant(int p2p_supported)
                 }
             }
         }
-#else
-        if (property_get(supplicant_prop_name, supp_status, NULL)) {
-            if (strcmp(supp_status, "running") == 0)
-                return 0;
-        }
-#endif
         usleep(100000);
     }
     return -1;
