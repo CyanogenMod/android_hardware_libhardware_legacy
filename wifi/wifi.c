@@ -193,6 +193,9 @@ char* get_samsung_wifi_type()
     if (strncmp(buf, "semcosh", 7) == 0)
         return "_semcosh";
 
+    if (strncmp(buf, "semco", 5) == 0)
+        return "_semco";
+
     return NULL;
 }
 #endif
