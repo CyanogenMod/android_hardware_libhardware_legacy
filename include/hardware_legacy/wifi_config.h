@@ -18,7 +18,9 @@ typedef int wifi_radio;
 wifi_error wifi_extended_dtim_config_set(wifi_request_id id,
         wifi_interface_handle iface, int extended_dtim);
 
-
+//set the country code to driver
+wifi_error wifi_set_country_code(wifi_request_id id, wifi_interface_handle iface,
+        const char* country_code);
 #ifdef __cplusplus
 }
 
