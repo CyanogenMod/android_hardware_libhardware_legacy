@@ -15,6 +15,85 @@ extern "C"
 typedef int wifi_radio;
 typedef int wifi_ring_buffer_id;
 
+typedef struct {
+    u8 direction:1; //  0: TX, 1: RX
+    u8 success:1; // whether packet was transmitted or received/decrypted successfully
+    u8 has_80211_header:1; // has full 802.11 header, else has 802.3 header
+    u8 protected_packet:1; // whether packet was encrypted
+    u8 tid:4; // transmit  or received tid
+    u8 MCS; // modulation and bandwidth
+    u8 rssi; // TX: RSSI of ACK for that packet
+             // RX: RSSI of packet
+    u8 num_retries; // number of attempted retries
+    u16 last_transmit_rate; // last transmit rate in .5 mbps
+    u16 link_layer_transmit_sequence; // transmit/reeive sequence for that MPDU packet
+    u64 firmware_entry_timestamp;  // TX: firmware timestamp (us) when packet is queued within firmware buffer
+                                   // for SDIO/HSIC or into PCIe buffer
+                                   // RX : firmware receive timestamp
+    u64 start_contention_timestamp; // firmware timestamp (us) when packet start contending for the
+                                    // medium for the first time, at head of its AC queue,
+                                    // or as part of an MPDU or A-MPDU. This timestamp is not updated
+                                    // for each retry, only the first transmit attempt.
+    u64 transmit_success_timestamp; // fimrware timestamp (us) when packet is successfully transmitted
+                                    // or aborted because it has exhausted its maximum number of retries
+    u8 data[0]; // packet data. The length of packet data is determined by the entry_size field of
+                // the wifi_ring_buffer_entry structure. It is expected that first bytes of the
+                // packet, or packet headers only (up to TCP or RTP/UDP headers) will be copied into the ring
+} wifi_ring_per_packet_status_entry;
+
+
+
+#define WIFI_EVENT_ASSOCIATION_REQUESTED 0 // driver receive association command from kernel
+#define WIFI_EVENT_AUTH_COMPLETE 1
+#define WIFI_EVENT_ASSOC_COMPLETE 2
+#define WIFI_EVENT_FW_AUTH_STARTED 3 // received firmware event indicating auth frames are sent
+#define WIFI_EVENT_FW_ASSOC_STARTED 4 // received firmware event indicating assoc frames are sent
+#define WIFI_EVENT_FW_RE_ASSOC_STARTED 5 // received firmware event indicating reassoc frames are sent
+#define WIFI_EVENT_DRIVER_SCAN_REQUESTED 6
+#define WIFI_EVENT_DRIVER_SCAN_RESULT_FOUND 7
+#define WIFI_EVENT_DRIVER_SCAN_COMPLETE 8
+#define WIFI_EVENT_G_SCAN_STARTED 9
+#define WIFI_EVENT_G_SCAN_COMPLETE 10
+#define WIFI_EVENT_DISASSOCIATION_REQUESTED 11
+#define WIFI_EVENT_RE_ASSOCIATION_REQUESTED 12
+#define WIFI_EVENT_ROAM_REQUESTED 13
+#define WIFI_EVENT_BEACON_RECEIVED 14 // received beacon from AP (event enabled only in verbose mode)
+#define WIFI_EVENT_ROAM_SCAN_STARTED 15 // firmware has triggered a roam scan (not g-scan)
+#define WIFI_EVENT_ROAM_SCAN_COMPLETE 16 // firmware has completed a roam scan (not g-scan)
+#define WIFI_EVENT_ROAM_SEARCH_STARTED 17 // firmware has started searching for roam candidates (with reason =xx)
+#define WIFI_EVENT_ROAM_SEARCH_STOPPED 18 // firmware has stopped searching for roam candidates (with reason =xx)
+#define WIFI_EVENT_CHANNEL_SWITCH_ANOUNCEMENT 20 // received channel switch anouncement from AP
+#define WIFI_EVENT_FW_EAPOL_FRAME_TRANSMIT_START 21 // fw start transmit eapol frame, with EAPOL index 1-4
+#define WIFI_EVENT_FW_EAPOL_FRAME_TRANSMIT_STOP 22 // fw gives up eapol frame, with rate, success/failure and number retries
+#define WIFI_EVENT_DRIVER_EAPOL_FRAME_TRANSMIT_REQUESTED 23 // kernel queue EAPOL for transmission in tdriver
+                                                            // with EAPOL index 1-4
+#define WIFI_EVENT_FW_EAPOL_FRAME_RECEIVED 24 // with rate, regardless of the fact that EAPOL frame
+                                           // is accepted or rejected by firmware
+#define WIFI_EVENT_DRIVER_EAPOL_FRAME_RECEIVED 26 // with rate, and eapol index, driver has received EAPOL
+                                                    //frame and will queue it up to wpa_supplicant
+#define WIFI_EVENT_BLOCK_ACK_NEGOTIATION_COMPLETE 27 // with success/failure, parameters
+#define WIFI_EVENT_BT_COEX_BT_SCO_START 28
+#define WIFI_EVENT_BT_COEX_BT_SCO_STOP 29
+#define WIFI_EVENT_BT_COEX_BT_SCAN_START 30 // for paging/scan etc..., when BT starts transmiting twice per BT slot
+#define WIFI_EVENT_BT_COEX_BT_SCAN_STOP 31
+#define WIFI_EVENT_BT_COEX_BT_HID_START 32
+#define WIFI_EVENT_BT_COEX_BT_HID_STOP 33
+#define WIFI_EVENT_ROAM_AUTH_STARTED 34 // firmware sends auth frame in roaming to next candidate
+#define WIFI_EVENT_ROAM_AUTH_COMPLETE 35 // firmware receive auth confirm from ap
+#define WIFI_EVENT_ROAM_ASSOC_STARTED 36 // firmware sends assoc/reassoc frame in roaming to next candidate
+#define WIFI_EVENT_ROAM_ASSOC_COMPLETE 37 // firmware receive assoc/reassoc confirm from ap
+
+
+typedef struct {
+    u16 event;
+    u8 event_data[0]; // separate parameter structure per event to be provided and optional data
+                        // the event_data is expected to include an official android part, with some parameter
+                        // as transmit rate, num retries, num scan result found etc...
+                        // as well, event_data can include a vendor proprietary part which is understood
+                        // by the developer only.
+} wifi_ring_buffer_driver_connectivity_event;
+
+
 /**
  * This structure represent a logger entry within a ring.
  * Binary entries can be used so as to store packet data or vendor specific information.
