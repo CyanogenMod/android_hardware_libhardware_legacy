@@ -95,8 +95,19 @@ typedef struct {
 
 
 /**
- * This structure represent a logger entry within a ring.
- * Binary entries can be used so as to store packet data or vendor specific information.
+ * This structure represent a logger entry within a ring buffer.
+ * Wifi driver are responsible to manage the ring buffer and write the debug
+ * information into those rings.
+ *
+ * In general, the debug entries can be used to store meaningful 802.11 information (SME, MLME,
+ * connection and packet statistics) as well as vendor proprietary data that is specific to a
+ * specific driver or chipset.
+ * Binary entries can be used so as to store packet data or vendor specific information and
+ * will be treated as blobs of data by android.
+ *
+ * A user land process will be started by framework so as to periodically retrieve the
+ * data logged by drivers into their ring buffer, store the data into log files and include
+ * the logs into android bugreports.
  */
 typedef struct {
     u16 entry_size:13;
@@ -130,11 +141,14 @@ typedef struct {
    u32 read_bytes;  // number of bytes that was read from the buffer by user land, monotonously increasing integer
 } wifi_ring_buffer_status;
 
-/* API to trigger the debug collection.
-   Unless his API is invoked - logging is not triggered.
-   - verbose_level 0 corresponds to minimal or no collection
-   - verbose_level 1+ are TBD
-   */
+/**
+ * API to trigger the debug collection.
+ *  Unless his API is invoked - logging is not triggered.
+ *  - verbose_level 0 corresponds to minimal or no collection
+ *  - verbose_level 1+ are TBD
+ *
+ * buffer_name represent the name of the ring for which data collection shall start.
+ */
 wifi_error wifi_start_logging(wifi_interface_handle iface, u32 verbose_level, u8 * buffer_name);
 
 /* callback for reporting ring buffer status */

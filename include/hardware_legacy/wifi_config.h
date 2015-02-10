@@ -21,6 +21,23 @@ wifi_error wifi_extended_dtim_config_set(wifi_request_id id,
 //set the country code to driver
 wifi_error wifi_set_country_code(wifi_request_id id, wifi_interface_handle iface,
         const char* country_code);
+
+//set the wifi_iface stats averaging factor used to calculate
+// statistics like average the TSF offset or average number of frame leaked
+// For instance, upon beacon reception:
+//    current_avg = ((beacon_TSF - TBTT) * factor + previous_avg * (0x10000 - factor) ) / 0x10000
+// For instance, when evaluating leaky APs:
+//    current_avg = ((num frame received within guard time) * factor + previous_avg * (0x10000 - factor)) / 0x10000
+
+wifi_error wifi_set_beacon_wifi_iface_stats_averaging_factor(wifi_request_id id, wifi_interface_handle iface,
+        u16 factor);
+
+// configure guard time, i.e. when implementing IEEE power management based on
+// frame control PM bit, how long driver waits before shutting down the radio and
+// after receiving an ACK for a data frame with PM bit set
+wifi_error wifi_set_guard_time(wifi_request_id id, wifi_interface_handle iface,
+        u32 guard_time);
+
 #ifdef __cplusplus
 }
 
