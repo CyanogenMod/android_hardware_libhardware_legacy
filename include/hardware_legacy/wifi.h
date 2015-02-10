@@ -37,7 +37,8 @@ int wifi_unload_driver();
 
 /**
  * Check if the Wi-Fi driver is loaded.
- *
+ * Check if the Wi-Fi driver is loaded.
+
  * @return 0 on success, < 0 on failure.
  */
 int is_wifi_driver_loaded();

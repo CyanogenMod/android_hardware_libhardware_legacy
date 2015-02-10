@@ -129,6 +129,7 @@ wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
 #include "tdls.h"
 #include "wifi_logger.h"
 #include "wifi_config.h"
+#include "wifi_nan.h"
 
 #endif
 
