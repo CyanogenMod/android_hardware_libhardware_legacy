@@ -15,6 +15,7 @@ extern "C"
 typedef int wifi_radio;
 
 // whether the wifi chipset wakes at every dtim beacon or a multiple of the dtim period
+// if extended_dtim is set to 3, the STA shall wake up every 3 DTIM beacons
 wifi_error wifi_extended_dtim_config_set(wifi_request_id id,
         wifi_interface_handle iface, int extended_dtim);
 

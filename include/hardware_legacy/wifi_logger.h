@@ -42,6 +42,7 @@ typedef struct {
 } wifi_ring_per_packet_status_entry;
 
 
+// Below events refer to the wifi_connectivity_event ring and shall be supported
 
 #define WIFI_EVENT_ASSOCIATION_REQUESTED 0 // driver receive association command from kernel
 #define WIFI_EVENT_AUTH_COMPLETE 1
@@ -93,6 +94,7 @@ typedef struct {
                         // by the developer only.
 } wifi_ring_buffer_driver_connectivity_event;
 
+static char connectivity_event_ring_name[] = "wifi_connectivity_events"; //ring buffer name for connectivity events ring
 
 /**
  * This structure represent a logger entry within a ring buffer.
@@ -117,7 +119,10 @@ typedef struct {
     u8 type; // Per ring specific
     u8 resvd;
     u64 timestamp; //present if has_timestamp bit is set.
-    u8 data[0];
+    union {
+        u8 data[0];
+        wifi_ring_buffer_driver_connectivity_event connectivity_event;
+        };
 } wifi_ring_buffer_entry;
 
 #define WIFI_RING_BUFFER_FLAG_HAS_BINARY_ENTRIES         0x00000001     // set if binary entries are present
@@ -144,12 +149,12 @@ typedef struct {
 /**
  * API to trigger the debug collection.
  *  Unless his API is invoked - logging is not triggered.
- *  - verbose_level 0 corresponds to minimal or no collection
- *  - verbose_level 1+ are TBD
+ *  - verbose_level 0 corresponds to no collection
+ *  - verbose_level 1+ are TBD, with increasing level of logging
  *
  * buffer_name represent the name of the ring for which data collection shall start.
  */
-wifi_error wifi_start_logging(wifi_interface_handle iface, u32 verbose_level, u8 * buffer_name);
+wifi_error wifi_set_logging_level(wifi_interface_handle iface, u32 verbose_level, u8 * buffer_name);
 
 /* callback for reporting ring buffer status */
 typedef struct {
