@@ -41,6 +41,7 @@ typedef struct {
                 // packet, or packet headers only (up to TCP or RTP/UDP headers) will be copied into the ring
 } wifi_ring_per_packet_status_entry;
 
+static char per_packet_status_ring_name[] = "wifi_per_packet_status"; // Ring buffer name for per-packet status ring
 
 // Below events refer to the wifi_connectivity_event ring and shall be supported
 
@@ -121,7 +122,8 @@ typedef struct {
     u64 timestamp; //present if has_timestamp bit is set.
     union {
         u8 data[0];
-        wifi_ring_buffer_driver_connectivity_event connectivity_event;
+        wifi_ring_buffer_driver_connectivity_event connectivity_event[0];
+        wifi_ring_per_packet_status_entry packet_status[0];
         };
 } wifi_ring_buffer_entry;
 
@@ -139,12 +141,29 @@ typedef struct {
 typedef struct {
    u8 name[32];
    u32 flags;
-   u64 fd; // linux file descriptor for that buffer
+   wifi_ring_buffer_id ring_id; // unique integer representing the ring
    u32 ring_buffer_byte_size;   // total memory size allocated for the buffer
    u32 verbose_level; //
    u32 written_bytes; // number of bytes that was written to the buffer by driver, monotonously increasing integer
    u32 read_bytes;  // number of bytes that was read from the buffer by user land, monotonously increasing integer
+   u32 written_records;  // number of records that was written to the buffer by driver, monotonously increasing integer
+
 } wifi_ring_buffer_status;
+
+/**
+ * Callback for reporting ring data
+ *
+ * The ring buffer data collection supports 2 modes:
+ *   - polling : framework periodically calls wifi_get_ringdata()
+ *   - event based: driver calls on_ring_buffer_data when new records are available
+ *
+ * The callback is called by driver whenever new data is
+ */
+typedef struct {
+  void (*on_ring_buffer_data) (wifi_request_id id, wifi_ring_buffer_id ring_id, char * buffer, int buffer_size, wifi_ring_buffer_status *status);
+} wifi_ring_buffer_data_handler;
+
+
 
 /**
  * API to trigger the debug collection.
@@ -154,7 +173,7 @@ typedef struct {
  *
  * buffer_name represent the name of the ring for which data collection shall start.
  */
-wifi_error wifi_set_logging_level(wifi_interface_handle iface, u32 verbose_level, u8 * buffer_name);
+wifi_error wifi_set_logging_level(wifi_interface_handle iface, u32 verbose_level, u8 * buffer_name, wifi_ring_buffer_data_handler handler);
 
 /* callback for reporting ring buffer status */
 typedef struct {
@@ -176,6 +195,11 @@ wifi_error wifi_get_firmware_version(wifi_request_id id,
 /* api to collect a driver version string */
 wifi_error wifi_get_driver_version(wifi_request_id id,
         wifi_interface_handle iface, char * buffer, int buffer_size);
+
+
+/* api to collect driver records */
+wifi_error wifi_get_ringdata(wifi_request_id id,
+        wifi_interface_handle iface, wifi_ring_buffer_id ring_id, char * buffer, int buffer_size, wifi_ring_buffer_status *status);
 
 
 /* Feature set */
