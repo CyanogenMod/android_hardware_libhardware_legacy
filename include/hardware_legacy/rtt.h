@@ -12,8 +12,11 @@ typedef enum {
     RTT_STATUS_SUCCESS,
     RTT_STATUS_FAILURE,
     RTT_STATUS_FAIL_NO_RSP,
+    RTT_STATUS_FAIL_INVALID_TS, // Invalid T1-T4 timestamp
+    RTT_STATUS_FAIL_PROTOCOL,   // 11mc protocol failed
     RTT_STATUS_FAIL_REJECTED,
     RTT_STATUS_FAIL_NOT_SCHEDULED_YET,
+    RTT_STATUS_FAIL_SCHEDULE,  // schedule failed
     RTT_STATUS_FAIL_TM_TIMEOUT,
     RTT_STATUS_FAIL_AP_ON_DIFF_CHANNEL,
     RTT_STATUS_FAIL_NO_CAPABILITY,
@@ -37,10 +40,9 @@ typedef struct {
                                        // RTT_TYPE_AUTO implies best effort
     wifi_peer_type peer;               // optional - peer device hint (STA, P2P, AP)
     wifi_channel_info channel;         // Required for STA-AP mode, optional for P2P, NBD etc.
-    byte multi_burst;                  // 0 = single burst or 1 = multi burst ranging
     unsigned interval;                 // interval between RTT burst (unit ms).
                                        // Only valid when multi_burst = 1
-    unsigned num_burst;                // total number of RTT bursts when multi_burst = 1
+    unsigned num_burst;                // total number of RTT bursts, 0 means single shot
     unsigned num_frames_per_burst;     // num of frames in each RTT burst
                                        // for single side, measurement result num = frame number
                                        // for 2 side RTT, measurement result num  = frame number - 1
@@ -139,6 +141,36 @@ typedef struct {
 
 /*  RTT capabilities of the device */
 wifi_error wifi_get_rtt_capabilities(wifi_interface_handle iface, wifi_rtt_capabilities *capabilities);
+
+/* debugging definitions */
+enum {
+    RTT_DEBUG_DISABLE,
+    RTT_DEBUG_LOG,
+    RTT_DEBUG_PROTO,
+    RTT_DEBUG_BURST,
+    RTT_DEBUG_ACCURACY,
+    RTT_DEBUG_LOGDETAIL
+};  //rtt debug type
+
+enum {
+    RTT_DEBUG_FORMAT_TXT,
+    RTT_DEBUG_FORMAT_BINARY
+}; //rtt debug format
+
+typedef struct rtt_debug {
+    unsigned version;
+    unsigned len; // total length of after len field
+    unsigned type;  // rtt debug type
+    unsigned format; //rtt debug format
+    char dbuf[0]; // debug content
+} rtt_debug_t;
+
+/* set configuration for debug */
+wifi_error wifi_rtt_debug_cfg(wifi_interface_handle h, unsigned rtt_dbg_type, char *cfgbuf, u32 cfg_buf_size);
+/* get the debug information */
+wifi_error wifi_rtt_debug_get(wifi_interface_handle h, rtt_debug_t **debugbuf);
+/* free the debug buffer */
+wifi_error wifi_rtt_debug_free(wifi_interface_handle h, rtt_debug_t *debugbuf);
 
 #endif
 
