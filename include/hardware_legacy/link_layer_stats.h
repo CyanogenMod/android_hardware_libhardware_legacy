@@ -113,6 +113,27 @@ typedef struct {
    wifi_channel_stat channels[];   // channel statistics
 } wifi_radio_stat;
 
+/**
+ * Packet statistics reporting by firmware is performed on MPDU basi (i.e. counters increase by 1 for each MPDU)
+ * As well, "data packet" in associated comments, shall be interpreted as 802.11 data packet,
+ * that is, 802.11 frame control subtype == 2 and excluding management and control frames.
+ *
+ * As an example, in the case of transmission of an MSDU fragmented in 16 MPDUs which are transmitted
+ * OTA in a 16 units long a-mpdu, for which a block ack is received with 5 bits set:
+ *          tx_mpdu : shall increase by 5
+ *          retries : shall increase by 16
+ *          tx_ampdu : shall increase by 1
+ * data packet counters shall not increase regardless of the number of BAR potentially sent by device for this a-mpdu
+ * data packet counters shall not increase regardless of the number of BA received by device for this a-mpdu
+ *
+ * For each subsequent retransmission of the 11 remaining non ACK'ed mpdus
+ * (regardless of the fact that they are transmitted in a-mpdu or not)
+ *          retries : shall increase by 1
+ *
+ * If no subsequent BA or ACK are received from AP, until packet lifetime expires for those 11 packet that were not ACK'ed
+ *          mpdu_lost : shall increase by 11
+ */
+
 /* per rate statistics */
 typedef struct {
    wifi_rate rate;     // rate information
@@ -154,16 +175,16 @@ typedef struct {
    wifi_rate_stat rate_stats[];   // per rate statistics, number of entries  = num_rate
 } wifi_peer_info;
 
-/* per access category statistics */
+/* Per access category statistics */
 typedef struct {
    wifi_traffic_ac ac;             // access category (VI, VO, BE, BK)
    u32 tx_mpdu;                    // number of successfully transmitted unicast data pkts (ACK rcvd)
-   u32 rx_mpdu;                    // number of received unicast mpdus
+   u32 rx_mpdu;                    // number of received unicast data packets
    u32 tx_mcast;                   // number of succesfully transmitted multicast data packets
                                    // STA case: implies ACK received from AP for the unicast packet in which mcast pkt was sent
    u32 rx_mcast;                   // number of received multicast data packets
-   u32 rx_ampdu;                   // number of received unicast a-mpdus
-   u32 tx_ampdu;                   // number of transmitted unicast a-mpdus
+   u32 rx_ampdu;                   // number of received unicast a-mpdus; support of this counter is optional
+   u32 tx_ampdu;                   // number of transmitted unicast a-mpdus; support of this counter is optional
    u32 mpdu_lost;                  // number of data pkt losses (no ACK)
    u32 retries;                    // total number of data pkt retries
    u32 retries_short;              // number of short data pkt retries
@@ -179,6 +200,15 @@ typedef struct {
    wifi_interface_handle iface;          // wifi interface
    wifi_interface_link_layer_info info;  // current state of the interface
    u32 beacon_rx;                        // access point beacon received count from connected AP
+   u64 average_tsf_offset;               // average beacon offset encountered (beacon_TSF - TBTT)
+                                         // The average_tsf_offset field is used so as to calculate the
+                                         // typical beacon contention time on the channel as well may be
+                                         // used to debug beacon synchronization and related power consumption issue
+   u32 leaky_ap_detected;                // indicate that this AP typically leaks packets beyond the driver guard time.
+   u32 leaky_ap_avg_num_frames_leaked;  // average number of frame leaked by AP after frame with PM bit set was ACK'ed by AP
+   u32 leaky_ap_guard_time;              // guard time currently in force (when implementing IEEE power management based on
+                                         // frame control PM bit), How long driver waits before shutting down the radio and
+                                         // after receiving an ACK for a data frame with PM bit set)
    u32 mgmt_rx;                          // access point mgmt frames received count from connected AP (including Beacon)
    u32 mgmt_action_rx;                   // action frames received count
    u32 mgmt_action_tx;                   // action frames transmit count
