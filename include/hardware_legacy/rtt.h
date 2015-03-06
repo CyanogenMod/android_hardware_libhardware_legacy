@@ -42,7 +42,7 @@ typedef struct {
     wifi_channel_info channel;         // Required for STA-AP mode, optional for P2P, NBD etc.
     unsigned interval;                 // interval between RTT burst (unit ms).
                                        // Only valid when multi_burst = 1
-    unsigned num_burst;                // total number of RTT bursts, 0 means single shot
+    unsigned num_burst;                // total number of RTT bursts, 1 means single shot
     unsigned num_frames_per_burst;     // num of frames in each RTT burst
                                        // for single side, measurement result num = frame number
                                        // for 2 side RTT, measurement result num  = frame number - 1
@@ -82,7 +82,6 @@ typedef struct {
     int burst_duration;          // in ms, How long the FW time is to finish one burst measurement
     wifi_information_element LCI;      // for 11mc only, optional
     wifi_information_element LCR;      // for 11mc only, optional
-
 } wifi_rtt_result;
 
 /* RTT result callback */
