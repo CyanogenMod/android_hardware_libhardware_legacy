@@ -190,7 +190,7 @@ typedef struct {
             unsigned num_results, wifi_scan_result *results);
     void (*on_hotlist_ssid_lost)(wifi_request_id id,
             unsigned num_results, wifi_scan_result *results);
-} wifi_hotlist_ssid_found_handler;
+} wifi_hotlist_ssid_handler;
 
 typedef struct {
     char  ssid[32+1];                   // SSID
@@ -208,7 +208,7 @@ typedef struct {
 
 /* Set the SSID Hotlist */
 wifi_error wifi_set_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface,
-        wifi_ssid_hotlist_params params, wifi_hotlist_ssid_found_handler handler);
+        wifi_ssid_hotlist_params params, wifi_hotlist_ssid_handler handler);
 
 /* Clear the SSID Hotlist */
 wifi_error wifi_reset_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface);
@@ -394,18 +394,18 @@ wifi_error wifi_set_gscan_roam_params(wifi_request_id id, wifi_interface_handle 
 /**
  * Enable/Disable "Lazy" roam
  */
-wifi_error wifi_set_lazy_roam(wifi_request_id id, wifi_interface_handle iface, int enable);
+wifi_error wifi_enable_lazy_roam(wifi_request_id id, wifi_interface_handle iface, int enable);
 
 /**
  * Per BSSID preference
  */
 typedef struct {
     char bssid[6];
-    int rssi_modifier;  // modifier applied to the RSSI of the BSSIDfor the purpose of comparing
+    int rssi_modifier;  // modifier applied to the RSSI of the BSSID for the purpose of comparing
                         // it with other roam candidate
 } wifi_bssid_preference;
 
-wifi_error wifi_set_lazy_roam(wifi_request_id id, wifi_interface_handle iface,
+wifi_error wifi_set_bssid_preference(wifi_request_id id, wifi_interface_handle iface,
                                     int num_bssid, wifi_bssid_preference *prefs);
 
 
