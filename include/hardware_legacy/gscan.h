@@ -182,6 +182,35 @@ wifi_error wifi_set_bssid_hotlist(wifi_request_id id, wifi_interface_handle ifac
 /* Clear the BSSID Hotlist */
 wifi_error wifi_reset_bssid_hotlist(wifi_request_id id, wifi_interface_handle iface);
 
+/* SSID Hotlist */
+typedef struct {
+    void (*on_hotlist_ssid_found)(wifi_request_id id,
+            unsigned num_results, wifi_scan_result *results);
+    void (*on_hotlist_ssid_lost)(wifi_request_id id,
+            unsigned num_results, wifi_scan_result *results);
+} wifi_hotlist_ssid_handler;
+
+typedef struct {
+    char  ssid[32+1];                   // SSID
+    wifi_band band;                     // band for this set of threshold params
+    wifi_rssi low;                      // low threshold
+    wifi_rssi high;                     // high threshold
+} ssid_threshold_param;
+
+typedef struct {
+    int lost_ssid_sample_size;
+    int num_ap;                                 // number of hotlist APs
+    ssid_threshold_param ssid[MAX_HOTLIST_APS];     // hotlist APs
+} wifi_ssid_hotlist_params;
+
+
+/* Set the SSID Hotlist */
+wifi_error wifi_set_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface,
+        wifi_ssid_hotlist_params params, wifi_hotlist_ssid_handler handler);
+
+/* Clear the SSID Hotlist */
+wifi_error wifi_reset_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface);
+
 /* Significant wifi change */
 typedef struct {
     mac_addr bssid;                     // BSSID
@@ -287,6 +316,89 @@ typedef struct {
 
 wifi_error wifi_set_ssid_white_list(wifi_request_id id, wifi_interface_handle iface,
         int num_networks, wifi_ssid *ssids);
+
+/* Set G-SCAN roam parameters */
+/**
+ * Firmware roaming is implemented with two modes:
+ *   1- "Alert" mode roaming, (Note: alert roaming is the pre-L roaming, whereas firmware is
+ *      "urgently" hunting for another BSSID because the RSSI is low, or because many successive
+ *      beacons have been lost or other bad link conditions).
+ *   2- "Lazy" mode, where firmware is hunting for a better BSSID or white listed SSID even though
+ *      the RSSI of the link is good.
+ *      Lazy mode is configured thru G-scan, that is, the results of G-scans are compared to the
+ *      current RSSI and fed thru the roaming engine.
+ *      Lazy scan will be enabled (and or throttled down by reducing the number of G-scans) by
+ *      framework only in certain conditions, such as:
+ *          - no real time (VO/VI) traffic at the interface
+ *          - low packet rate for BE/BK packets a the interface
+ *          - system conditions (screen lit/dark) etc...
+ *
+ * For consistency, the roam parameters will always be configured by framework such that:
+ *
+ * condition 1- A_band_boost_threshold >= (alert_roam_rssi_trigger + 10)
+ * This condition ensures that Lazy roam doesn't cause the device to roam to a 5GHz BSSID whose RSSI
+ * is lower than the alert threshold, which would consequently trigger a roam to a low RSSI BSSID,
+ * hence triggering alert mode roaming.
+ * In other words, in alert mode, the A_band parameters may safely be ignored by WiFi chipset.
+ *
+ * condition 2- A_band_boost_threshold > A_band_penalty_factor
+ *
+ */
+
+/**
+ * Example:
+ * A_band_boost_threshold = -65
+ * A_band_penalty_threshold = -75
+ * A_band_boost_factor = 4
+ * A_band_penalty_factor = 2
+ * A_band_max_boost = 50
+ *
+ * a 5GHz RSSI value is transformed as below:
+ * -20 -> -20+ 50 = 30
+ * -60 -> -60 + 4 * (-60 - A_band_boost_threshold) = -60 + 16 = -44
+ * -70 -> -70
+ * -80 -> -80 - 2 * (A_band_penalty_threshold - (-80)) = -80 - 10 = -90
+ */
+
+typedef struct {
+    // Lazy roam parameters
+    // A_band_XX parameters are applied to 5GHz BSSIDs when comparing with a 2.4GHz BSSID
+    // they may not be applied when comparing two 5GHz BSSIDs
+    int A_band_boost_threshold;     // RSSI threshold above which 5GHz RSSI is favored
+    int A_band_penalty_threshold;   // RSSI threshold below which 5GHz RSSI is penalized
+    int A_band_boost_factor;        // factor by which 5GHz RSSI is boosted
+                               // boost=RSSI_measured-5GHz_boost_threshold)*5GHz_boost_factor
+    int A_band_penalty_factor;      // factor by which 5GHz RSSI is penalized
+                               // penalty=(5GHz_penalty_factor-RSSI_measured)*5GHz_penalty_factor
+    int A_band_max_boost;           // maximum boost that can be applied to a 5GHz RSSI
+
+    // Hysteresis: ensuring the currently associated BSSID is favored
+    // so as to prevent ping-pong situations
+    int lazy_roam_histeresys;       // boost applied to current BSSID
+
+    // Alert mode enable, i.e. configuring when firmware enters alert mode
+    int alert_roam_rssi_trigger;    // RSSI below which "Alert" roam is enabled
+} wifi_roam_params;
+
+wifi_error wifi_set_gscan_roam_params(wifi_request_id id, wifi_interface_handle iface,
+                                        wifi_roam_params * params);
+
+/**
+ * Enable/Disable "Lazy" roam
+ */
+wifi_error wifi_enable_lazy_roam(wifi_request_id id, wifi_interface_handle iface, int enable);
+
+/**
+ * Per BSSID preference
+ */
+typedef struct {
+    char bssid[6];
+    int rssi_modifier;  // modifier applied to the RSSI of the BSSID for the purpose of comparing
+                        // it with other roam candidate
+} wifi_bssid_preference;
+
+wifi_error wifi_set_bssid_preference(wifi_request_id id, wifi_interface_handle iface,
+                                    int num_bssid, wifi_bssid_preference *prefs);
 
 typedef struct {
     int max_number_epno_networks_by_crc32; //max number of epno entries if crc32 is specified
