@@ -21,6 +21,7 @@ const unsigned MAX_BUCKETS                 = 16;
 const unsigned MAX_HOTLIST_APS             = 128;
 const unsigned MAX_SIGNIFICANT_CHANGE_APS  = 64;
 const unsigned MAX_PNO_SSID                = 128;
+const unsigned MAX_HOTLIST_SSID            = 8;
 
 wifi_error wifi_get_valid_channels(wifi_interface_handle handle,
         int band, int max_channels, wifi_channel *channels, int *num_channels);
@@ -247,9 +248,14 @@ wifi_error wifi_reset_significant_change_handler(wifi_request_id id, wifi_interf
 /* Random MAC OUI for PNO */
 wifi_error wifi_set_scanning_mac_oui(wifi_interface_handle handle, oui scan_oui);
 
-
-#define WIFI_PNO_FLAG_DIRECTED_SCAN = 1 // whether directed scan needs to be performed (for hidden SSIDs)
-#define WIFI_PNO_FLAG_HASH_PROVIDED = 2 // whether a crc32 hash of the ssid is provided instead of the ssid
+// Whether directed scan needs to be performed (for hidden SSIDs)
+#define WIFI_PNO_FLAG_DIRECTED_SCAN = 1
+// Whether PNO event shall be triggered if the network is found on A band
+#define WIFI_PNO_FLAG_A_BAND = 2
+// Whether PNO event shall be triggered if the network is found on G band
+#define WIFI_PNO_FLAG_G_BAND = 4
+// Whether strict matching is required (i.e. firmware shall not match on the entire SSID)
+#define WIFI_PNO_FLAG_STRICT_MATCH = 8
 
 // Code for matching the beacon AUTH IE - additional codes TBD
 #define WIFI_PNO_AUTH_CODE_OPEN  1 // open
@@ -257,39 +263,35 @@ wifi_error wifi_set_scanning_mac_oui(wifi_interface_handle handle, oui scan_oui)
 #define WIFI_PNO_AUTH_CODE_EAPOL 4 // any EAPOL
 
 // Enhanced PNO:
-// for each network framework will either specify a ssid or a crc32
-// if ssid is specified (i.e. ssid[0] != 0) then crc32 field shall be ignored.
+// Enhanced PNO feature is expected to be enabled all of the time (e.g. screen lit) and may thus
+// requires firmware to store a large number of networks, covering the whole list of known network.
+// Therefore, it is acceptable for firmware to store a crc24, crc32 or other short hash of the SSID,
+// such that a low but non-zero probability of collision exist. With that scheme it should be
+// possible for firmware to keep an entry as small as 4 bytes for each pno network.
+// For instance, a firmware pn0 entry can be implemented in the form of:
+//          PNO ENTRY = crc24(3 bytes) | RSSI_THRESHOLD>>3 (5 bits) | auth flags(3 bits)
+//
 // A PNO network shall be reported once, that is, once a network is reported by firmware
-// its entry shall be marked as "done" until framework call wifi_set_epno_list.
- // Calling wifi_set_epno_list shall reset the "done" status of pno networks in firmware.
+// its entry shall be marked as "done" until framework calls wifi_set_epno_list again.
+// Calling wifi_set_epno_list shall reset the "done" status of pno networks in firmware.
 typedef struct {
-    char ssid[32];
-    char rssi_threshold; // threshold for considering this SSID as found
-    char flags;
-    int crc32;  // crc32 of the SSID, this allows for memory size optimization
-                // i.e. not passing the whole SSID
-                // in firmware and instead storing a shorter string
-    char auth_bit_field; // auth bitfield for matching WPA IE
+    char ssid[32+1];
+    char rssi_threshold; // threshold for considering this SSID as found, required granularity for
+                         // this threshold is 4dBm to 8dBm
+    char flags;          //  WIFI_PNO_FLAG_XXX
+    char auth_bit_field; // auth bit field for matching WPA IE
 } wifi_epno_network;
 
 /* PNO list */
 typedef struct {
-    int num_networks;                                // number of SSIDs
+    int num_networks;                 // number of SSIDs
     wifi_epno_network networks[];     // PNO networks
 } wifi_epno_params;
 
 typedef struct {
-    int network_index; // index of the network found in the pno list
-    char ssid[32+1]; // null terminated
-    wifi_channel channel;
-    int rssi;
-} wifi_epno_result;
-
-
-typedef struct {
     // on results
     void (*on_network_found)(wifi_request_id id,
-            unsigned num_results, wifi_epno_result *results);
+            unsigned num_results, wifi_scan_result *results);
 } wifi_epno_handler;
 
 
@@ -301,7 +303,8 @@ wifi_error wifi_set_epno_list(wifi_request_id id, wifi_interface_handle iface,
 /* SSID white list */
 /* Note that this feature requires firmware to be able to indicate to kernel sme and wpa_supplicant
  * that the SSID of the network has changed
- * and thus requires further changed in cfg80211 stack, for instance, the below function would change:
+ * and thus requires further changed in cfg80211 stack, for instance,
+ * the below function would change:
 
  void __cfg80211_roamed(struct wireless_dev *wdev,
  		       struct cfg80211_bss *bss,
@@ -401,9 +404,9 @@ wifi_error wifi_set_bssid_preference(wifi_request_id id, wifi_interface_handle i
                                     int num_bssid, wifi_bssid_preference *prefs);
 
 typedef struct {
-    int max_number_epno_networks_by_crc32; //max number of epno entries if crc32 is specified
-    int max_number_epno_networks_by_ssid;  //max number of epno entries if ssid is specified
-    int max_number_of_white_losted_ssid;   //max number of white listed SSIDs, M target is 2 to 4 */
+    int max_number_epno_networks;           // max number of epno entries, M target is 64
+    int max_number_of_white_listed_ssid;    // max number of white listed SSIDs, M target is 2 to 4
+    int max_number_of_hotlist_ssid;         // max number of hotlist SSIDs, M target is 4
 } wifi_roam_autojoin_offload_capabilities;
 
 wifi_error wifi_get_roam_autojoin_offload_capabilities(wifi_interface_handle handle,

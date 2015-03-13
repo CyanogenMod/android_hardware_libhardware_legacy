@@ -62,6 +62,7 @@ typedef struct {
                 // packet, or packet headers only (up to TCP or RTP/UDP headers) will be copied into the ring
 } wifi_ring_per_packet_status_entry;
 
+static char per_packet_status_ring_name[] = "wifi_per_packet_status"; // Ring buffer name for per-packet status ring
 
 // Below events refer to the wifi_connectivity_event ring and shall be supported
 
@@ -208,11 +209,13 @@ typedef struct {
 typedef struct {
    u8 name[32];
    u32 flags;
-   u64 fd; // linux file descriptor for that buffer
+   wifi_ring_buffer_id ring_id; // unique integer representing the ring
    u32 ring_buffer_byte_size;   // total memory size allocated for the buffer
    u32 verbose_level; //
    u32 written_bytes; // number of bytes that was written to the buffer by driver, monotonously increasing integer
    u32 read_bytes;  // number of bytes that was read from the buffer by user land, monotonously increasing integer
+   u32 written_records;  // number of records that was written to the buffer by driver, monotonously increasing integer
+
 } wifi_ring_buffer_status;
 
 /**
