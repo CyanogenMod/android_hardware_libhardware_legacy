@@ -20,7 +20,7 @@ typedef enum {
     RTT_STATUS_FAIL_TM_TIMEOUT,
     RTT_STATUS_FAIL_AP_ON_DIFF_CHANNEL,
     RTT_STATUS_FAIL_NO_CAPABILITY,
-    RTT_STATUS_FAIL_BUSY_TRY_LATER,        //2 side RTT if other side temporarily busy
+    RTT_STATUS_FAIL_BUSY_TRY_LATER,
     RTT_STATUS_ABORTED
 } wifi_rtt_status;
 
@@ -37,15 +37,15 @@ typedef enum {
 typedef struct {
     mac_addr addr;                     // peer device mac address
     wifi_rtt_type type;                // optional - rtt type hint.
-                                       // RTT_TYPE_AUTO implies best effort
+    // RTT_TYPE_AUTO implies best effort
     wifi_peer_type peer;               // optional - peer device hint (STA, P2P, AP)
     wifi_channel_info channel;         // Required for STA-AP mode, optional for P2P, NBD etc.
     unsigned interval;                 // interval between RTT burst (unit ms).
-                                       // Only valid when multi_burst = 1
+    // Only valid when multi_burst = 1
     unsigned num_burst;                // total number of RTT bursts, 1 means single shot
     unsigned num_frames_per_burst;     // num of frames in each RTT burst
-                                       // for single side, measurement result num = frame number
-                                       // for 2 side RTT, measurement result num  = frame number - 1
+    // for single side, measurement result num = frame number
+    // for 2 side RTT, measurement result num  = frame number - 1
     unsigned num_retries_per_measurement_frame; // retry time for RTT MEASUREMENT frame
 
     //following fields are only valid for 2 side RTT
@@ -64,7 +64,7 @@ typedef struct {
     unsigned measurement_number;  // total RTT measurement Frames
     unsigned success_number;     // total successful RTT measurement Frames
     byte  number_per_burst_peer;  //Max number of FTM numbers per burst the other side support,
-                                  //11mc only
+    //11mc only
     wifi_rtt_status status;      // ranging status
     byte retry_after_duration;      // in s , 11mc only, only for RTT_STATUS_FAIL_BUSY_TRY_LATER, 1-31s
     wifi_rtt_type type;          // RTT type
@@ -80,13 +80,13 @@ typedef struct {
     int distance_spread;         // difference between max and min distance recorded (optional)
     wifi_timestamp ts;           // time of the measurement (in microseconds since boot)
     int burst_duration;          // in ms, How long the FW time is to finish one burst measurement
-    wifi_information_element LCI;      // for 11mc only, optional
-    wifi_information_element LCR;      // for 11mc only, optional
+    wifi_information_element *LCI; // for 11mc only
+    wifi_information_element *LCR; // for 11mc only
 } wifi_rtt_result;
 
 /* RTT result callback */
 typedef struct {
-    void (*on_rtt_results) (wifi_request_id id, unsigned num_results, wifi_rtt_result rtt_result[]);
+    void (*on_rtt_results) (wifi_request_id id, unsigned num_results, wifi_rtt_result *rtt_result[]);
 } wifi_rtt_event_handler;
 
 /* API to request RTT measurement */
@@ -100,8 +100,8 @@ wifi_error wifi_rtt_range_cancel(wifi_request_id id,  wifi_interface_handle ifac
 /* NBD ranging channel map */
 typedef struct {
     wifi_channel availablity[32];           // specifies the channel map for each of the 16 TU windows
-                                            // frequency of 0 => unspecified; which means firmware is
-                                            // free to do whatever it wants in this window.
+    // frequency of 0 => unspecified; which means firmware is
+    // free to do whatever it wants in this window.
 } wifi_channel_map;
 
 /* API to start publishing the channel map on responder device in a NBD cluster.
@@ -130,12 +130,12 @@ wifi_error wifi_rtt_channel_map_clear(wifi_request_id id,  wifi_interface_handle
 
 /* RTT Capabilities */
 typedef struct {
-   byte rtt_one_sided_supported;  // if 1-sided rtt data collection is supported
-   byte rtt_ftm_supported;        // if ftm rtt data collection is supported
-   byte lci_support;
-   byte lcr_support;
-   byte preamble_support;         //bit mask indicate what preamble is supported
-   byte bw_support;               //bit mask indicate what BW is supported
+    byte rtt_one_sided_supported;  // if 1-sided rtt data collection is supported
+    byte rtt_ftm_supported;        // if ftm rtt data collection is supported
+    byte lci_support;
+    byte lcr_support;
+    byte preamble_support;         //bit mask indicate what preamble is supported
+    byte bw_support;               //bit mask indicate what BW is supported
 } wifi_rtt_capabilities;
 
 /*  RTT capabilities of the device */
@@ -165,7 +165,7 @@ typedef struct rtt_debug {
 } rtt_debug_t;
 
 /* set configuration for debug */
-wifi_error wifi_rtt_debug_cfg(wifi_interface_handle h, unsigned rtt_dbg_type, char *cfgbuf, u32 cfg_buf_size);
+wifi_error wifi_rtt_debug_cfg(wifi_interface_handle h, unsigned rtt_dbg_type, char *cfgbuf, unsigned cfg_buf_size);
 /* get the debug information */
 wifi_error wifi_rtt_debug_get(wifi_interface_handle h, rtt_debug_t **debugbuf);
 /* free the debug buffer */

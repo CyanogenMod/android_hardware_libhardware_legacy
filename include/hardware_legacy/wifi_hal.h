@@ -22,14 +22,14 @@
 /* WiFi Common definitions */
 /* channel operating width */
 typedef enum {
-   WIFI_CHAN_WIDTH_20    = 0,
-   WIFI_CHAN_WIDTH_40    = 1,
-   WIFI_CHAN_WIDTH_80    = 2,
-   WIFI_CHAN_WIDTH_160   = 3,
-   WIFI_CHAN_WIDTH_80P80 = 4,
-   WIFI_CHAN_WIDTH_5     = 5,
-   WIFI_CHAN_WIDTH_10    = 6,
-   WIFI_CHAN_WIDTH_INVALID = -1
+    WIFI_CHAN_WIDTH_20    = 0,
+    WIFI_CHAN_WIDTH_40    = 1,
+    WIFI_CHAN_WIDTH_80    = 2,
+    WIFI_CHAN_WIDTH_160   = 3,
+    WIFI_CHAN_WIDTH_80P80 = 4,
+    WIFI_CHAN_WIDTH_5     = 5,
+    WIFI_CHAN_WIDTH_10    = 6,
+    WIFI_CHAN_WIDTH_INVALID = -1
 } wifi_channel_width;
 
 typedef int wifi_radio;
@@ -61,7 +61,9 @@ typedef unsigned char u8;
 typedef signed char s8;
 typedef uint16_t u16;
 typedef uint32_t u32;
+typedef int32_t s32;
 typedef uint64_t u64;
+typedef int64_t s64;
 typedef int wifi_request_id;
 typedef int wifi_channel;                       // indicates channel frequency in MHz
 typedef int wifi_rssi;
@@ -108,6 +110,7 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 
 // Add more features here
 
+
 typedef int feature_set;
 
 #define IS_MASK_SET(mask, flags)        ((flags & mask) == mask)
@@ -124,7 +127,7 @@ wifi_error wifi_get_supported_feature_set(wifi_interface_handle handle, feature_
  * all other combinations are invalid!
  */
 wifi_error wifi_get_concurrency_matrix(wifi_interface_handle handle, int set_size_max,
-       feature_set set[], int *set_size);
+        feature_set set[], int *set_size);
 
 /* multiple interface support */
 
