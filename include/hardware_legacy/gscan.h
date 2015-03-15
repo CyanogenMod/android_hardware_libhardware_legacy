@@ -124,7 +124,7 @@ typedef struct {
 
 typedef struct {
     int base_period;                    // base timer period in ms
-    int max_ap_per_scan;                // number of APs to store in each scan in the
+    int max_ap_per_scan;                // number of APs to store in each scan ientryn the
                                         // BSSID/RSSI history buffer (keep the highest RSSI APs)
     int report_threshold_percent;       // in %, when scan buffer is this much full, wake up AP
     int report_threshold_num_scans;     // in number of scans, wake up AP after these many scans
