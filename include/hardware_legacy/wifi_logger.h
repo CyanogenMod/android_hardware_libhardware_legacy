@@ -196,6 +196,9 @@ wifi_error wifi_get_firmware_version(wifi_request_id id,
 wifi_error wifi_get_driver_version(wifi_request_id id,
         wifi_interface_handle iface, char * buffer, int buffer_size);
 
+/* api to collect driver records */
+wifi_error wifi_get_ringdata(wifi_request_id id,
+        wifi_interface_handle iface, wifi_ring_buffer_id ring_id);
 
 /* api to collect driver records */
 wifi_error wifi_get_ringdata(wifi_request_id id,

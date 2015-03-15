@@ -183,7 +183,6 @@ wifi_error wifi_set_bssid_hotlist(wifi_request_id id, wifi_interface_handle ifac
 /* Clear the BSSID Hotlist */
 wifi_error wifi_reset_bssid_hotlist(wifi_request_id id, wifi_interface_handle iface);
 
-
 /* SSID Hotlist */
 typedef struct {
     void (*on_hotlist_ssid_found)(wifi_request_id id,
@@ -212,8 +211,6 @@ wifi_error wifi_set_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface
 
 /* Clear the SSID Hotlist */
 wifi_error wifi_reset_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface);
-
-
 
 /* Significant wifi change */
 typedef struct {
@@ -323,8 +320,6 @@ typedef struct {
 wifi_error wifi_set_ssid_white_list(wifi_request_id id, wifi_interface_handle iface,
         int num_networks, wifi_ssid *ssids);
 
-
-
 /* Set G-SCAN roam parameters */
 /**
  * Firmware roaming is implemented with two modes:
@@ -407,7 +402,6 @@ typedef struct {
 
 wifi_error wifi_set_bssid_preference(wifi_request_id id, wifi_interface_handle iface,
                                     int num_bssid, wifi_bssid_preference *prefs);
-
 
 typedef struct {
     int max_number_epno_networks;           // max number of epno entries, M target is 64
