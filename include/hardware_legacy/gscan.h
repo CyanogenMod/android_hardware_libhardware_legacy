@@ -227,6 +227,12 @@ wifi_error wifi_set_scanning_mac_oui(wifi_interface_handle handle, oui scan_oui)
 #define WIFI_PNO_AUTH_CODE_PSK   2 // WPA_PSK or WPA2PSK
 #define WIFI_PNO_AUTH_CODE_EAPOL 4 // any EAPOL
 
+// Enhanced PNO:
+// for each network framework will either specify a ssid or a crc32
+// if ssid is specified (i.e. ssid[0] != 0) then crc32 field shall be ignored.
+// A PNO network shall be reported once, that is, once a network is reported by firmware
+// its entry shall be marked as "done" until framework call wifi_set_epno_list.
+ // Calling wifi_set_epno_list shall reset the "done" status of pno networks in firmware.
 typedef struct {
     char ssid[32];
     char rssi_threshold; // threshold for considering this SSID as found
@@ -235,13 +241,32 @@ typedef struct {
                 // i.e. not passing the whole SSID
                 // in firmware and instead storing a shorter string
     char auth_bit_field; // auth bitfield for matching WPA IE
-} wifi_pno_network;
+} wifi_epno_network;
 
 /* PNO list */
 typedef struct {
-    int num_ssid;                            // number of SSIDs
-    char wifi_pno_network[MAX_PNO_SSID];     // SSIDs
-} wifi_pno_params;
+    int num_networks;                                // number of SSIDs
+    wifi_epno_network networks[];     // PNO networks
+} wifi_epno_params;
+
+typedef struct {
+    int network_index; // index of the network found in the pno list
+    char ssid[32];
+    wifi_channel channel;
+    int rssi;
+} wifi_epno_result;
+
+
+typedef struct {
+    // on results
+    void (*on_network_found)(wifi_request_id id,
+            unsigned num_results, wifi_epno_result *results);
+} wifi_epno_handler;
+
+
+/* Set the PNO list */
+wifi_error wifi_set_epno_list(wifi_request_id id, wifi_interface_handle iface,
+        int num_networks, wifi_epno_network *networks, wifi_epno_handler handler);
 
 #endif
 
