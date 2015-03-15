@@ -82,6 +82,8 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 #define WIFI_FEATURE_EPR                0x4000      // Enhanced power reporting
 #define WIFI_FEATURE_AP_STA             0x8000      // Support for AP STA Concurrency
 #define WIFI_FEATURE_LINK_LAYER_STATS  0x10000      // Link layer stats collection
+#define WIFI_FEATURE_LOGGER            0x20000      // WiFi Logger
+
 // Add more features here
 
 typedef int feature_set;
@@ -126,8 +128,9 @@ wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
 #include "link_layer_stats.h"
 #include "rtt.h"
 #include "tdls.h"
+#include "wifi_logger.h"
+
 #ifdef __cplusplus
 }
-#endif
 #endif
 
