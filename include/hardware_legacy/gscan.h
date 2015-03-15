@@ -251,7 +251,7 @@ typedef struct {
 
 typedef struct {
     int network_index; // index of the network found in the pno list
-    char ssid[32];
+    char ssid[32+1]; // null terminated
     wifi_channel channel;
     int rssi;
 } wifi_epno_result;
@@ -267,6 +267,35 @@ typedef struct {
 /* Set the PNO list */
 wifi_error wifi_set_epno_list(wifi_request_id id, wifi_interface_handle iface,
         int num_networks, wifi_epno_network *networks, wifi_epno_handler handler);
+
+
+/* SSID white list */
+/* Note that this feature requires firmware to be able to indicate to kernel sme and wpa_supplicant
+ * that the SSID of the network has changed
+ * and thus requires further changed in cfg80211 stack, for instance, the below function would change:
+
+ void __cfg80211_roamed(struct wireless_dev *wdev,
+ 		       struct cfg80211_bss *bss,
+ 		       const u8 *req_ie, size_t req_ie_len,
+ 		       const u8 *resp_ie, size_t resp_ie_len)
+ * when firmware roam to a new SSID the corresponding link layer stats info need to be updated:
+     struct wifi_interface_link_layer_info;
+ */
+typedef struct {
+    char ssid[32+1]; // null terminated
+} wifi_ssid;
+
+wifi_error wifi_set_ssid_white_list(wifi_request_id id, wifi_interface_handle iface,
+        int num_networks, wifi_ssid *ssids);
+
+typedef struct {
+    int max_number_epno_networks_by_crc32; //max number of epno entries if crc32 is specified
+    int max_number_epno_networks_by_ssid;  //max number of epno entries if ssid is specified
+    int max_number_of_white_losted_ssid;   //max number of white listed SSIDs, M target is 2 to 4 */
+} wifi_roam_autojoin_offload_capabilities;
+
+wifi_error wifi_get_roam_autojoin_offload_capabilities(wifi_interface_handle handle,
+        wifi_roam_autojoin_offload_capabilities *capabilities);
 
 #endif
 
