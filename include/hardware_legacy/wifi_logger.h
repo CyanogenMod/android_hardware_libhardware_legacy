@@ -199,7 +199,7 @@ wifi_error wifi_get_driver_version(wifi_request_id id,
 
 /* api to collect driver records */
 wifi_error wifi_get_ringdata(wifi_request_id id,
-        wifi_interface_handle iface, wifi_ring_buffer_id ring_id, char * buffer, int buffer_size, wifi_ring_buffer_status *status);
+        wifi_interface_handle iface, wifi_ring_buffer_id ring_id);
 
 
 /* Feature set */
