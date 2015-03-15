@@ -23,6 +23,29 @@ extern "C"
 #endif
 #include <stdint.h>
 
+/* WiFi Common definitions */
+/* channel operating width */
+typedef enum {
+   WIFI_CHAN_WIDTH_20    = 0,
+   WIFI_CHAN_WIDTH_40    = 1,
+   WIFI_CHAN_WIDTH_80    = 2,
+   WIFI_CHAN_WIDTH_160   = 3,
+   WIFI_CHAN_WIDTH_80P80 = 4,
+   WIFI_CHAN_WIDTH_5     = 5,
+   WIFI_CHAN_WIDTH_10    = 6,
+   WIFI_CHAN_WIDTH_INVALID = -1
+} wifi_channel_width;
+
+typedef int wifi_radio;
+typedef int wifi_channel;
+
+typedef struct {
+    wifi_channel_width width;
+    int center_frequency0;
+    int center_frequency1;
+    int primary_frequency;
+} wifi_channel_spec;
+
 typedef enum {
     WIFI_SUCCESS = 0,
     WIFI_ERROR_NONE = 0,

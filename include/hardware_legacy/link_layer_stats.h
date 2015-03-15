@@ -12,21 +12,6 @@ extern "C"
 #define STATS_MINOR_VERSION      0
 #define STATS_MICRO_VERSION      0
 
-typedef int wifi_radio;
-typedef int wifi_channel;
-
-/* channel operating width */
-typedef enum {
-   WIFI_CHAN_WIDTH_20    = 0,
-   WIFI_CHAN_WIDTH_40    = 1,
-   WIFI_CHAN_WIDTH_80    = 2,
-   WIFI_CHAN_WIDTH_160   = 3,
-   WIFI_CHAN_WIDTH_80P80 = 4,
-   WIFI_CHAN_WIDTH_5     = 5,
-   WIFI_CHAN_WIDTH_10    = 6,
-   WIFI_CHAN_WIDTH_INVALID = -1
-} wifi_channel_width;
-
 typedef enum {
     WIFI_DISCONNECTED = 0,
     WIFI_AUTHENTICATING = 1,
