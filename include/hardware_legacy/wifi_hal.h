@@ -160,3 +160,5 @@ wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
 }
 #endif
 
+#endif
+
