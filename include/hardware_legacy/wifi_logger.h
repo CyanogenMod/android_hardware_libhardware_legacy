@@ -71,6 +71,14 @@ wifi_error wifi_get_ring_buffer_status(wifi_request_id id,
 wifi_error wifi_get_firmware_memory_dump(wifi_request_id id,
         wifi_interface_handle iface, char * buffer, int buffer_size);
 
+/* api to collect a firmware version string */
+wifi_error wifi_get_firmware_version(wifi_request_id id,
+        wifi_interface_handle iface, char * buffer, int buffer_size);
+
+/* api to collect a driver version string */
+wifi_error wifi_get_driver_version(wifi_request_id id,
+        wifi_interface_handle iface, char * buffer, int buffer_size);
+
 
 /* Feature set */
 #define WIFI_LOGGER_MEMORY_DUMP_SUPPORTED 1

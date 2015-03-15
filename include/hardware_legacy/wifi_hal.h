@@ -83,6 +83,7 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 #define WIFI_FEATURE_AP_STA             0x8000      // Support for AP STA Concurrency
 #define WIFI_FEATURE_LINK_LAYER_STATS  0x10000      // Link layer stats collection
 #define WIFI_FEATURE_LOGGER            0x20000      // WiFi Logger
+#define WIFI_FEATURE_HAL_EPNO          0x40000      // WiFi PNO enhanced
 
 // Add more features here
 

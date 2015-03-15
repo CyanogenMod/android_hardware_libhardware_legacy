@@ -20,6 +20,7 @@ typedef enum {
 #define MAX_BUCKETS                 16
 #define MAX_HOTLIST_APS             128
 #define MAX_SIGNIFICANT_CHANGE_APS  64
+#define MAX_PNO_SSID                128;
 
 wifi_error wifi_get_valid_channels(wifi_interface_handle handle,
         int band, int max_channels, wifi_channel *channels, int *num_channels);
@@ -97,7 +98,8 @@ typedef struct {
     wifi_band band;                     // when UNSPECIFIED, use channel list
     int period;                         // desired period, in millisecond; if this is too
                                         // low, the firmware should choose to generate results as
-                                        // fast as it can instead of failing the command
+                                        // fast as it can instead of failing the command.
+                                        // for exponential backoff bucket this is the min_period
     /* report_events semantics -
      *  0 => report only when scan history is % full
      *  1 => same as 0 + report a scan completion event after scanning this bucket
@@ -106,9 +108,18 @@ typedef struct {
              supplicant as well (optional) .
      */
     byte report_events;
+    int max_period; // if max_period is non zero or different than period, then this bucket is
+                    // an exponential backoff bucket and the scan period will grow exponentially
+                    // as per formula: actual_period(N) = period ^ (N/(step_count+1))
+                    // to a maximum period of max_period
+    int exponent; // for exponential back off bucket: multiplier: new_period = old_period * exponent
+    int step_count; // for exponential back off bucket, number of scans performed at a given
+                    // period and until the exponent is applied
 
     int num_channels;
-    wifi_scan_channel_spec channels[MAX_CHANNELS];  // channels to scan; these may include DFS channels
+    // channels to scan; these may include DFS channels
+    // Note that a given channel may appear in multiple buckets
+    wifi_scan_channel_spec channels[MAX_CHANNELS];
 } wifi_scan_bucket_spec;
 
 typedef struct {
@@ -156,7 +167,6 @@ typedef struct {
     mac_addr  bssid;                    // AP BSSID
     wifi_rssi low;                      // low threshold
     wifi_rssi high;                     // high threshold
-    wifi_channel channel;               // channel hint
 } ap_threshold_param;
 
 typedef struct {
@@ -172,7 +182,7 @@ wifi_error wifi_set_bssid_hotlist(wifi_request_id id, wifi_interface_handle ifac
 /* Clear the BSSID Hotlist */
 wifi_error wifi_reset_bssid_hotlist(wifi_request_id id, wifi_interface_handle iface);
 
-/* Significant wifi change*/
+/* Significant wifi change */
 typedef struct {
     mac_addr bssid;                     // BSSID
     wifi_channel channel;               // channel frequency in MHz
@@ -185,6 +195,11 @@ typedef struct {
             unsigned num_results, wifi_significant_change_result **results);
 } wifi_significant_change_handler;
 
+// The sample size parameters in the wifi_significant_change_params structure
+// represent the number of occurence of a g-scan where the BSSID was seen and RSSI was
+// collected for that BSSID, or, the BSSID was expected to be seen and didn't.
+// for instance: lost_ap_sample_size : number of time a g-scan was performed on the
+// channel the BSSID was seen last, and the BSSID was not seen during those g-scans
 typedef struct {
     int rssi_sample_size;               // number of samples for averaging RSSI
     int lost_ap_sample_size;            // number of samples to confirm AP loss
@@ -202,6 +217,31 @@ wifi_error wifi_reset_significant_change_handler(wifi_request_id id, wifi_interf
 
 /* Random MAC OUI for PNO */
 wifi_error wifi_set_scanning_mac_oui(wifi_interface_handle handle, oui scan_oui);
+
+
+#define WIFI_PNO_FLAG_DIRECTED_SCAN = 1 // whether directed scan needs to be performed (for hidden SSIDs)
+#define WIFI_PNO_FLAG_HASH_PROVIDED = 2 // whether a crc32 hash of the ssid is provided instead of the ssid
+
+// Code for matching the beacon AUTH IE - additional codes TBD
+#define WIFI_PNO_AUTH_CODE_OPEN  1 // open
+#define WIFI_PNO_AUTH_CODE_PSK   2 // WPA_PSK or WPA2PSK
+#define WIFI_PNO_AUTH_CODE_EAPOL 4 // any EAPOL
+
+typedef struct {
+    char ssid[32];
+    char rssi_threshold; // threshold for considering this SSID as found
+    char flags;
+    int crc32;  // crc32 of the SSID, this allows for memory size optimization
+                // i.e. not passing the whole SSID
+                // in firmware and instead storing a shorter string
+    char auth_bit_field; // auth bitfield for matching WPA IE
+} wifi_pno_network;
+
+/* PNO list */
+typedef struct {
+    int num_ssid;                            // number of SSIDs
+    char wifi_pno_network[MAX_PNO_SSID];     // SSIDs
+} wifi_pno_params;
 
 #endif
 
