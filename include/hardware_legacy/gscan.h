@@ -39,6 +39,9 @@ typedef struct {
     int max_significant_wifi_change_aps;     // maximum number of entries for
                                              // significant wifi change APs
     int max_bssid_history_entries;           // number of BSSID/RSSI entries that device can hold
+    int max_number_epno_networks_by_crc32;   //max number of epno entries if crc32 is specified
+    int max_number_epno_networks_by_ssid;    //max number of epno entries if ssid is specified
+    int max_number_of_white_losted_ssid;     //max number of white listed SSIDs, M target is 2 to 4 */
 } wifi_gscan_capabilities;
 
 wifi_error wifi_get_gscan_capabilities(wifi_interface_handle handle,
@@ -416,15 +419,6 @@ typedef struct {
 
 wifi_error wifi_set_bssid_preference(wifi_request_id id, wifi_interface_handle iface,
                                     int num_bssid, wifi_bssid_preference *prefs);
-
-typedef struct {
-    int max_number_epno_networks;           // max number of epno entries, M target is 64
-    int max_number_of_white_listed_ssid;    // max number of white listed SSIDs, M target is 2 to 4
-    int max_number_of_hotlist_ssid;         // max number of hotlist SSIDs, M target is 4
-} wifi_roam_autojoin_offload_capabilities;
-
-wifi_error wifi_get_roam_autojoin_offload_capabilities(wifi_interface_handle handle,
-        wifi_roam_autojoin_offload_capabilities *capabilities);
 
 #endif
 
