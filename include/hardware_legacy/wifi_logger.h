@@ -62,7 +62,7 @@ typedef struct {
     u8 data[0]; // packet data. The length of packet data is determined by the entry_size field of
                 // the wifi_ring_buffer_entry structure. It is expected that first bytes of the
                 // packet, or packet headers only (up to TCP or RTP/UDP headers) will be copied into the ring
-} wifi_ring_per_packet_status_entry __attribute__((packed));
+} __attribute__((packed)) wifi_ring_per_packet_status_entry;
 
 static char per_packet_status_ring_name[] = "wifi_per_packet_status"; // Ring buffer name for per-packet status ring
 
@@ -136,7 +136,7 @@ typedef struct {
     u16 tag;
     u16 length; // length of value
     u8 value[0];
-} tlv_log __attribute__((packed));
+} __attribute__((packed)) tlv_log;
 
 typedef struct {
     u16 event;
@@ -145,7 +145,7 @@ typedef struct {
                         // parameter as transmit rate, num retries, num scan result found etc...
                         // as well, event_data can include a vendor proprietary part which is
                         // understood by the developer only.
-} wifi_ring_buffer_driver_connectivity_event __attribute__((packed));
+} __attribute__((packed)) wifi_ring_buffer_driver_connectivity_event;
 
 // Ring buffer name for connectivity events ring
 static char connectivity_event_ring_name[] = "wifi_connectivity_events";
@@ -157,7 +157,7 @@ typedef struct {
     int status;   // 0 taken, 1 released
     int reason;   // reason why this wake lock is taken
     char name[0]; // null terminated
-} wake_lock_event __attribute__((packed));
+} __attribute__((packed)) wake_lock_event;
 
 typedef struct {
     u16 event;
@@ -196,7 +196,7 @@ typedef struct {
         wifi_ring_per_packet_status_entry packet_status;
         wifi_power_event power_event;
         };
-} wifi_ring_buffer_entry __attribute__((packed));
+} __attribute__((packed)) wifi_ring_buffer_entry;
 
 #define WIFI_RING_BUFFER_FLAG_HAS_BINARY_ENTRIES 0x00000001     // set if binary entries are present
 #define WIFI_RING_BUFFER_FLAG_HAS_ASCII_ENTRIES  0x00000002     // set if ascii entries are present
