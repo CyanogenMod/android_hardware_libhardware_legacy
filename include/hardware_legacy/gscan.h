@@ -39,7 +39,7 @@ typedef struct {
     int max_significant_wifi_change_aps;     // maximum number of entries for
                                              // significant wifi change APs
     int max_bssid_history_entries;           // number of BSSID/RSSI entries that device can hold
-    int max_number_epno_networks_by_crc32;   //max number of epno entries if crc32 is specified
+    int max_number_epno_networks;   //max number of epno entries if crc32 is specified
     int max_number_epno_networks_by_ssid;    //max number of epno entries if ssid is specified
     int max_number_of_white_losted_ssid;     //max number of white listed SSIDs, M target is 2 to 4 */
 } wifi_gscan_capabilities;
