@@ -112,9 +112,6 @@ public:
     // return the number of audio frames written by the audio dsp to DAC since
     // the output has exited standby
     virtual status_t    getRenderPosition(uint32_t *dspFrames) = 0;
-#ifdef QCOM_DIRECTTRACK
-    virtual status_t    getPresentationPosition(uint64_t *frames, struct timespec *timestamp) = 0;
-#endif
 
     /**
      * get the local time at which the next write to the audio driver will be
