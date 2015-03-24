@@ -36,13 +36,15 @@ extern "C"
 typedef int wifi_radio;
 typedef int wifi_ring_buffer_id;
 
+#define PER_PACKET_ENTRY_FLAGS_DIRECTION_TX 1 //  0: TX, 1: RX
+#define PER_PACKET_ENTRY_FLAGS_TX_SUCCESS 2 // whether packet was transmitted or received/decrypted successfully
+#define PER_PACKET_ENTRY_FLAGS_80211_HEADER 4 // has full 802.11 header, else has 802.3 header
+#define PER_PACKET_ENTRY_FLAGS_PROTECTED 8  // whether packet was encrypted
+
 typedef struct {
-    u8 direction:1; //  0: TX, 1: RX
-    u8 success:1; // whether packet was transmitted or received/decrypted successfully
-    u8 has_80211_header:1; // has full 802.11 header, else has 802.3 header
-    u8 protected_packet:1; // whether packet was encrypted
-    u8 tid:4; // transmit  or received tid
-    u8 MCS; // modulation and bandwidth
+    u8 flags;
+    u8 tid; // transmit or received tid
+    u16 MCS; // modulation and bandwidth
     u8 rssi; // TX: RSSI of ACK for that packet
              // RX: RSSI of packet
     u8 num_retries; // number of attempted retries
@@ -60,7 +62,7 @@ typedef struct {
     u8 data[0]; // packet data. The length of packet data is determined by the entry_size field of
                 // the wifi_ring_buffer_entry structure. It is expected that first bytes of the
                 // packet, or packet headers only (up to TCP or RTP/UDP headers) will be copied into the ring
-} wifi_ring_per_packet_status_entry;
+} __attribute__((packed)) wifi_ring_per_packet_status_entry;
 
 static char per_packet_status_ring_name[] = "wifi_per_packet_status"; // Ring buffer name for per-packet status ring
 
@@ -134,7 +136,7 @@ typedef struct {
     u16 tag;
     u16 length; // length of value
     u8 value[0];
-} tlv_log;
+} __attribute__((packed)) tlv_log;
 
 typedef struct {
     u16 event;
@@ -143,7 +145,7 @@ typedef struct {
                         // parameter as transmit rate, num retries, num scan result found etc...
                         // as well, event_data can include a vendor proprietary part which is
                         // understood by the developer only.
-} wifi_ring_buffer_driver_connectivity_event;
+} __attribute__((packed)) wifi_ring_buffer_driver_connectivity_event;
 
 // Ring buffer name for connectivity events ring
 static char connectivity_event_ring_name[] = "wifi_connectivity_events";
@@ -155,15 +157,14 @@ typedef struct {
     int status;   // 0 taken, 1 released
     int reason;   // reason why this wake lock is taken
     char name[0]; // null terminated
-} wake_lock_event;
+} __attribute__((packed)) wake_lock_event;
 
 typedef struct {
     u16 event;
     tlv_log tlvs[0];
-} wifi_power_event;
+} wifi_power_event __attribute__((packed));
 
 static char power_event_ring_name[] = "wifi_power_events";
-
 
 /**
  * This structure represent a logger entry within a ring buffer.
@@ -180,23 +181,25 @@ static char power_event_ring_name[] = "wifi_power_events";
  * data logged by drivers into their ring buffer, store the data into log files and include
  * the logs into android bugreports.
  */
+
+#define RING_BUFFER_ENTRY_FLAGS_HAS_BINARY 1 // set for binary entries
+#define RING_BUFFER_ENTRY_FLAGS_HAS_TIMESTAMP 2 // set if 64 bits timestamp is present
+
 typedef struct {
-    u16 entry_size:13;
-    u16 binary:1; //set for binary entries
-    u16 has_timestamp:1; //set if 64 bits timestamp is present
-    u16 reserved:1;
+    u16 entry_size;
+    u8 flags;
     u8 type; // Per ring specific
-    u8 resvd;
     u64 timestamp; //present if has_timestamp bit is set.
     union {
         u8 data[0];
         wifi_ring_buffer_driver_connectivity_event connectivity_event;
         wifi_ring_per_packet_status_entry packet_status;
+        wifi_power_event power_event;
         };
-} wifi_ring_buffer_entry;
+} __attribute__((packed)) wifi_ring_buffer_entry;
 
 #define WIFI_RING_BUFFER_FLAG_HAS_BINARY_ENTRIES 0x00000001     // set if binary entries are present
-#define WIFI_RING_BUFFER_FLAG_HAS_ASCII_ENTRI    0x00000002     // set if ascii entries are present
+#define WIFI_RING_BUFFER_FLAG_HAS_ASCII_ENTRIES  0x00000002     // set if ascii entries are present
 
 /* ring buffer params */
 /**
@@ -268,15 +271,15 @@ wifi_error wifi_get_ring_buffers_status(wifi_request_id id,
 
 /* api to collect a firmware memory dump for a given iface */
 wifi_error wifi_get_firmware_memory_dump(wifi_request_id id,
-        wifi_interface_handle iface, char * buffer, int buffer_size);
+        wifi_interface_handle iface, char ** buffer, int *buffer_size);
 
 /* api to collect a firmware version string */
 wifi_error wifi_get_firmware_version(wifi_request_id id,
-        wifi_interface_handle iface, char * buffer, int buffer_size);
+        wifi_interface_handle iface, char *buffer, int buffer_size);
 
 /* api to collect a driver version string */
 wifi_error wifi_get_driver_version(wifi_request_id id,
-        wifi_interface_handle iface, char * buffer, int buffer_size);
+        wifi_interface_handle iface, char *buffer, int buffer_size);
 
 
 /* api to collect driver records */

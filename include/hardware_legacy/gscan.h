@@ -16,12 +16,13 @@ typedef enum {
     WIFI_BAND_ABG_WITH_DFS = 7,             // 2.4 GHz + 5 GHz with DFS
 } wifi_band;
 
-#define MAX_CHANNELS                16
-#define MAX_BUCKETS                 16
-#define MAX_HOTLIST_APS             128
-#define MAX_SIGNIFICANT_CHANGE_APS  64
-#define MAX_PNO_SSID                128;
-#define MAX_HOTLIST_SSID            8;
+const unsigned MAX_CHANNELS                = 16;
+const unsigned MAX_BUCKETS                 = 16;
+const unsigned MAX_HOTLIST_APS             = 128;
+const unsigned MAX_SIGNIFICANT_CHANGE_APS  = 64;
+const unsigned MAX_PNO_SSID                = 128;
+const unsigned MAX_HOTLIST_SSID            = 8;
+const unsigned MAX_BLACKLIST_BSSID         = 16;
 
 wifi_error wifi_get_valid_channels(wifi_interface_handle handle,
         int band, int max_channels, wifi_channel *channels, int *num_channels);
@@ -33,10 +34,16 @@ typedef struct {
     int max_rssi_sample_size;                // number of RSSI samples used for averaging RSSI
     int max_scan_reporting_threshold;        // max possible report_threshold as described
                                              // in wifi_scan_cmd_params
-    int max_hotlist_aps;                     // maximum number of entries for hotlist APs
+    int max_hotlist_bssids;                  // maximum number of entries for hotlist BSSIDs
+    int max_hotlist_ssids;                   // maximum number of entries for hotlist SSIDs
     int max_significant_wifi_change_aps;     // maximum number of entries for
                                              // significant wifi change APs
     int max_bssid_history_entries;           // number of BSSID/RSSI entries that device can hold
+    int max_number_epno_networks;            // max number of epno entries
+    int max_number_epno_networks_by_ssid;    // max number of epno entries if ssid is specified,
+                                             // that is, epno entries for which an exact match is
+                                             // required, or entries corresponding to hidden ssids
+    int max_number_of_white_listed_ssid;     // max number of white listed SSIDs, M target is 2 to 4
 } wifi_gscan_capabilities;
 
 wifi_error wifi_get_gscan_capabilities(wifi_interface_handle handle,
@@ -172,7 +179,7 @@ typedef struct {
 
 typedef struct {
     int lost_ap_sample_size;
-    int num_ap;                                 // number of hotlist APs
+    int num_bssid;                                 // number of hotlist APs
     ap_threshold_param ap[MAX_HOTLIST_APS];     // hotlist APs
 } wifi_bssid_hotlist_params;
 
@@ -200,8 +207,8 @@ typedef struct {
 
 typedef struct {
     int lost_ssid_sample_size;
-    int num_ap;                                 // number of hotlist APs
-    ssid_threshold_param ssid[MAX_HOTLIST_APS];     // hotlist APs
+    int num_ssid;                                   // number of hotlist SSIDs
+    ssid_threshold_param ssid[MAX_HOTLIST_SSID];    // hotlist SSIDs
 } wifi_ssid_hotlist_params;
 
 
@@ -211,6 +218,18 @@ wifi_error wifi_set_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface
 
 /* Clear the SSID Hotlist */
 wifi_error wifi_reset_ssid_hotlist(wifi_request_id id, wifi_interface_handle iface);
+
+
+/* BSSID blacklist */
+typedef struct {
+    int num_bssid;                           // number of blacklisted BSSIDs
+    mac_addr bssids[MAX_BLACKLIST_BSSID];    // blacklisted BSSIDs
+} wifi_bssid_params;
+
+/* Set the BSSID blacklist */
+wifi_error wifi_set_bssid_blacklist(wifi_request_id id, wifi_interface_handle iface,
+        wifi_bssid_params params);
+
 
 /* Significant wifi change */
 typedef struct {
@@ -234,7 +253,7 @@ typedef struct {
     int rssi_sample_size;               // number of samples for averaging RSSI
     int lost_ap_sample_size;            // number of samples to confirm AP loss
     int min_breaching;                  // number of APs breaching threshold
-    int num_ap;                         // max 64
+    int num_bssid;                         // max 64
     ap_threshold_param ap[MAX_SIGNIFICANT_CHANGE_APS];
 } wifi_significant_change_params;
 
@@ -377,7 +396,7 @@ typedef struct {
 
     // Hysteresis: ensuring the currently associated BSSID is favored
     // so as to prevent ping-pong situations
-    int lazy_roam_histeresys;       // boost applied to current BSSID
+    int lazy_roam_hysteresis;       // boost applied to current BSSID
 
     // Alert mode enable, i.e. configuring when firmware enters alert mode
     int alert_roam_rssi_trigger;    // RSSI below which "Alert" roam is enabled
@@ -395,22 +414,13 @@ wifi_error wifi_enable_lazy_roam(wifi_request_id id, wifi_interface_handle iface
  * Per BSSID preference
  */
 typedef struct {
-    char bssid[6];
+    mac_addr bssid;
     int rssi_modifier;  // modifier applied to the RSSI of the BSSID for the purpose of comparing
                         // it with other roam candidate
 } wifi_bssid_preference;
 
 wifi_error wifi_set_bssid_preference(wifi_request_id id, wifi_interface_handle iface,
                                     int num_bssid, wifi_bssid_preference *prefs);
-
-typedef struct {
-    int max_number_epno_networks;           // max number of epno entries, M target is 64
-    int max_number_of_white_listed_ssid;    // max number of white listed SSIDs, M target is 2 to 4
-    int max_number_of_hotlist_ssid;         // max number of hotlist SSIDs, M target is 4
-} wifi_roam_autojoin_offload_capabilities;
-
-wifi_error wifi_get_roam_autojoin_offload_capabilities(wifi_interface_handle handle,
-        wifi_roam_autojoin_offload_capabilities *capabilities);
 
 #endif
 
