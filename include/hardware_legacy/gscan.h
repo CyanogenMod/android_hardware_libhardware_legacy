@@ -20,7 +20,7 @@ const unsigned MAX_CHANNELS                = 16;
 const unsigned MAX_BUCKETS                 = 16;
 const unsigned MAX_HOTLIST_APS             = 128;
 const unsigned MAX_SIGNIFICANT_CHANGE_APS  = 64;
-const unsigned MAX_PNO_SSID                = 128;
+const unsigned MAX_PNO_SSID                = 64;
 const unsigned MAX_HOTLIST_SSID            = 8;
 const unsigned MAX_BLACKLIST_BSSID         = 16;
 

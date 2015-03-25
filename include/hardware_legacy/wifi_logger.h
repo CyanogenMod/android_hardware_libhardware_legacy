@@ -162,7 +162,7 @@ typedef struct {
 typedef struct {
     u16 event;
     tlv_log tlvs[0];
-} wifi_power_event __attribute__((packed));
+} __attribute__((packed)) wifi_power_event;
 
 static char power_event_ring_name[] = "wifi_power_events";
 
