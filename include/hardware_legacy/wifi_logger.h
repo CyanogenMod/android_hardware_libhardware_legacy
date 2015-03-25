@@ -181,21 +181,24 @@ static char power_event_ring_name[] = "wifi_power_events";
  * data logged by drivers into their ring buffer, store the data into log files and include
  * the logs into android bugreports.
  */
+enum {
+    RING_BUFFER_ENTRY_FLAGS_HAS_BINARY = (1 << (0)), // set for binary entries
+    RING_BUFFER_ENTRY_FLAGS_HAS_TIMESTAMP = (1 << (1)) // set if 64 bits timestamp is present
+};
 
-#define RING_BUFFER_ENTRY_FLAGS_HAS_BINARY 1 // set for binary entries
-#define RING_BUFFER_ENTRY_FLAGS_HAS_TIMESTAMP 2 // set if 64 bits timestamp is present
+enum {
+    ENTRY_TYPE_CONNECT_EVENT = 1,
+    ENTRY_TYPE_PKT,
+    ENTRY_TYPE_WAKE_LOCK,
+    ENTRY_TYPE_POWER_EVENT,
+    ENTRY_TYPE_DATA
+};
 
 typedef struct {
-    u16 entry_size;
+    u16 entry_size; // the size of payload excluding the header. 
     u8 flags;
-    u8 type; // Per ring specific
+    u8 type; // Entry type
     u64 timestamp; //present if has_timestamp bit is set.
-    union {
-        u8 data[0];
-        wifi_ring_buffer_driver_connectivity_event connectivity_event;
-        wifi_ring_per_packet_status_entry packet_status;
-        wifi_power_event power_event;
-        };
 } __attribute__((packed)) wifi_ring_buffer_entry;
 
 #define WIFI_RING_BUFFER_FLAG_HAS_BINARY_ENTRIES 0x00000001     // set if binary entries are present
@@ -263,34 +266,35 @@ wifi_error wifi_get_ring_data(wifi_request_id id,
  * min_data_size: minimum data size in buffer for driver to invoke on_ring_buffer_data, ignore if zero
  */
 
-wifi_error wifi_start_logging(wifi_interface_handle iface, u32 verbose_level, u32 flags, u32 max_interval_sec, u32 min_data_size, u8 *buffer_name, wifi_ring_buffer_data_handler handler);
+wifi_error wifi_start_logging(wifi_request_id id, wifi_interface_handle iface, u32 verbose_level, u32 flags, u32 max_interval_sec, u32 min_data_size, u8 *buffer_name, wifi_ring_buffer_data_handler handler);
 
 /* api to get the status of all ring buffers supported by driver */
 wifi_error wifi_get_ring_buffers_status(wifi_request_id id,
-        wifi_interface_handle iface, u32 num_buffers, wifi_ring_buffer_status *status);
+        wifi_interface_handle iface, u32 *num_rings, wifi_ring_buffer_status **status);
 
 /* api to collect a firmware memory dump for a given iface */
 wifi_error wifi_get_firmware_memory_dump(wifi_request_id id,
-        wifi_interface_handle iface, char ** buffer, int *buffer_size);
+        wifi_interface_handle iface, char **buffer, int *buffer_size);
 
 /* api to collect a firmware version string */
 wifi_error wifi_get_firmware_version(wifi_request_id id,
-        wifi_interface_handle iface, char *buffer, int buffer_size);
+        wifi_interface_handle iface, char **buffer, int *buffer_size);
 
 /* api to collect a driver version string */
 wifi_error wifi_get_driver_version(wifi_request_id id,
-        wifi_interface_handle iface, char *buffer, int buffer_size);
-
-
-/* api to collect driver records */
-wifi_error wifi_get_ringdata(wifi_request_id id,
-        wifi_interface_handle iface, wifi_ring_buffer_id ring_id);
+        wifi_interface_handle iface, char **buffer, int *buffer_size);
 
 
 /* Feature set */
-#define WIFI_LOGGER_MEMORY_DUMP_SUPPORTED 1
-#define WIFI_LOGGER_PER_PACKET_TX_RX_STATUS_SUPPORTED 2
-
+enum {
+    WIFI_LOGGER_MEMORY_DUMP_SUPPORTED = (1 << (0)), // Memory dump of FW
+    WIFI_LOGGER_PER_PACKET_TX_RX_STATUS_SUPPORTED = (1 << (1)), // PKT status
+    WIFI_LOGGER_CONNECT_EVENT_SUPPORTED = (1 << (2)), // Connectivity event
+    WIFI_LOGGER_POWER_EVENT_SUPPORTED = (1 << (3)), // POWER of Driver
+    WIFI_LOGGER_WAKE_LOCK_SUPPORTED = (1 << (4)), // WAKE LOCK of Driver
+    WIFI_LOGGER_VERBOSE_SUPPORTED = (1 << (5)), // verbose log of FW
+    WIFI_LOGGER_WATCHDOG_TIMER_SUPPORTED = (1 << (6)) // monitor the health of FW
+};
 wifi_error wifi_get_logger_supported_feature_set(wifi_interface_handle handle, unsigned int *support);
 
 
