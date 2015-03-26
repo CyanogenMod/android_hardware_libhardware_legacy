@@ -195,7 +195,7 @@ enum {
 };
 
 typedef struct {
-    u16 entry_size; // the size of payload excluding the header. 
+    u16 entry_size; // the size of payload excluding the header.
     u8 flags;
     u8 type; // Entry type
     u64 timestamp; //present if has_timestamp bit is set.
@@ -272,9 +272,15 @@ wifi_error wifi_start_logging(wifi_request_id id, wifi_interface_handle iface, u
 wifi_error wifi_get_ring_buffers_status(wifi_request_id id,
         wifi_interface_handle iface, u32 *num_rings, wifi_ring_buffer_status **status);
 
+/* Upper layer has to free the memory indicated by buffer pointer */
+typedef struct {
+   void (*on_firmware_memory_dump) (wifi_request_id id, char *buffer, int buffer_size);
+} wifi_firmware_memory_dump_handler;
+
+
 /* api to collect a firmware memory dump for a given iface */
 wifi_error wifi_get_firmware_memory_dump(wifi_request_id id,
-        wifi_interface_handle iface, char **buffer, int *buffer_size);
+        wifi_interface_handle iface, wifi_firmware_memory_dump_handler handler);
 
 /* api to collect a firmware version string */
 wifi_error wifi_get_firmware_version(wifi_request_id id,
@@ -295,7 +301,7 @@ enum {
     WIFI_LOGGER_VERBOSE_SUPPORTED = (1 << (5)), // verbose log of FW
     WIFI_LOGGER_WATCHDOG_TIMER_SUPPORTED = (1 << (6)) // monitor the health of FW
 };
-wifi_error wifi_get_logger_supported_feature_set(wifi_interface_handle handle, unsigned int *support);
+wifi_error wifi_get_logger_supported_feature_set(wifi_request_id id, wifi_interface_handle iface, unsigned int *support);
 
 
 #ifdef __cplusplus
