@@ -422,5 +422,31 @@ typedef struct {
 wifi_error wifi_set_bssid_preference(wifi_request_id id, wifi_interface_handle iface,
                                     int num_bssid, wifi_bssid_preference *prefs);
 
+typedef struct {
+    int  id;                            // identifier of this network block, report this in event
+    char realm[256];                    // null terminated UTF8 encoded realm, 0 if unspecified
+    int64_t roamingConsortiumIds[16];   // roaming consortium ids to match, 0s if unspecified
+    byte plmn[3];                       // mcc/mnc combination as per rules, 0s if unspecified
+} wifi_passpoint_network;
+
+typedef struct {
+    void (*on_passpoint_network_found)(
+            wifi_request_id id,
+            int net_id,                        // network block identifier for the matched network
+            wifi_scan_result *result,          // scan result, with channel and beacon information
+            int anqp_len,                      // length of ANQP blob
+            byte *anqp                         // ANQP data, in the information_element format
+            );
+} wifi_passpoint_event_handler;
+
+/* Sets a list for passpoint networks for PNO purposes; it should be matched
+ * against any passpoint networks (designated by Interworking element) found
+ * during regular PNO scan. */
+wifi_error wifi_set_passpoint_list(wifi_request_id id, wifi_interface_handle iface, int num,
+        wifi_passpoint_network *networks, wifi_passpoint_event_handler handler);
+
+/* Reset passpoint network list - no Passpoint networks should be matched after this */
+wifi_error wifi_reset_passpoint_list(wifi_request_id id, wifi_interface_handle iface);
+
 #endif
 
