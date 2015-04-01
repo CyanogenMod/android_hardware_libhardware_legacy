@@ -297,10 +297,10 @@ wifi_error wifi_set_scanning_mac_oui(wifi_interface_handle handle, oui scan_oui)
 // Calling wifi_set_epno_list shall reset the "done" status of pno networks in firmware.
 typedef struct {
     char ssid[32+1];
-    char rssi_threshold; // threshold for considering this SSID as found, required granularity for
+    byte rssi_threshold; // threshold for considering this SSID as found, required granularity for
                          // this threshold is 4dBm to 8dBm
-    char flags;          //  WIFI_PNO_FLAG_XXX
-    char auth_bit_field; // auth bit field for matching WPA IE
+    byte flags;          //  WIFI_PNO_FLAG_XXX
+    byte auth_bit_field; // auth bit field for matching WPA IE
 } wifi_epno_network;
 
 /* PNO list */
