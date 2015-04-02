@@ -158,7 +158,52 @@ wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
 #include "wifi_logger.h"
 #include "wifi_config.h"
 #include "wifi_nan.h"
-
+//wifi HAL function pointer table
+typedef struct {
+    wifi_error (* wifi_initialize) (wifi_handle *);
+    void (* wifi_cleanup) (wifi_handle, wifi_cleaned_up_handler);
+    void (*wifi_event_loop)(wifi_handle);
+    void (* wifi_get_error_info) (wifi_error , const char **);
+    wifi_error (* wifi_get_supported_feature_set) (wifi_interface_handle, feature_set *);
+    wifi_error (* wifi_get_concurrency_matrix) (wifi_interface_handle, int, feature_set *, int *);
+    wifi_error (* wifi_set_scanning_mac_oui) (wifi_interface_handle, unsigned char *);
+    wifi_error (* wifi_get_supported_channels)(wifi_handle, int *, wifi_channel *);
+    wifi_error (* wifi_is_epr_supported)(wifi_handle);
+    wifi_error (* wifi_get_ifaces) (wifi_handle , int *, wifi_interface_handle **);
+    wifi_error (* wifi_get_iface_name) (wifi_interface_handle, char *name, size_t);
+    wifi_error (* wifi_set_iface_event_handler) (wifi_request_id,wifi_interface_handle ,
+            wifi_event_handler);
+    wifi_error (* wifi_reset_iface_event_handler) (wifi_request_id, wifi_interface_handle);
+    wifi_error (* wifi_start_gscan) (wifi_request_id, wifi_interface_handle, wifi_scan_cmd_params,
+            wifi_scan_result_handler);
+    wifi_error (* wifi_stop_gscan)(wifi_request_id, wifi_interface_handle);
+    wifi_error (* wifi_get_cached_gscan_results)(wifi_interface_handle, byte, int,
+            wifi_cached_scan_results *, int *);
+    wifi_error (* wifi_set_bssid_hotlist)(wifi_request_id, wifi_interface_handle,
+            wifi_bssid_hotlist_params, wifi_hotlist_ap_found_handler);
+    wifi_error (* wifi_reset_bssid_hotlist)(wifi_request_id, wifi_interface_handle);
+    wifi_error (* wifi_set_significant_change_handler)(wifi_request_id, wifi_interface_handle,
+            wifi_significant_change_params, wifi_significant_change_handler);
+    wifi_error (* wifi_reset_significant_change_handler)(wifi_request_id, wifi_interface_handle);
+    wifi_error (* wifi_get_gscan_capabilities)(wifi_interface_handle, wifi_gscan_capabilities *);
+    wifi_error (* wifi_set_link_stats) (wifi_interface_handle, wifi_link_layer_params);
+    wifi_error (* wifi_get_link_stats) (wifi_request_id,wifi_interface_handle,
+            wifi_stats_result_handler);
+    wifi_error (* wifi_clear_link_stats)(wifi_interface_handle,u32, u32 *, u8, u8 *);
+    wifi_error (* wifi_get_valid_channels)(wifi_interface_handle,int, int, wifi_channel *, int *);
+    wifi_error (* wifi_rtt_range_request)(wifi_request_id, wifi_interface_handle, unsigned,
+            wifi_rtt_config[], wifi_rtt_event_handler);
+    wifi_error (* wifi_rtt_range_cancel)(wifi_request_id,  wifi_interface_handle, unsigned,
+            mac_addr[]);
+    wifi_error (* wifi_get_rtt_capabilities)(wifi_interface_handle, wifi_rtt_capabilities *);
+    wifi_error (* wifi_set_nodfs_flag)(wifi_interface_handle, u32);
+    wifi_error (* wifi_start_logging)(wifi_interface_handle, u32, u32, u32, u32, u8 *,
+            wifi_ring_buffer_data_handler);
+    wifi_error (* wifi_set_epno_list)(int, wifi_interface_info *, int, wifi_epno_network *,
+            wifi_epno_handler);
+    wifi_error (* wifi_set_country_code)(wifi_interface_handle, const char *);
+} wifi_hal_fn;
+wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #ifdef __cplusplus
 }
 #endif
