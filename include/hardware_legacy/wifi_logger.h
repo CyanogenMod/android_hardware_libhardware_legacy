@@ -266,7 +266,7 @@ wifi_error wifi_get_ring_data(wifi_request_id id,
  * min_data_size: minimum data size in buffer for driver to invoke on_ring_buffer_data, ignore if zero
  */
 
-wifi_error wifi_start_logging(wifi_request_id id, wifi_interface_handle iface, u32 verbose_level, u32 flags, u32 max_interval_sec, u32 min_data_size, u8 *buffer_name, wifi_ring_buffer_data_handler handler);
+wifi_error wifi_start_logging(wifi_interface_handle iface, u32 verbose_level, u32 flags, u32 max_interval_sec, u32 min_data_size, u8 *buffer_name, wifi_ring_buffer_data_handler handler);
 
 /* api to get the status of all ring buffers supported by driver */
 wifi_error wifi_get_ring_buffers_status(wifi_request_id id,
