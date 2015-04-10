@@ -64,7 +64,6 @@ typedef struct {
                 // packet, or packet headers only (up to TCP or RTP/UDP headers) will be copied into the ring
 } __attribute__((packed)) wifi_ring_per_packet_status_entry;
 
-static char per_packet_status_ring_name[] = "wifi_per_packet_status"; // Ring buffer name for per-packet status ring
 
 // Below events refer to the wifi_connectivity_event ring and shall be supported
 
@@ -147,8 +146,6 @@ typedef struct {
                         // understood by the developer only.
 } __attribute__((packed)) wifi_ring_buffer_driver_connectivity_event;
 
-// Ring buffer name for connectivity events ring
-static char connectivity_event_ring_name[] = "wifi_connectivity_events";
 
 // Ring buffer name for power events ring. note that power event are extremely frequents
 // and thus should be stored in their own ring/file so as not to clobber connectivity events
@@ -163,8 +160,6 @@ typedef struct {
     u16 event;
     tlv_log tlvs[0];
 } __attribute__((packed)) wifi_power_event;
-
-static char power_event_ring_name[] = "wifi_power_events";
 
 /**
  * This structure represent a logger entry within a ring buffer.
@@ -241,13 +236,33 @@ typedef struct {
  * The callback is called by driver whenever new data is
  */
 typedef struct {
-  void (*on_ring_buffer_data) (wifi_request_id id, wifi_ring_buffer_id ring_id, char *buffer, int buffer_size, wifi_ring_buffer_status *status);
+  void (*on_ring_buffer_data) (char *ring_name, char *buffer, int buffer_size,
+        wifi_ring_buffer_status *status);
 } wifi_ring_buffer_data_handler;
+
+/* api to set the log handler for getting ring data  */
+wifi_error wifi_set_log_handler(wifi_request_id id, wifi_interface_handle iface,
+    wifi_ring_buffer_data_handler handler);
+
+/* api to reset the log handler */
+wifi_error wifi_reset_log_handler(wifi_request_id id, wifi_interface_handle iface);
+
+
+typedef struct {
+   void (*on_alert) (wifi_request_id id, char *buffer, int buffer_size, int err_code);
+} wifi_alert_handler;
+
+/* api to set the alert handler for the alert case in Wi-Fi Chip */
+wifi_error wifi_set_alert_handler(wifi_request_id id, wifi_interface_handle iface,
+    wifi_alert_handler handler);
+
+
+/* api to reset the alert handler */
+wifi_error wifi_reset_alert_handler(wifi_request_id id, wifi_interface_handle iface);
 
 
 /* api for framework to indicate driver has to upload and drain all data of a given ring */
-wifi_error wifi_get_ring_data(wifi_request_id id,
-        wifi_interface_handle iface, wifi_ring_buffer_id ring_id);
+wifi_error wifi_get_ring_data(wifi_interface_handle iface, char *ring_name);
 
 
 /**
@@ -259,36 +274,34 @@ wifi_error wifi_get_ring_data(wifi_request_id id,
  *     can be impacted but device should not otherwise be significantly impacted
  *  - verbose_level 3+ are used when trying to actively debug a problem
  *
- * buffer_name represent the name of the ring for which data collection shall start.
+ * ring_name represent the name of the ring for which data collection shall start.
  *
  * flags: TBD parameter used to enable/disable specific events on a ring
  * max_interval: maximum interval in seconds for driver to invoke on_ring_buffer_data, ignore if zero
  * min_data_size: minimum data size in buffer for driver to invoke on_ring_buffer_data, ignore if zero
  */
 
-wifi_error wifi_start_logging(wifi_interface_handle iface, u32 verbose_level, u32 flags, u32 max_interval_sec, u32 min_data_size, u8 *buffer_name, wifi_ring_buffer_data_handler handler);
+wifi_error wifi_start_logging(wifi_interface_handle iface, u32 verbose_level, u32 flags,
+    u32 max_interval_sec, u32 min_data_size, char *ring_name);
 
 /* api to get the status of all ring buffers supported by driver */
-wifi_error wifi_get_ring_buffers_status(wifi_request_id id,
-        wifi_interface_handle iface, u32 *num_rings, wifi_ring_buffer_status **status);
+wifi_error wifi_get_ring_buffers_status(wifi_interface_handle iface, u32 *num_rings,
+    wifi_ring_buffer_status **status);
 
-/* Upper layer has to free the memory indicated by buffer pointer */
 typedef struct {
-   void (*on_firmware_memory_dump) (wifi_request_id id, char *buffer, int buffer_size);
+   void (*on_firmware_memory_dump) (char *buffer, int buffer_size);
 } wifi_firmware_memory_dump_handler;
 
 
 /* api to collect a firmware memory dump for a given iface */
-wifi_error wifi_get_firmware_memory_dump(wifi_request_id id,
-        wifi_interface_handle iface, wifi_firmware_memory_dump_handler handler);
+wifi_error wifi_get_firmware_memory_dump(wifi_interface_handle iface,
+    wifi_firmware_memory_dump_handler handler);
 
 /* api to collect a firmware version string */
-wifi_error wifi_get_firmware_version(wifi_request_id id,
-        wifi_interface_handle iface, char **buffer, int *buffer_size);
+wifi_error wifi_get_firmware_version(wifi_interface_handle iface, char **buffer, int *buffer_size);
 
 /* api to collect a driver version string */
-wifi_error wifi_get_driver_version(wifi_request_id id,
-        wifi_interface_handle iface, char **buffer, int *buffer_size);
+wifi_error wifi_get_driver_version(wifi_interface_handle iface, char **buffer, int *buffer_size);
 
 
 /* Feature set */
@@ -301,7 +314,7 @@ enum {
     WIFI_LOGGER_VERBOSE_SUPPORTED = (1 << (5)), // verbose log of FW
     WIFI_LOGGER_WATCHDOG_TIMER_SUPPORTED = (1 << (6)) // monitor the health of FW
 };
-wifi_error wifi_get_logger_supported_feature_set(wifi_request_id id, wifi_interface_handle iface, unsigned int *support);
+wifi_error wifi_get_logger_supported_feature_set(wifi_interface_handle iface, unsigned int *support);
 
 
 #ifdef __cplusplus
