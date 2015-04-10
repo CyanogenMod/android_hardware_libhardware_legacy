@@ -5,81 +5,142 @@
 #ifndef __WIFI_HAL_RTT_H__
 #define __WIFI_HAL_RTT_H__
 
-/* channel operating width */
-
 /* Ranging status */
 typedef enum {
-    RTT_STATUS_SUCCESS,
-    RTT_STATUS_FAILURE,
-    RTT_STATUS_FAIL_NO_RSP,
-    RTT_STATUS_FAIL_INVALID_TS, // Invalid T1-T4 timestamp
-    RTT_STATUS_FAIL_PROTOCOL,   // 11mc protocol failed
-    RTT_STATUS_FAIL_REJECTED,
-    RTT_STATUS_FAIL_NOT_SCHEDULED_YET,
-    RTT_STATUS_FAIL_SCHEDULE,  // schedule failed
-    RTT_STATUS_FAIL_TM_TIMEOUT,
-    RTT_STATUS_FAIL_AP_ON_DIFF_CHANNEL,
-    RTT_STATUS_FAIL_NO_CAPABILITY,
-    RTT_STATUS_FAIL_BUSY_TRY_LATER,
-    RTT_STATUS_ABORTED
+    RTT_STATUS_SUCCESS       = 0,
+    RTT_STATUS_FAILURE       = 1,           // general failure status
+    RTT_STATUS_FAIL_NO_RSP   = 2,           // target STA does not respond to request
+    RTT_STATUS_FAIL_REJECTED = 3,           // request rejected. Applies to 2-sided RTT only
+    RTT_STATUS_FAIL_NOT_SCHEDULED_YET  = 4,
+    RTT_STATUS_FAIL_TM_TIMEOUT         = 5, // timing measurement times out
+    RTT_STATUS_FAIL_AP_ON_DIFF_CHANNEL = 6, // Target on different channel, cannot range
+    RTT_STATUS_FAIL_NO_CAPABILITY  = 7,     // ranging not supported
+    RTT_STATUS_ABORTED             = 8,     // request aborted for unknown reason
+    RTT_STATUS_FAIL_INVALID_TS     = 9,     // Invalid T1-T4 timestamp
+    RTT_STATUS_FAIL_PROTOCOL       = 10,    // 11mc protocol failed
+    RTT_STATUS_FAIL_SCHEDULE       = 11,    // request could not be scheduled
+    RTT_STATUS_FAIL_BUSY_TRY_LATER = 12,    // responder cannot collaborate at time of request
+    RTT_STATUS_INVALID_REQ         = 13,    // bad request args
+    RTT_STATUS_NO_WIFI             = 14,    // WiFi not enabled
+    RTT_STATUS_FAIL_FTM_PARAM_OVERRIDE = 15 // Responder overrides param info, cannot range with new params
 } wifi_rtt_status;
 
+/* RTT peer type */
+typedef enum {
+    RTT_PEER_AP         = 0x1,
+    RTT_PEER_STA        = 0x2,
+    RTT_PEER_P2P_GO     = 0x3,
+    RTT_PEER_P2P_CLIENT = 0x4,
+    RTT_PEER_NAN        = 0x5
+} rtt_peer_type;
+
+/* RTT Measurement Bandwidth */
+typedef enum {
+    WIFI_RTT_BW_5   = 0x01,
+    WIFI_RTT_BW_10  = 0x02,
+    WIFI_RTT_BW_20  = 0x04,
+    WIFI_RTT_BW_40  = 0x08,
+    WIFI_RTT_BW_80  = 0x10,
+    WIFI_RTT_BW_160 = 0x20
+} wifi_rtt_bw;
+
+/* RTT Measurement Preamble */
+typedef enum {
+    WIFI_RTT_PREAMBLE_LEGACY = 0x1,
+    WIFI_RTT_PREAMBLE_HT     = 0x2,
+    WIFI_RTT_PREAMBLE_VHT    = 0x4
+} wifi_rtt_preamble;
 
 /* RTT Type */
 typedef enum {
-    RTT_TYPE_INVALID,
-    RTT_TYPE_1_SIDED,
-    RTT_TYPE_2_SIDED,
-    RTT_TYPE_AUTO,              // Two sided if remote supports; one sided otherwise
+    RTT_TYPE_1_SIDED = 0x1,
+    RTT_TYPE_2_SIDED = 0x2,
 } wifi_rtt_type;
 
 /* RTT configuration */
 typedef struct {
-    mac_addr addr;                     // peer device mac address
-    wifi_rtt_type type;                // optional - rtt type hint.
-    // RTT_TYPE_AUTO implies best effort
-    wifi_peer_type peer;               // optional - peer device hint (STA, P2P, AP)
-    wifi_channel_info channel;         // Required for STA-AP mode, optional for P2P, NBD etc.
-    unsigned interval;                 // interval between RTT burst (unit ms).
-    // Only valid when multi_burst = 1
-    unsigned num_burst;                // total number of RTT bursts, 1 means single shot
-    unsigned num_frames_per_burst;     // num of frames in each RTT burst
-    // for single side, measurement result num = frame number
-    // for 2 side RTT, measurement result num  = frame number - 1
-    unsigned num_retries_per_measurement_frame; // retry time for RTT MEASUREMENT frame
+    mac_addr addr;                 // peer device mac address
+    wifi_rtt_type type;            // 1-sided or 2-sided RTT
+    rtt_peer_type peer;            // optional - peer device hint (STA, P2P, AP)
+    wifi_channel_info channel;     // Required for STA-AP mode, optional for P2P, NBD etc.
+    unsigned burst_period;         // Time interval between bursts (units: 100 ms).
+                                   // Applies to 1-sided and 2-sided RTT multi-burst requests.
+                                   // Range: 0-31, 0: no preference by initiator (2-sided RTT)
+    unsigned num_burst;            // Total number of RTT bursts to be executed. It will be
+                                   // specified in the same way as the parameter "Number of
+                                   // Burst Exponent" found in the FTM frame format. It
+                                   // applies to both: 1-sided RTT and 2-sided RTT. Valid
+                                   // values are 0 to 15 as defined in 802.11mc std.
+                                   // 0 means single shot
+                                   // The implication of this parameter on the maximum
+                                   // number of RTT results is the following:
+                                   // for 1-sided RTT: max num of RTT results = (2^num_burst)*(num_frames_per_burst)
+                                   // for 2-sided RTT: max num of RTT results = (2^num_burst)*(num_frames_per_burst - 1)
+    unsigned num_frames_per_burst; // num of frames per burst.
+                                   // Minimum value = 1, Maximum value = 31
+                                   // For 2-sided this equals the number of FTM frames
+                                   // to be attempted in a single burst. This also
+                                   // equals the number of FTM frames that the
+                                   // initiator will request that the responder send
+                                   // in a single frame.
+    unsigned num_retries_per_rtt_frame; // number of retries for a failed RTT frame. Applies
+                                        // to 1-sided RTT only. Minimum value = 0, Maximum value = 3
 
-    //following fields are only valid for 2 side RTT
-    unsigned num_retries_per_ftmr;
-    byte LCI_request;                  // request LCI or not
-    byte LCR_request;                  // request LCR or not
-    unsigned burst_timeout;            // unit of 250 us
-    byte preamble;                     // 0- Legacy,1- HT, 2-VHT
-    byte bw;                           //5, 10, 20, 40, 80,160
+    //following fields are only valid for 2-side RTT
+    unsigned num_retries_per_ftmr; // Maximum number of retries that the initiator can
+                                   // retry an FTMR frame.
+                                   // Minimum value = 0, Maximum value = 3
+    byte LCI_request;              // 1: request LCI, 0: do not request LCI
+    byte LCR_request;              // 1: request LCR, 0: do not request LCR
+    unsigned burst_duration;       // Applies to 1-sided and 2-sided RTT. Valid values will
+                                   // be 2-11 and 15 as specified by the 802.11mc std for
+                                   // the FTM parameter burst duration. In a multi-burst
+                                   // request, if responder overrides with larger value,
+                                   // the initiator will return failure. In a single-burst
+                                   // request if responder overrides with larger value,
+                                   // the initiator will sent TMR_STOP to terminate RTT
+                                   // at the end of the burst_duration it requested.
+    wifi_rtt_preamble preamble;    // RTT preamble to be used in the RTT frames
+    wifi_rtt_bw bw;                // RTT BW to be used in the RTT frames
 } wifi_rtt_config;
 
-/* RTT results*/
+/* RTT results */
 typedef struct {
-    mac_addr addr;               // device mac address
-    unsigned burst_num;          // # of burst inside a multi-burst request
-    unsigned measurement_number;  // total RTT measurement Frames
-    unsigned success_number;     // total successful RTT measurement Frames
-    byte  number_per_burst_peer;  //Max number of FTM numbers per burst the other side support,
-    //11mc only
-    wifi_rtt_status status;      // ranging status
-    byte retry_after_duration;      // in s , 11mc only, only for RTT_STATUS_FAIL_BUSY_TRY_LATER, 1-31s
-    wifi_rtt_type type;          // RTT type
-    wifi_rssi rssi;              // average rssi in 0.5 dB steps e.g. 143 implies -71.5 dB
-    wifi_rssi rssi_spread;       // rssi spread in 0.5 dB steps e.g. 5 implies 2.5 dB spread (optional)
-    wifi_rate tx_rate;           // TX rate
-    wifi_rate rx_rate;          // Rx rate
-    wifi_timespan rtt;           // round trip time in 0.1 nanoseconds
-    wifi_timespan rtt_sd;        // rtt standard deviation in 0.1 nanoseconds
-    wifi_timespan rtt_spread;    // difference between max and min rtt times recorded
-    int distance;                // distance in cm (optional)
-    int distance_sd;             // standard deviation in cm (optional)
-    int distance_spread;         // difference between max and min distance recorded (optional)
-    wifi_timestamp ts;           // time of the measurement (in microseconds since boot)
-    int burst_duration;          // in ms, How long the FW time is to finish one burst measurement
+    mac_addr addr;                // device mac address
+    unsigned burst_num;           // burst number in a multi-burst request
+    unsigned measurement_number;  // Total RTT measurement frames attempted
+    unsigned success_number;      // Total successful RTT measurement frames
+    byte  number_per_burst_peer;  // Maximum number of "FTM frames per burst" supported by
+                                  // the responder STA. Applies to 2-sided RTT only.
+                                  // If reponder overrides with larger value:
+                                  // - for single-burst request initiator will truncate the
+                                  // larger value and send a TMR_STOP after receiving as
+                                  // many frames as originally requested.
+                                  // - for multi-burst request, initiator will return
+                                  // failure right away.
+    wifi_rtt_status status;       // ranging status
+    byte retry_after_duration;    // When status == RTT_STATUS_FAIL_BUSY_TRY_LATER,
+                                  // this will be the time provided by the responder as to
+                                  // when the request can be tried again. Applies to 2-sided
+                                  // RTT only. In sec, 1-31sec.
+    wifi_rtt_type type;           // RTT type
+    wifi_rssi rssi;               // average rssi in 0.5 dB steps e.g. 143 implies -71.5 dB
+    wifi_rssi rssi_spread;        // rssi spread in 0.5 dB steps e.g. 5 implies 2.5 dB spread (optional)
+    wifi_rate tx_rate;            // 1-sided RTT: TX rate of RTT frame.
+                                  // 2-sided RTT: TX rate of initiator's Ack in response to FTM frame.
+    wifi_rate rx_rate;            // 1-sided RTT: TX rate of Ack from other side.
+                                  // 2-sided RTT: TX rate of FTM frame coming from responder.
+    wifi_timespan rtt;            // round trip time in 0.1 nanoseconds
+    wifi_timespan rtt_sd;         // rtt standard deviation in 0.1 nanoseconds
+    wifi_timespan rtt_spread;     // difference between max and min rtt times recorded
+    int distance;                 // distance in cm (optional)
+    int distance_sd;              // standard deviation in cm (optional)
+    int distance_spread;          // difference between max and min distance recorded (optional)
+    wifi_timestamp ts;            // time of the measurement (in microseconds since boot)
+    int burst_duration;           // in ms, actual time taken by the FW to finish one burst
+                                  // measurement. Applies to 1-sided and 2-sided RTT.
+    int negotiated_burst_num;  // Number of bursts allowed by the responder. Applies
+                                   // to 2-sided RTT only.
     wifi_information_element *LCI; // for 11mc only
     wifi_information_element *LCR; // for 11mc only
 } wifi_rtt_result;
@@ -99,7 +160,7 @@ wifi_error wifi_rtt_range_cancel(wifi_request_id id,  wifi_interface_handle ifac
 
 /* NBD ranging channel map */
 typedef struct {
-    wifi_channel availablity[32];           // specifies the channel map for each of the 16 TU windows
+    wifi_channel availablity[32]; // specifies the channel map for each of the 16 TU windows
     // frequency of 0 => unspecified; which means firmware is
     // free to do whatever it wants in this window.
 } wifi_channel_map;
@@ -117,25 +178,27 @@ wifi_error wifi_rtt_channel_map_set(wifi_request_id id,
    DW interval and will also stop broadcasting NBD ranging attribute in SDF */
 wifi_error wifi_rtt_channel_map_clear(wifi_request_id id,  wifi_interface_handle iface);
 
+// Preamble definition for bit mask used in wifi_rtt_capabilities
 #define PREAMBLE_LEGACY 0x1
 #define PREAMBLE_HT     0x2
 #define PREAMBLE_VHT    0x4
 
-#define BW_5_SUPPORT     0x1
-#define BW_10_SUPPORT    0x2
-#define BW_20_SUPPORT    0x4
-#define BW_40_SUPPORT    0x8
-#define BW_80_SUPPORT    0x10
-#define BW_160_SUPPORT   0x20
+// BW definition for bit mask used in wifi_rtt_capabilities
+#define BW_5_SUPPORT   0x1
+#define BW_10_SUPPORT  0x2
+#define BW_20_SUPPORT  0x4
+#define BW_40_SUPPORT  0x8
+#define BW_80_SUPPORT  0x10
+#define BW_160_SUPPORT 0x20
 
 /* RTT Capabilities */
 typedef struct {
     byte rtt_one_sided_supported;  // if 1-sided rtt data collection is supported
     byte rtt_ftm_supported;        // if ftm rtt data collection is supported
-    byte lci_support;
-    byte lcr_support;
-    byte preamble_support;         //bit mask indicate what preamble is supported
-    byte bw_support;               //bit mask indicate what BW is supported
+    byte lci_support;              // if initiator supports LCI request. Applies to 2-sided RTT
+    byte lcr_support;              // if initiator supports LCR request. Applies to 2-sided RTT
+    byte preamble_support;         // bit mask indicates what preamble is supported by initiator
+    byte bw_support;               // bit mask indicates what BW is supported by initiator
 } wifi_rtt_capabilities;
 
 /*  RTT capabilities of the device */
