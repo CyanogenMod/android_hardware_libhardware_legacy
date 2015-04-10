@@ -23,6 +23,7 @@ const unsigned MAX_SIGNIFICANT_CHANGE_APS  = 64;
 const unsigned MAX_PNO_SSID                = 64;
 const unsigned MAX_HOTLIST_SSID            = 8;
 const unsigned MAX_BLACKLIST_BSSID         = 16;
+const unsigned MAX_AP_CACHE_PER_SCAN       = 32;
 
 wifi_error wifi_get_valid_channels(wifi_interface_handle handle,
         int band, int max_channels, wifi_channel *channels, int *num_channels);
@@ -120,7 +121,7 @@ typedef struct {
                     // an exponential backoff bucket and the scan period will grow exponentially
                     // as per formula: actual_period(N) = period ^ (N/(step_count+1))
                     // to a maximum period of max_period
-    int exponent; // for exponential back off bucket: multiplier: new_period = old_period * exponent
+    int exponent;   // for exponential back off bucket: multiplier: new_period=old_period*exponent
     int step_count; // for exponential back off bucket, number of scans performed at a given
                     // period and until the exponent is applied
 
@@ -154,10 +155,11 @@ typedef enum {
 
 /* Get the GSCAN cached scan results */
 typedef struct {
-    int scan_id;                        // a unique identifier for the scan unit
-    int flags;                          // a bitmask with additional information about scan
-    int num_results;                    // number of bssids retrieved by the scan
-    wifi_scan_result *results;          // scan results - one for each bssid
+    int scan_id;                                     // a unique identifier for the scan unit
+    int flags;                                       // a bitmask with additional 
+                                                     // information about scan
+    int num_results;                                 // number of bssids retrieved by the scan
+    wifi_scan_result results[MAX_AP_CACHE_PER_SCAN]; // scan results - one for each bssid
 } wifi_cached_scan_results;
 
 wifi_error wifi_get_cached_gscan_results(wifi_interface_handle iface, byte flush,
