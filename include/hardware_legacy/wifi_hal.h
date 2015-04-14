@@ -197,8 +197,7 @@ typedef struct {
             mac_addr[]);
     wifi_error (* wifi_get_rtt_capabilities)(wifi_interface_handle, wifi_rtt_capabilities *);
     wifi_error (* wifi_set_nodfs_flag)(wifi_interface_handle, u32);
-    wifi_error (* wifi_start_logging)(wifi_interface_handle, u32, u32, u32, u32, u8 *,
-            wifi_ring_buffer_data_handler);
+    wifi_error (* wifi_start_logging)(wifi_interface_handle, u32, u32, u32, u32, char *);
     wifi_error (* wifi_set_epno_list)(int, wifi_interface_info *, int, wifi_epno_network *,
             wifi_epno_handler);
     wifi_error (* wifi_set_country_code)(wifi_interface_handle, const char *);
