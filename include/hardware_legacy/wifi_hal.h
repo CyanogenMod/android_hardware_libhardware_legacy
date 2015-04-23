@@ -224,6 +224,16 @@ typedef struct {
     wifi_error (* wifi_set_passpoint_list)(wifi_request_id id, wifi_interface_handle iface,
         int num, wifi_passpoint_network *networks, wifi_passpoint_event_handler handler);
     wifi_error (* wifi_reset_passpoint_list)(wifi_request_id id, wifi_interface_handle iface);
+    wifi_error (*wifi_set_bssid_blacklist)(wifi_request_id id, wifi_interface_handle iface,
+                  wifi_bssid_params params);
+    wifi_error (*wifi_enable_lazy_roam)(wifi_request_id id,
+                wifi_interface_handle iface, int enable);
+    wifi_error (*wifi_set_bssid_preference)(wifi_request_id id, wifi_interface_handle iface,
+                                            int num_bssid, wifi_bssid_preference *prefs);
+    wifi_error (*wifi_set_gscan_roam_params)(wifi_request_id id, wifi_interface_handle iface,
+                                                wifi_roam_params * params);
+    wifi_error (*wifi_set_ssid_white_list)(wifi_request_id id, wifi_interface_handle iface,
+                               int num_networks, wifi_ssid *ssids);
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 
