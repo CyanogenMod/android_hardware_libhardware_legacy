@@ -201,6 +201,21 @@ typedef struct {
     wifi_error (* wifi_set_epno_list)(int, wifi_interface_info *, int, wifi_epno_network *,
             wifi_epno_handler);
     wifi_error (* wifi_set_country_code)(wifi_interface_handle, const char *);
+    wifi_error (* wifi_get_firmware_memory_dump)( wifi_interface_handle iface,
+            wifi_firmware_memory_dump_handler handler);
+    wifi_error (* wifi_set_log_handler)(wifi_request_id id, wifi_interface_handle iface,
+        wifi_ring_buffer_data_handler handler);
+    wifi_error (* wifi_set_alert_handler)(wifi_request_id id, wifi_interface_handle iface,
+        wifi_alert_handler handler);
+    wifi_error (* wifi_get_firmware_version)( wifi_interface_handle iface, char **buffer,
+        int *buffer_size);
+    wifi_error (* wifi_get_ring_buffers_status)(wifi_interface_handle iface,
+        u32 *num_rings, wifi_ring_buffer_status **status);
+    wifi_error (* wifi_get_logger_supported_feature_set)(wifi_interface_handle iface,
+        unsigned int *support);
+    wifi_error (* wifi_get_ring_data)(wifi_interface_handle iface, char *ring_name);
+    wifi_error (* wifi_get_driver_version)(wifi_interface_handle iface, char **buffer,
+    int *buffer_size);
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #ifdef __cplusplus
