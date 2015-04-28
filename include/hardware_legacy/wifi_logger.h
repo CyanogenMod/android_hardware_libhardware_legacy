@@ -118,29 +118,59 @@ typedef struct {
 #define WIFI_EVENT_ROAM_ASSOC_STARTED       36  // firmware sends assoc/reassoc frame in
                                                 // roaming to next candidate
 #define WIFI_EVENT_ROAM_ASSOC_COMPLETE      37  // firmware receive assoc/reassoc confirm from ap
-
+#define WIFI_EVENT_G_SCAN_STOP              38  // firmware sends stop G_SCAN
+#define WIFI_EVENT_G_SCAN_CYCLE_STARTED     39  // firmware indicates G_SCAN scan cycle started
+#define WIFI_EVENT_G_SCAN_CYCLE_COMPLETED   40  // firmware indicates G_SCAN scan cycle completed
+#define WIFI_EVENT_G_SCAN_BUCKET_STARTED    41  // firmware indicates G_SCAN scan start
+                                                // for a particular bucket
+#define WIFI_EVENT_G_SCAN_BUCKET_COMPLETED  42  // firmware indicates G_SCAN scan completed for
+                                                // for a particular bucket
+#define WIFI_EVENT_G_SCAN_RESULTS_AVAILABLE 43  // Event received from firmware about G_SCAN scan
+                                                // results being available
+#define WIFI_EVENT_G_SCAN_CAPABILITIES      44  // Event received from firmware with G_SCAN
+                                                // capabilities
+#define WIFI_EVENT_ROAM_CANDIDATE_FOUND     45  // Event received from firmware when eligible
+                                                // candidate is found
+#define WIFI_EVENT_ROAM_SCAN_CONFIG         46  // Event received from firmware when roam scan
+                                                // configuration gets enabled or disabled
 
 /**
  * Parameters of wifi logger events are TLVs
  * Event parameters tags are defined as:
  */
-#define WIFI_TAG_VENDOR_SPECIFIC  0   // take a byte stream as parameter
-#define WIFI_TAG_BSSID            1   // takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_ADDR             2   // takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_SSID             3   // takes a 32 bytes SSID address as parameter
-#define WIFI_TAG_STATUS           4   // takes an integer as parameter
-#define WIFI_TAG_CHANNEL_SPEC     5   // takes one or more wifi_channel_spec as parameter
-#define WIFI_TAG_WAKE_LOCK_EVENT  6   // takes a wake_lock_event struct as parameter
-#define WIFI_TAG_ADDR1            7   // takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_ADDR2            8   // takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_ADDR3            9   // takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_ADDR4            10  // takes a 6 bytes MAC address as parameter
-#define WIFI_TAG_TSF              11  // take a 64 bits TSF value as parameter
-#define WIFI_TAG_IE               12  // take one or more specific 802.11 IEs parameter,
-                                      // IEs are in turn indicated in TLV format as per 802.11 spec
-#define WIFI_TAG_INTERFACE        13  // take interface name as parameter
-#define WIFI_TAG_REASON_CODE      14  // take a reason code as per 802.11 as parameter
-#define WIFI_TAG_RATE_MBPS        15  // take a wifi rate in 0.5 mbps
+#define WIFI_TAG_VENDOR_SPECIFIC    0   // take a byte stream as parameter
+#define WIFI_TAG_BSSID              1   // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_ADDR               2   // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_SSID               3   // takes a 32 bytes SSID address as parameter
+#define WIFI_TAG_STATUS             4   // takes an integer as parameter
+#define WIFI_TAG_CHANNEL_SPEC       5   // takes one or more wifi_channel_spec as parameter
+#define WIFI_TAG_WAKE_LOCK_EVENT    6   // takes a wake_lock_event struct as parameter
+#define WIFI_TAG_ADDR1              7   // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_ADDR2              8   // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_ADDR3              9   // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_ADDR4              10  // takes a 6 bytes MAC address as parameter
+#define WIFI_TAG_TSF                11  // take a 64 bits TSF value as parameter
+#define WIFI_TAG_IE                 12  // take one or more specific 802.11 IEs parameter,
+                                        // IEs are in turn indicated in TLV format as per 
+                                        // 802.11 spec
+#define WIFI_TAG_INTERFACE          13  // take interface name as parameter
+#define WIFI_TAG_REASON_CODE        14  // take a reason code as per 802.11 as parameter
+#define WIFI_TAG_RATE_MBPS          15  // take a wifi rate in 0.5 mbps
+#define WIFI_TAG_REQUEST_ID         16  // take an integer as parameter
+#define WIFI_TAG_BUCKET_ID          17  // take an integer as parameter
+#define WIFI_TAG_GSCAN_PARAMS       18  // takes a wifi_scan_cmd_params struct as parameter
+#define WIFI_TAG_GSCAN_CAPABILITIES 19  // takes a wifi_gscan_capabilities struct as parameter
+#define WIFI_TAG_SCAN_ID            20  // take an integer as parameter
+#define WIFI_TAG_RSSI               21  // take an integer as parameter
+#define WIFI_TAG_CHANNEL            22  // take an integer as parameter
+#define WIFI_TAG_LINK_ID            23  // take an integer as parameter
+#define WIFI_TAG_LINK_ROLE          24  // take an integer as parameter
+#define WIFI_TAG_LINK_STATE         25  // take an integer as parameter
+#define WIFI_TAG_LINK_TYPE          26  // take an integer as parameter
+#define WIFI_TAG_TSCO               27  // take an integer as parameter
+#define WIFI_TAG_RSCO               28  // take an integer as parameter
+#define WIFI_TAG_EAPOL_MESSAGE_TYPE 29  // take an integer as parameter
+                                        // M1-1, M2-2, M3-3, M4-4
 
 typedef struct {
     u16 tag;
@@ -380,3 +410,4 @@ wifi_error wifi_get_logger_supported_feature_set(wifi_interface_handle iface,
 #endif /* __cplusplus */
 
 #endif /*__WIFI_HAL_STATS_ */
+
