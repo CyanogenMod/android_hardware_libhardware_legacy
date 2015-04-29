@@ -221,6 +221,9 @@ typedef struct {
     wifi_error (* wifi_get_ring_data)(wifi_interface_handle iface, char *ring_name);
     wifi_error (* wifi_get_driver_version)(wifi_interface_handle iface, char **buffer,
     int *buffer_size);
+    wifi_error (* wifi_set_passpoint_list)(wifi_request_id id, wifi_interface_handle iface,
+        int num, wifi_passpoint_network *networks, wifi_passpoint_event_handler handler);
+    wifi_error (* wifi_reset_passpoint_list)(wifi_request_id id, wifi_interface_handle iface);
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 
