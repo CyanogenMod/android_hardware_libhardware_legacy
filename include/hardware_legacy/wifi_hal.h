@@ -212,17 +212,17 @@ typedef struct {
         wifi_ring_buffer_data_handler handler);
     wifi_error (* wifi_set_alert_handler)(wifi_request_id id, wifi_interface_handle iface,
         wifi_alert_handler handler);
-    wifi_error (* wifi_get_firmware_version)( wifi_interface_handle iface, char **buffer,
-        int *buffer_size);
+    wifi_error (* wifi_get_firmware_version)(wifi_interface_handle iface, char *buffer,
+            int buffer_size);
     wifi_error (* wifi_get_ring_buffers_status)(wifi_interface_handle iface,
-        u32 *num_rings, wifi_ring_buffer_status **status);
+            u32 *num_rings, wifi_ring_buffer_status *status);
     wifi_error (* wifi_get_logger_supported_feature_set)(wifi_interface_handle iface,
-        unsigned int *support);
+            unsigned int *support);
     wifi_error (* wifi_get_ring_data)(wifi_interface_handle iface, char *ring_name);
-    wifi_error (* wifi_get_driver_version)(wifi_interface_handle iface, char **buffer,
-    int *buffer_size);
+    wifi_error (* wifi_get_driver_version)(wifi_interface_handle iface, char *buffer,
+            int buffer_size);
     wifi_error (* wifi_set_passpoint_list)(wifi_request_id id, wifi_interface_handle iface,
-        int num, wifi_passpoint_network *networks, wifi_passpoint_event_handler handler);
+            int num, wifi_passpoint_network *networks, wifi_passpoint_event_handler handler);
     wifi_error (* wifi_reset_passpoint_list)(wifi_request_id id, wifi_interface_handle iface);
     wifi_error (*wifi_set_bssid_blacklist)(wifi_request_id id, wifi_interface_handle iface,
                   wifi_bssid_params params);
