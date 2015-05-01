@@ -216,6 +216,12 @@ typedef struct {
     wifi_error (* wifi_get_ring_data)(wifi_interface_handle iface, char *ring_name);
     wifi_error (* wifi_get_driver_version)(wifi_interface_handle iface, char **buffer,
     int *buffer_size);
+    wifi_error (* wifi_enable_tdls)(wifi_interface_handle, mac_addr, wifi_tdls_params *,
+            wifi_tdls_handler);
+    wifi_error (* wifi_disable_tdls)(wifi_interface_handle, mac_addr);
+    wifi_error (*wifi_get_tdls_status) (wifi_interface_handle, mac_addr, wifi_tdls_status *);
+    wifi_error (*wifi_get_tdls_capabilities)(wifi_interface_handle iface,
+            wifi_tdls_capabilities *capabilities);
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #ifdef __cplusplus
