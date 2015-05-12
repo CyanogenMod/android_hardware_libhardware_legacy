@@ -234,5 +234,41 @@ wifi_error wifi_rtt_debug_get(wifi_interface_handle h, rtt_debug_t **debugbuf);
 /* free the debug buffer */
 wifi_error wifi_rtt_debug_free(wifi_interface_handle h, rtt_debug_t *debugbuf);
 
+/* API for setting LCI/LCR information to be provided to a requestor */
+typedef enum {
+    WIFI_MOTION_NOT_EXPECTED = 0, // Not expected to change location
+    WIFI_MOTION_EXPECTED = 1,     // Expected to change location
+    WIFI_MOTION_UNKNOWN  = 2,     // Movement pattern unknown
+} wifi_motion_pattern;
+
+typedef struct {
+    long latitude;              // latitude in degrees * 2^25 , 2's complement
+    long longitude;             // latitude in degrees * 2^25 , 2's complement
+    int  altitude;              // Altitude in units of 1/256 m
+    byte latitude_unc;          // As defined in Section 2.3.2 of IETF RFC 6225
+    byte longitude_unc;         // As defined in Section 2.3.2 of IETF RFC 6225
+    byte altitude_unc;          // As defined in Section 2.4.5 from IETF RFC 6225:
+
+    //Following element for configuring the Z subelement
+    wifi_motion_pattern motion_pattern;
+    int  floor;                 // floor in units of 1/16th of floor. 0x80000000 if unknown.
+    int  height_above_floor;    // in units of 1/64 m
+    int  height_unc;            // in units of 1/64 m. 0 if unknown
+} wifi_lci_information;
+
+typedef struct {
+    char country_code[2];       // country code
+    int  length;                // length of the info field
+    char civic_info[256];       // Civic info to be copied in FTM frame
+} wifi_lcr_information;
+
+// API to configure the LCI. Used in RTT Responder mode only
+wifi_error wifi_set_lci(wifi_request_id id, wifi_interface_handle iface,
+                        wifi_lci_information *lci);
+
+// API to configure the LCR. Used in RTT Responder mode only.
+wifi_error wifi_set_lcr(wifi_request_id id, wifi_interface_handle iface,
+                        wifi_lcr_information *lcr);
+
 #endif
 

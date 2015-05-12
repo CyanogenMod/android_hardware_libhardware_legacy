@@ -234,6 +234,10 @@ typedef struct {
                                                 wifi_roam_params * params);
     wifi_error (*wifi_set_ssid_white_list)(wifi_request_id id, wifi_interface_handle iface,
                                int num_networks, wifi_ssid *ssids);
+    wifi_error (*wifi_set_lci) (wifi_request_id id, wifi_interface_handle iface,
+	                             wifi_lci_information *lci);
+    wifi_error (*wifi_set_lcr) (wifi_request_id id, wifi_interface_handle iface,
+	                             wifi_lcr_information *lcr);
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 
