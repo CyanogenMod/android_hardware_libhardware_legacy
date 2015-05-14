@@ -101,6 +101,10 @@ typedef struct {
     /* Add channel class */
 } wifi_scan_channel_spec;
 
+#define REPORT_EVENTS_BUFFER_FULL      0
+#define REPORT_EVENTS_EACH_SCAN        1
+#define REPORT_EVENTS_FULL_RESULTS     2
+#define REPORT_EVENTS_NO_BATCH         4
 
 typedef struct {
     int bucket;                         // bucket index, 0 based
@@ -110,11 +114,14 @@ typedef struct {
                                         // fast as it can instead of failing the command.
                                         // for exponential backoff bucket this is the min_period
     /* report_events semantics -
-     *  0 => report only when scan history is % full
-     *  1 => same as 0 + report a scan completion event after scanning this bucket
-     *  2 => same as 1 + forward scan results (beacons/probe responses + IEs) in real time to HAL
-     *  3 => same as 2 + forward scan results (beacons/probe responses + IEs) in real time to
-             supplicant as well (optional) .
+     *  This is a bit field; which defines following bits -
+     *  REPORT_EVENTS_BUFFER_FULL  => report only when scan history is % full
+     *  REPORT_EVENTS_EACH_SCAN    => report a scan completion event after scan
+     *  REPORT_EVENTS_FULL_RESULTS => forward scan results (beacons/probe responses + IEs)
+     *                                 in real time to HAL, in addition to completion events
+     *                                 Note: To keep backward compatibility, fire completion
+     *                                 events regardless of REPORT_EVENTS_EACH_SCAN.
+     *  REPORT_EVENTS_NO_BATCH     => controls batching, 0 => batching, 1 => no batching
      */
     byte report_events;
     int max_period; // if max_period is non zero or different than period, then this bucket is
