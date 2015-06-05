@@ -144,6 +144,10 @@ typedef struct {
     // More event handlers
 } wifi_event_handler;
 
+typedef struct {
+        void (*on_rssi_threshold_breached)(wifi_request_id id, u8 *cur_bssid, s8 cur_rssi);
+} wifi_rssi_event_handler;
+
 wifi_error wifi_set_iface_event_handler(wifi_request_id id, wifi_interface_handle iface, wifi_event_handler eh);
 wifi_error wifi_reset_iface_event_handler(wifi_request_id id, wifi_interface_handle iface);
 
@@ -235,6 +239,18 @@ typedef struct {
                                                 wifi_roam_params * params);
     wifi_error (*wifi_set_ssid_white_list)(wifi_request_id id, wifi_interface_handle iface,
                                int num_networks, wifi_ssid *ssids);
+    wifi_error (*wifi_set_lci) (wifi_request_id id, wifi_interface_handle iface,
+	                             wifi_lci_information *lci);
+    wifi_error (*wifi_set_lcr) (wifi_request_id id, wifi_interface_handle iface,
+	                             wifi_lcr_information *lcr);
+    wifi_error (*wifi_start_sending_offloaded_packet)(wifi_request_id id,
+                                wifi_interface_handle iface, u8 *ip_packet, u16 ip_packet_len,
+                                u8 *src_mac_addr, u8 *dst_mac_addr, u32 period_msec);
+    wifi_error (*wifi_stop_sending_offloaded_packet)(wifi_request_id id,
+                                wifi_interface_handle iface);
+    wifi_error (*wifi_start_rssi_monitoring)(wifi_request_id id, wifi_interface_handle
+                        iface, s8 max_rssi, s8 min_rssi, wifi_rssi_event_handler eh);
+    wifi_error (*wifi_stop_rssi_monitoring)(wifi_request_id id, wifi_interface_handle iface);
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #ifdef __cplusplus
