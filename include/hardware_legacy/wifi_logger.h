@@ -294,7 +294,7 @@ typedef struct {
 wifi_error wifi_set_log_handler(wifi_request_id id, wifi_interface_handle iface,
     wifi_ring_buffer_data_handler handler);
 
-/* api to reset the log handler */
+/* API to reset the log handler */
 wifi_error wifi_reset_log_handler(wifi_request_id id, wifi_interface_handle iface);
 
 

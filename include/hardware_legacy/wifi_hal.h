@@ -210,6 +210,7 @@ typedef struct {
             wifi_firmware_memory_dump_handler handler);
     wifi_error (* wifi_set_log_handler)(wifi_request_id id, wifi_interface_handle iface,
         wifi_ring_buffer_data_handler handler);
+    wifi_error (* wifi_reset_log_handler)(wifi_request_id id, wifi_interface_handle iface);
     wifi_error (* wifi_set_alert_handler)(wifi_request_id id, wifi_interface_handle iface,
         wifi_alert_handler handler);
     wifi_error (* wifi_get_firmware_version)(wifi_interface_handle iface, char *buffer,
