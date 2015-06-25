@@ -110,6 +110,7 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 #define WIFI_FEATURE_LOGGER            0x20000      // WiFi Logger
 #define WIFI_FEATURE_HAL_EPNO          0x40000      // WiFi PNO enhanced
 #define WIFI_FEATURE_RSSI_MONITOR      0x80000      // RSSI Monitor
+#define WIFI_FEATURE_MKEEP_ALIVE      0x100000      // WiFi mkeep_alive
 
 // Add more features here
 
@@ -163,6 +164,8 @@ wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
 #include "wifi_logger.h"
 #include "wifi_config.h"
 #include "wifi_nan.h"
+#include "wifi_offload.h"
+
 //wifi HAL function pointer table
 typedef struct {
     wifi_error (* wifi_initialize) (wifi_handle *);
