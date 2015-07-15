@@ -190,6 +190,30 @@ const char *get_dhcp_error_string() {
     return dhcp_lasterror();
 }
 
+#ifdef WIFI_DRIVER_STATE_CTRL_PARAM
+int wifi_change_driver_state(const char *state)
+{
+    int len;
+    int fd;
+    int ret = 0;
+
+    if (!state)
+        return -1;
+    fd = TEMP_FAILURE_RETRY(open(WIFI_DRIVER_STATE_CTRL_PARAM, O_WRONLY));
+    if (fd < 0) {
+        ALOGE("Failed to open driver state control param (%s)", strerror(errno));
+        return -1;
+    }
+    len = strlen(state) + 1;
+    if (TEMP_FAILURE_RETRY(write(fd, state, len)) != len) {
+        ALOGE("Failed to write driver state control param (%s)", strerror(errno));
+        ret = -1;
+    }
+    close(fd);
+    return ret;
+}
+#endif
+
 int is_wifi_driver_loaded() {
     char driver_status[PROPERTY_VALUE_MAX];
 #ifdef WIFI_DRIVER_MODULE_PATH
@@ -263,6 +287,14 @@ int wifi_load_driver()
     wifi_unload_driver();
     return -1;
 #else
+#ifdef WIFI_DRIVER_STATE_CTRL_PARAM
+    if (is_wifi_driver_loaded()) {
+        return 0;
+    }
+
+    if (wifi_change_driver_state(WIFI_DRIVER_STATE_ON) < 0)
+        return -1;
+#endif
     property_set(DRIVER_PROP_NAME, "ok");
     return 0;
 #endif
@@ -287,6 +319,12 @@ int wifi_unload_driver()
     } else
         return -1;
 #else
+#ifdef WIFI_DRIVER_STATE_CTRL_PARAM
+    if (is_wifi_driver_loaded()) {
+        if (wifi_change_driver_state(WIFI_DRIVER_STATE_OFF) < 0)
+            return -1;
+    }
+#endif
     property_set(DRIVER_PROP_NAME, "unloaded");
     return 0;
 #endif
