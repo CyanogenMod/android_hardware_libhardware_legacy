@@ -216,6 +216,7 @@ typedef struct {
     wifi_error (* wifi_reset_log_handler)(wifi_request_id id, wifi_interface_handle iface);
     wifi_error (* wifi_set_alert_handler)(wifi_request_id id, wifi_interface_handle iface,
         wifi_alert_handler handler);
+    wifi_error (* wifi_reset_alert_handler)(wifi_request_id id, wifi_interface_handle iface);
     wifi_error (* wifi_get_firmware_version)(wifi_interface_handle iface, char *buffer,
             int buffer_size);
     wifi_error (* wifi_get_ring_buffers_status)(wifi_interface_handle iface,
