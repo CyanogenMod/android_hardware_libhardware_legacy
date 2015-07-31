@@ -44,7 +44,6 @@ enum {
     ALREADY_EXISTS      = android::ALREADY_EXISTS,
     DEAD_OBJECT         = android::DEAD_OBJECT,
     FAILED_TRANSACTION  = android::FAILED_TRANSACTION,
-    JPARKS_BROKE_IT     = android::JPARKS_BROKE_IT,
     BAD_INDEX           = android::BAD_INDEX,
     NOT_ENOUGH_DATA     = android::NOT_ENOUGH_DATA,
     WOULD_BLOCK         = android::WOULD_BLOCK,
