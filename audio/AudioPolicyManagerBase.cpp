@@ -36,6 +36,7 @@
 
 #include <cutils/properties.h>
 #include <utils/Log.h>
+#include <utils/Timers.h>
 
 #include <hardware/audio.h>
 #include <hardware/audio_effect.h>

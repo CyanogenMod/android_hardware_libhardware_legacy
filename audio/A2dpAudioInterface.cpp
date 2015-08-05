@@ -20,6 +20,7 @@
 #define LOG_TAG "A2dpAudioInterface"
 #include <utils/Log.h>
 #include <utils/String8.h>
+#include <utils/Timers.h>
 
 #include "A2dpAudioInterface.h"
 #include "audio/liba2dp.h"

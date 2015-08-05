@@ -19,8 +19,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <sys/time.h>
-#include <time.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -50,14 +48,6 @@ const char * const NEW_PATHS[] = {
 static int g_initialized = 0;
 static int g_fds[OUR_FD_COUNT];
 static int g_error = 1;
-
-static int64_t systemTime()
-{
-    struct timespec t;
-    t.tv_sec = t.tv_nsec = 0;
-    clock_gettime(CLOCK_MONOTONIC, &t);
-    return t.tv_sec*1000000000LL + t.tv_nsec;
-}
 
 static int
 open_file_descriptors(const char * const paths[])
