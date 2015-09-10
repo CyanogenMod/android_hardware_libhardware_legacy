@@ -25,6 +25,7 @@
 #include <poll.h>
 #include <sys/syscall.h>
 #include "hardware_legacy/wifi.h"
+#include "wifi_fst.h"
 #ifdef LIBWPA_CLIENT_EXISTS
 #include "libwpa_client/wpa_ctrl.h"
 #endif
@@ -132,7 +133,7 @@ static char supplicant_name[PROPERTY_VALUE_MAX];
 /* Is either SUPP_PROP_NAME or P2P_PROP_NAME */
 static char supplicant_prop_name[PROPERTY_KEY_MAX];
 
-static int insmod(const char *filename, const char *args)
+int insmod(const char *filename, const char *args)
 {
      /* O_NOFOLLOW is removed as wlan.ko is symlink pointing to
         the vendor specfic file which is in readonly location */
@@ -149,7 +150,7 @@ static int insmod(const char *filename, const char *args)
      return rc;
 }
 
-static int rmmod(const char *modname)
+int rmmod(const char *modname)
 {
     int ret = -1;
     int maxtry = 10;
@@ -240,7 +241,7 @@ int is_wifi_driver_loaded() {
     while ((fgets(line, sizeof(line), proc)) != NULL) {
         if (strncmp(line, DRIVER_MODULE_TAG, strlen(DRIVER_MODULE_TAG)) == 0) {
             fclose(proc);
-            return 1;
+            return is_fst_driver_loaded();
         }
     }
     fclose(proc);
@@ -275,7 +276,7 @@ int wifi_load_driver()
     while (count-- > 0) {
         if (property_get(DRIVER_PROP_NAME, driver_status, NULL)) {
             if (strcmp(driver_status, "ok") == 0)
-                return 0;
+                return wifi_fst_load_driver();
             else if (strcmp(driver_status, "failed") == 0) {
                 wifi_unload_driver();
                 return -1;
@@ -303,6 +304,9 @@ int wifi_load_driver()
 int wifi_unload_driver()
 {
     usleep(200000); /* allow to finish interface down */
+
+    wifi_fst_unload_driver();
+
 #ifdef WIFI_DRIVER_MODULE_PATH
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
         int count = 20; /* wait at most 10 seconds for completion */
@@ -374,7 +378,7 @@ int ensure_entropy_file_exists()
     return 0;
 }
 
-int ensure_config_file_exists(const char *config_file)
+int ensure_config_file_exists(const char *config_file, const char *config_file_template)
 {
     char buf[2048];
     int srcfd, destfd;
@@ -395,9 +399,9 @@ int ensure_config_file_exists(const char *config_file)
         return -1;
     }
 
-    srcfd = TEMP_FAILURE_RETRY(open(SUPP_CONFIG_TEMPLATE, O_RDONLY));
+    srcfd = TEMP_FAILURE_RETRY(open(config_file_template, O_RDONLY));
     if (srcfd < 0) {
-        ALOGE("Cannot open \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
+        ALOGE("Cannot open \"%s\": %s", config_file_template, strerror(errno));
         return -1;
     }
 
@@ -410,7 +414,7 @@ int ensure_config_file_exists(const char *config_file)
 
     while ((nread = TEMP_FAILURE_RETRY(read(srcfd, buf, sizeof(buf)))) != 0) {
         if (nread < 0) {
-            ALOGE("Error reading \"%s\": %s", SUPP_CONFIG_TEMPLATE, strerror(errno));
+            ALOGE("Error reading \"%s\": %s", config_file_template, strerror(errno));
             close(srcfd);
             close(destfd);
             unlink(config_file);
@@ -446,12 +450,16 @@ int wifi_start_supplicant(int p2p_supported)
     const prop_info *pi;
     unsigned serial = 0, i;
 
+    if (wifi_start_fstman(0)) {
+        return -1;
+    }
+
     if (p2p_supported) {
         strcpy(supplicant_name, P2P_SUPPLICANT_NAME);
         strcpy(supplicant_prop_name, P2P_PROP_NAME);
 
         /* Ensure p2p config file is created */
-        if (ensure_config_file_exists(P2P_CONFIG_FILE) < 0) {
+        if (ensure_config_file_exists(P2P_CONFIG_FILE, SUPP_CONFIG_TEMPLATE) < 0) {
             ALOGE("Failed to create a p2p config file");
             return -1;
         }
@@ -468,7 +476,7 @@ int wifi_start_supplicant(int p2p_supported)
     }
 
     /* Before starting the daemon, make sure its config file exists */
-    if (ensure_config_file_exists(SUPP_CONFIG_FILE) < 0) {
+    if (ensure_config_file_exists(SUPP_CONFIG_FILE, SUPP_CONFIG_TEMPLATE) < 0) {
         ALOGE("Wi-Fi will not be enabled");
         return -1;
     }
@@ -537,6 +545,7 @@ int wifi_stop_supplicant(int p2p_supported)
     /* Check whether supplicant already stopped */
     if (property_get(supplicant_prop_name, supp_status, NULL)
         && strcmp(supp_status, "stopped") == 0) {
+        wifi_stop_fstman(0);
         return 0;
     }
 
@@ -545,12 +554,15 @@ int wifi_stop_supplicant(int p2p_supported)
 
     while (count-- > 0) {
         if (property_get(supplicant_prop_name, supp_status, NULL)) {
-            if (strcmp(supp_status, "stopped") == 0)
+            if (strcmp(supp_status, "stopped") == 0) {
+                wifi_stop_fstman(0);
                 return 0;
+            }
         }
         usleep(100000);
     }
     ALOGE("Failed to stop supplicant");
+    wifi_stop_fstman(0);
     return -1;
 }
 
