@@ -25,6 +25,7 @@
 #include <poll.h>
 
 #include "hardware_legacy/wifi.h"
+#include "hardware_legacy/wifi_fst.h"
 #ifdef LIBWPA_CLIENT_EXISTS
 #include "libwpa_client/wpa_ctrl.h"
 #endif
@@ -132,7 +133,7 @@ static char supplicant_name[PROPERTY_VALUE_MAX];
 /* Is either SUPP_PROP_NAME or P2P_PROP_NAME */
 static char supplicant_prop_name[PROPERTY_KEY_MAX];
 
-static int insmod(const char *filename, const char *args)
+int insmod(const char *filename, const char *args)
 {
     void *module;
     unsigned int size;
@@ -149,7 +150,7 @@ static int insmod(const char *filename, const char *args)
     return ret;
 }
 
-static int rmmod(const char *modname)
+int rmmod(const char *modname)
 {
     int ret = -1;
     int maxtry = 10;
@@ -240,7 +241,7 @@ int is_wifi_driver_loaded() {
     while ((fgets(line, sizeof(line), proc)) != NULL) {
         if (strncmp(line, DRIVER_MODULE_TAG, strlen(DRIVER_MODULE_TAG)) == 0) {
             fclose(proc);
-            return 1;
+            return is_fst_driver_loaded();
         }
     }
     fclose(proc);
@@ -275,7 +276,7 @@ int wifi_load_driver()
     while (count-- > 0) {
         if (property_get(DRIVER_PROP_NAME, driver_status, NULL)) {
             if (strcmp(driver_status, "ok") == 0)
-                return 0;
+                return wifi_fst_load_driver();
             else if (strcmp(driver_status, "failed") == 0) {
                 wifi_unload_driver();
                 return -1;
@@ -303,6 +304,9 @@ int wifi_load_driver()
 int wifi_unload_driver()
 {
     usleep(200000); /* allow to finish interface down */
+
+    wifi_fst_unload_driver();
+
 #ifdef WIFI_DRIVER_MODULE_PATH
     if (rmmod(DRIVER_MODULE_NAME) == 0) {
         int count = 20; /* wait at most 10 seconds for completion */
@@ -446,6 +450,10 @@ int wifi_start_supplicant(int p2p_supported)
     const prop_info *pi;
     unsigned serial = 0, i;
 
+    if (wifi_start_fstman(0)) {
+        return -1;
+    }
+
     if (p2p_supported) {
         strcpy(supplicant_name, P2P_SUPPLICANT_NAME);
         strcpy(supplicant_prop_name, P2P_PROP_NAME);
@@ -537,6 +545,7 @@ int wifi_stop_supplicant(int p2p_supported)
     /* Check whether supplicant already stopped */
     if (property_get(supplicant_prop_name, supp_status, NULL)
         && strcmp(supp_status, "stopped") == 0) {
+        wifi_stop_fstman(0);
         return 0;
     }
 
@@ -546,11 +555,13 @@ int wifi_stop_supplicant(int p2p_supported)
     while (count-- > 0) {
         if (property_get(supplicant_prop_name, supp_status, NULL)) {
             if (strcmp(supp_status, "stopped") == 0)
+                wifi_stop_fstman(0);
                 return 0;
         }
         usleep(100000);
     }
     ALOGE("Failed to stop supplicant");
+    wifi_stop_fstman(0);
     return -1;
 }
 
