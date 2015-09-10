@@ -150,6 +150,11 @@ int wifi_change_fw_path(const char *fwpath);
 #define WIFI_ENTROPY_FILE	"/data/misc/wifi/entropy.bin"
 int ensure_entropy_file_exists();
 
+/**
+* Check and create if necessary the desired configuration file
+*/
+int ensure_config_file_exists(const char *config_file, const char *config_file_template);
+
 #if __cplusplus
 };  // extern "C"
 #endif
