@@ -11,7 +11,8 @@ include $(CLEAR_VARS)
 
 LOCAL_SHARED_LIBRARIES := libcutils liblog
 
-LOCAL_INCLUDES += $(LOCAL_PATH)
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 LOCAL_CFLAGS  += -DQEMU_HARDWARE
 QEMU_HARDWARE := true
@@ -30,6 +31,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE:= libpower
 
 LOCAL_SRC_FILES += power/power.c
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 include $(BUILD_STATIC_LIBRARY)
 
@@ -39,6 +42,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := libpower
 
 LOCAL_SRC_FILES := power/power.c
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 LOCAL_SHARED_LIBRARIES := libcutils
 
