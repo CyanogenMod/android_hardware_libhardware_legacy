@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2016 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -298,6 +298,45 @@ typedef struct {
     wifi_error (*wifi_stop_rssi_monitoring)(wifi_request_id id, wifi_interface_handle iface);
     wifi_error (*wifi_get_wake_reason_stats)(wifi_interface_handle iface,
                                 WLAN_DRIVER_WAKE_REASON_CNT *wifi_wake_reason_cnt);
+
+    /* NAN functions */
+    wifi_error (*wifi_nan_enable_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanEnableRequest* msg);
+    wifi_error (*wifi_nan_disable_request)(transaction_id id,
+        wifi_interface_handle iface);
+    wifi_error (*wifi_nan_publish_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanPublishRequest* msg);
+    wifi_error (*wifi_nan_publish_cancel_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanPublishCancelRequest* msg);
+    wifi_error (*wifi_nan_subscribe_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanSubscribeRequest* msg);
+    wifi_error (*wifi_nan_subscribe_cancel_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanSubscribeCancelRequest* msg);
+    wifi_error (*wifi_nan_transmit_followup_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanTransmitFollowupRequest* msg);
+    wifi_error (*wifi_nan_stats_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanStatsRequest* msg);
+    wifi_error (*wifi_nan_config_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanConfigRequest* msg);
+    wifi_error (*wifi_nan_tca_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanTCARequest* msg);
+    wifi_error (*wifi_nan_beacon_sdf_payload_request)(transaction_id id,
+        wifi_interface_handle iface,
+        NanBeaconSdfPayloadRequest* msg);
+    wifi_error (*wifi_nan_register_handler)(wifi_interface_handle iface,
+        NanCallbackHandler handlers);
+    wifi_error (*wifi_nan_get_version)(wifi_handle handle,
+        NanVersion* version);
+
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #ifdef __cplusplus
