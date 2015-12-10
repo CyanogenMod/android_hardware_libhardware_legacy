@@ -47,7 +47,7 @@ const char * const NEW_PATHS[] = {
 //XXX static pthread_once_t g_initialized = THREAD_ONCE_INIT;
 static int g_initialized = 0;
 static int g_fds[OUR_FD_COUNT];
-static int g_error = 1;
+static int g_error = -1;
 
 static int
 open_file_descriptors(const char * const paths[])
@@ -56,8 +56,9 @@ open_file_descriptors(const char * const paths[])
     for (i=0; i<OUR_FD_COUNT; i++) {
         int fd = open(paths[i], O_RDWR | O_CLOEXEC);
         if (fd < 0) {
-            fprintf(stderr, "fatal error opening \"%s\"\n", paths[i]);
-            g_error = errno;
+            g_error = -errno;
+            fprintf(stderr, "fatal error opening \"%s\": %s\n", paths[i],
+                strerror(errno));
             return -1;
         }
         g_fds[i] = fd;
@@ -90,15 +91,21 @@ acquire_wake_lock(int lock, const char* id)
     if (g_error) return g_error;
 
     int fd;
+    size_t len;
+    ssize_t ret;
 
-    if (lock == PARTIAL_WAKE_LOCK) {
-        fd = g_fds[ACQUIRE_PARTIAL_WAKE_LOCK];
-    }
-    else {
-        return EINVAL;
+    if (lock != PARTIAL_WAKE_LOCK) {
+        return -EINVAL;
     }
 
-    return write(fd, id, strlen(id));
+    fd = g_fds[ACQUIRE_PARTIAL_WAKE_LOCK];
+
+    ret = write(fd, id, strlen(id));
+    if (ret < 0) {
+        return -errno;
+    }
+
+    return ret;
 }
 
 int
@@ -111,5 +118,8 @@ release_wake_lock(const char* id)
     if (g_error) return g_error;
 
     ssize_t len = write(g_fds[RELEASE_WAKE_LOCK], id, strlen(id));
-    return len >= 0;
+    if (len < 0) {
+        return -errno;
+    }
+    return len;
 }
