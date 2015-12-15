@@ -155,6 +155,45 @@ wifi_error wifi_reset_iface_event_handler(wifi_request_id id, wifi_interface_han
 
 wifi_error wifi_set_nodfs_flag(wifi_interface_handle handle, u32 nodfs);
 
+typedef struct rx_data_cnt_details_t {
+    int rx_unicast_cnt;     /*Total rx unicast packet which woke up host */
+    int rx_multicast_cnt;   /*Total rx multicast packet which woke up host */
+    int rx_broadcast_cnt;   /*Total rx broadcast packet which woke up host */
+} RX_DATA_WAKE_CNT_DETAILS;
+
+typedef struct rx_wake_pkt_type_classification_t {
+    int icmp_pkt;   /*wake icmp packet count */
+    int icmp6_pkt;  /*wake icmp6 packet count */
+    int icmp6_ra;   /*wake icmp6 RA packet count */
+    int icmp6_na;   /*wake icmp6 NA packet count */
+    int icmp6_ns;   /*wake icmp6 NS packet count */
+    //ToDo: Any more interesting classification to add?
+} RX_WAKE_PKT_TYPE_CLASSFICATION;
+
+typedef struct rx_multicast_cnt_t{
+    int ipv4_rx_multicast_addr_cnt; /*Rx wake packet was ipv4 multicast */
+    int ipv6_rx_multicast_addr_cnt; /*Rx wake packet was ipv6 multicast */
+    int other_rx_multicast_addr_cnt;/*Rx wake packet was non-ipv4 and non-ipv6*/
+} RX_MULTICAST_WAKE_DATA_CNT;
+
+
+typedef struct wlan_driver_wake_reason_cnt_t {
+    int total_cmd_event_wake;   /* Total cmd event wake */
+    int *cmd_event_wake_cnt;    /* Individual wake count, each index a reason */
+    int cmd_event_wake_cnt_sz;  /* How may reasons for wake - driver specific */
+
+    int total_driver_fw_local_wake; /* Total count of driver fw wake, for local reasons */
+    int *driver_fw_local_wake_cnt;  /* Individual wake count, local to driver/fw */
+    int driver_fw_local_wake_cnt_sz;    /* How many local driver/fw wake - driver specific */
+
+    int total_rx_data_wake;     /* total data rx packets, that woke up host */
+    RX_DATA_WAKE_CNT_DETAILS rx_wake_details;
+    RX_WAKE_PKT_TYPE_CLASSFICATION rx_wake_pkt_classification_info;
+    RX_MULTICAST_WAKE_DATA_CNT rx_multicast_wake_pkt_info;
+} WLAN_DRIVER_WAKE_REASON_CNT;
+
+
+
 /* include various feature headers */
 
 #include "gscan.h"
@@ -257,6 +296,8 @@ typedef struct {
     wifi_error (*wifi_start_rssi_monitoring)(wifi_request_id id, wifi_interface_handle
                         iface, s8 max_rssi, s8 min_rssi, wifi_rssi_event_handler eh);
     wifi_error (*wifi_stop_rssi_monitoring)(wifi_request_id id, wifi_interface_handle iface);
+    wifi_error (*wifi_get_wake_reason_stats)(wifi_interface_handle iface,
+                                WLAN_DRIVER_WAKE_REASON_CNT *wifi_wake_reason_cnt);
 
     /* NAN functions */
     wifi_error (*wifi_nan_enable_request)(transaction_id id,
@@ -295,7 +336,6 @@ typedef struct {
         NanCallbackHandler handlers);
     wifi_error (*wifi_nan_get_version)(wifi_handle handle,
         NanVersion* version);
-
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #ifdef __cplusplus
