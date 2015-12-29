@@ -338,6 +338,22 @@ typedef struct {
     wifi_error (*wifi_nan_get_version)(wifi_handle handle,
         NanVersion* version);
 
+    /**
+     * Returns the chipset's hardware filtering capabilities:
+     * @param version pointer to version of the packet filter interpreter
+     *                supported, filled in upon return. 0 indicates no support.
+     * @param max_len pointer to maximum size of the filter bytecode, filled in
+     *                upon return.
+     */
+    wifi_error (*wifi_get_packet_filter_capabilities)(wifi_interface_handle handle,
+                                                      u32 *version, u32 *max_len);
+    /**
+     * Programs the packet filter.
+     * @param program pointer to the program byte-code.
+     * @param len length of the program byte-code.
+     */
+    wifi_error (*wifi_set_packet_filter)(wifi_interface_handle handle,
+                                         const u8 *program, u32 len);
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #ifdef __cplusplus
