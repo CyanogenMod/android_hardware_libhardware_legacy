@@ -126,11 +126,11 @@ typedef struct {
     byte report_events;
     int max_period; // if max_period is non zero or different than period, then this bucket is
                     // an exponential backoff bucket and the scan period will grow exponentially
-                    // as per formula: actual_period(N) = period ^ (N/(step_count+1))
+                    // as per formula: actual_period(N) = period * (base ^ (N/step_count))
                     // to a maximum period of max_period
-    int exponent;   // for exponential back off bucket: multiplier: new_period=old_period*exponent
-    int step_count; // for exponential back off bucket, number of scans performed at a given
-                    // period and until the exponent is applied
+    int base;       // for exponential back off bucket: multiplier: new_period=old_period*base
+    int step_count; // for exponential back off bucket, number of scans to perform for a given
+                    // period
 
     int num_channels;
     // channels to scan; these may include DFS channels
@@ -140,9 +140,11 @@ typedef struct {
 
 typedef struct {
     int base_period;                    // base timer period in ms
-    int max_ap_per_scan;                // number of APs to store in each scan ientryn the
-                                        // BSSID/RSSI history buffer (keep the highest RSSI APs)
-    int report_threshold_percent;       // in %, when scan buffer is this much full, wake up AP
+    int max_ap_per_scan;                // number of access points to store in each scan entry in
+                                        // the BSSID/RSSI history buffer (keep the highest RSSI
+                                        // access points)
+    int report_threshold_percent;       // in %, when scan buffer is this much full, wake up apps
+                                        // processor
     int report_threshold_num_scans;     // in number of scans, wake up AP after these many scans
     int num_buckets;
     wifi_scan_bucket_spec buckets[MAX_BUCKETS];
