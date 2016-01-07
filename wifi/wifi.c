@@ -873,9 +873,10 @@ int wifi_stop_supplicant(int p2p_supported)
 
     while (count-- > 0) {
         if (property_get(supplicant_prop_name, supp_status, NULL)) {
-            if (strcmp(supp_status, "stopped") == 0)
+            if (strcmp(supp_status, "stopped") == 0) {
                 wifi_stop_fstman(0);
                 return 0;
+            }
         }
         usleep(100000);
     }
