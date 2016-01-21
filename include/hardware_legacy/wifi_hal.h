@@ -337,6 +337,8 @@ typedef struct {
         NanCallbackHandler handlers);
     wifi_error (*wifi_nan_get_version)(wifi_handle handle,
         NanVersion* version);
+    wifi_error (*wifi_nan_get_capabilities)(transaction_id id,
+        wifi_interface_handle iface);
 
 } wifi_hal_fn;
 wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);

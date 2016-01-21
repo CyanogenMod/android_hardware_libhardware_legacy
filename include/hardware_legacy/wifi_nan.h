@@ -71,6 +71,7 @@ typedef enum {
     NAN_RESPONSE_TCA                    = 9,
     NAN_RESPONSE_ERROR                  = 10,
     NAN_RESPONSE_BEACON_SDF_PAYLOAD     = 11,
+    NAN_GET_CAPABILITIES                = 12
 } NanResponseType;
 
 /* NAN Publish Types */
@@ -139,7 +140,6 @@ typedef enum {
     NAN_STATUS_NO_OTA_ACK = 23,
     NAN_STATUS_TX_FAIL = 24,
     /* 25-4095 Reserved */
-
     /* NAN Configuration Response codes */
     NAN_STATUS_INVALID_RSSI_CLOSE_VALUE = 4096,
     NAN_STATUS_INVALID_RSSI_MIDDLE_VALUE = 4097,
@@ -228,6 +228,22 @@ typedef enum {
     NAN_SSI_NOT_REQUIRED_IN_MATCH_IND = 0,
     NAN_SSI_REQUIRED_IN_MATCH_IND
 } NanSsiInMatchInd;
+
+/* Nan/NDP Capabilites info */
+typedef struct {
+    u32 max_concurrent_nan_clusters;
+    u32 max_publishes;
+    u32 max_subscribes;
+    u32 max_service_name_len;
+    u32 max_match_filter_len;
+    u32 max_total_match_filter_len;
+    u32 max_service_specific_info_len;
+    u32 max_vsa_data_len;
+    u32 max_mesh_data_len;
+    u32 max_ndi_interfaces;
+    u32 max_ndp_sessions;
+    u32 max_app_info_len;
+} NanCapabilities;
 
 /*
   Host can send Vendor specific attributes which the Discovery Engine can
@@ -578,6 +594,11 @@ typedef struct {
 typedef struct {
     /* Mandatory parameters below */
     u8 master_pref;
+    /*
+      A cluster_low value matching cluster_high indicates a request to join
+      a cluster with that value. If the requested cluster is not found the
+      device will start its own cluster.
+    */
     u16 cluster_low;
     u16 cluster_high;
 
@@ -677,7 +698,7 @@ typedef struct {
     u8 rssi_close_proximity_5g_val;
     /*
        1 byte quantity which defines the window size over
-       which the ï¿½average RSSIï¿½ will be calculated over.
+       which the “average RSSI” will be calculated over.
     */
     u8 config_rssi_window_size;
     u8 rssi_window_size_val;
@@ -699,7 +720,7 @@ typedef struct {
     */
     u8 config_cluster_attribute_val;
     /*
-       The periodicity in seconds between full scanï¿½s to find any new
+       The periodicity in seconds between full scan’s to find any new
        clusters available in the area.  A Full scan should not be done
        more than every 10 seconds and should not be done less than every
        30 seconds.
@@ -719,6 +740,13 @@ typedef struct {
     */
     u8 config_hop_count_force;
     u8 hop_count_force_val;
+
+    /* channel frequency in MHz to enable Nan on */
+    u8 config_24g_channel;
+    wifi_channel channel_24g_val;
+
+    u8 config_5g_channel;
+    wifi_channel channel_5g_val;
 } NanEnableRequest;
 
 /*
@@ -769,9 +797,9 @@ typedef struct {
     /*
        flag which specifies that the Publish should use the configured RSSI
        threshold and the received RSSI in order to filter requests
-       0 ï¿½ ignore the configured RSSI threshold when running a Service
+       0 – ignore the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
-       1 ï¿½ use the configured RSSI threshold when running a Service
+       1 – use the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
 
     */
@@ -790,6 +818,13 @@ typedef struct {
        a PublishTerminatedIndication message.
     */
     u8 connmap;
+    /*
+      Set/Enable corresponding bits to disable any indications that follow a publish.
+      BIT0 - Disable publish termination indication.
+      BIT1 - Disable match expired indication.
+      BIT2 - Disable followUp indication received (OTA).
+    */
+    u8 recv_indication_cfg;
 } NanPublishRequest;
 
 /*
@@ -868,9 +903,9 @@ typedef struct {
     /*
        Flag which specifies that the Subscribe should use the configured RSSI
        threshold and the received RSSI in order to filter requests
-       0 ï¿½ ignore the configured RSSI threshold when running a Service
+       0 – ignore the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
-       1 ï¿½ use the configured RSSI threshold when running a Service
+       1 – use the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
 
     */
@@ -895,6 +930,13 @@ typedef struct {
     */
     u8 num_intf_addr_present;
     u8 intf_addr[NAN_MAX_SUBSCRIBE_MAX_ADDRESS][NAN_MAC_ADDR_LEN];
+    /*
+      Set/Enable corresponding bits to disable indications that follow a subscribe.
+      BIT0 - Disable subscribe termination indication.
+      BIT1 - Disable match expired indication.
+      BIT2 - Disable followUp indication received (OTA).
+    */
+    u8 recv_indication_cfg;
 } NanSubscribeRequest;
 
 /*
@@ -929,6 +971,11 @@ typedef struct {
     */
     u16 service_specific_info_len;
     u8 service_specific_info[NAN_MAX_SERVICE_SPECIFIC_INFO_LEN];
+    /*
+      Set/Enable corresponding bits to disable responses after followUp.
+      BIT0 - Disable followUp response from FW.
+    */
+    u8 recv_indication_cfg;
 } NanTransmitFollowupRequest;
 
 /*
@@ -969,7 +1016,7 @@ typedef struct {
     */
     /*
        2 byte quantity which defines the window size over
-       which the ï¿½average RSSIï¿½ will be calculated over.
+       which the “average RSSI” will be calculated over.
     */
     u8 config_rssi_window_size;
     u16 rssi_window_size_val;
@@ -980,7 +1027,7 @@ typedef struct {
     */
     u8 config_cluster_attribute_val;
     /*
-      The periodicity in seconds between full scanï¿½s to find any new
+      The periodicity in seconds between full scan’s to find any new
       clusters available in the area.  A Full scan should not be done
       more than every 10 seconds and should not be done less than every
       30 seconds.
@@ -1259,12 +1306,13 @@ typedef struct {
 */
 typedef struct {
     NanStatusType status; /* contains the result code */
-    u16 value; /* For error returns the value is returned which was in error */
+    u32 value; /* For error returns the value is returned which was in error */
     NanResponseType response_type; /* NanResponseType Definitions */
     union {
         NanPublishResponse publish_response;
         NanSubscribeResponse subscribe_response;
         NanStatsResponse stats_response;
+        NanCapabilities nan_capabilities;
     } body;
 } NanResponseMsg;
 
@@ -1358,8 +1406,8 @@ typedef struct {
 } NanMatchInd;
 
 /*
-  UnMatch Indication
-  The UnmatchInd message is sent whenever the Discovery Engine detects that
+  MatchExpired Indication
+  The MatchExpiredInd message is sent whenever the Discovery Engine detects that
   a previously Matched Service has been gone for too long. If the previous
   MatchInd message for this Publish/Subscribe Id had the out_of_resource_flag
   set then this message will not be received
@@ -1372,7 +1420,7 @@ typedef struct {
        MatchInd/FollowupInd to the application.
     */
     u32 requestor_instance_id;
-} NanUnmatchInd;
+} NanMatchExpiredInd;
 
 /*
   Subscribe Terminated
@@ -1521,7 +1569,7 @@ typedef struct {
     /* Callbacks for various Events */
     void (*EventPublishTerminated)(NanPublishTerminatedInd* event);
     void (*EventMatch) (NanMatchInd* event);
-    void (*EventUnMatch) (NanUnmatchInd* event);
+    void (*EventMatchExpired) (NanMatchExpiredInd* event);
     void (*EventSubscribeTerminated) (NanSubscribeTerminatedInd* event);
     void (*EventFollowup) (NanFollowupInd* event);
     void (*EventDiscEngEvent) (NanDiscEngEventInd* event);
@@ -1530,52 +1578,51 @@ typedef struct {
     void (*EventBeaconSdfPayload) (NanBeaconSdfPayloadInd* event);
 } NanCallbackHandler;
 
-
-/*  Enable NAN functionality.*/
+/*  Enable NAN functionality. */
 wifi_error nan_enable_request(transaction_id id,
                               wifi_interface_handle iface,
                               NanEnableRequest* msg);
 
-/*  Disable NAN functionality.*/
+/*  Disable NAN functionality. */
 wifi_error nan_disable_request(transaction_id id,
                                wifi_interface_handle iface);
 
-/*  Publish request to advertize a service.*/
+/*  Publish request to advertize a service. */
 wifi_error nan_publish_request(transaction_id id,
                                wifi_interface_handle iface,
                                NanPublishRequest* msg);
 
-/*  Cancel previous publish requests.*/
+/*  Cancel previous publish requests. */
 wifi_error nan_publish_cancel_request(transaction_id id,
                                       wifi_interface_handle iface,
                                       NanPublishCancelRequest* msg);
 
-/*  Subscribe request to search for a service.*/
+/*  Subscribe request to search for a service. */
 wifi_error nan_subscribe_request(transaction_id id,
                                  wifi_interface_handle iface,
                                  NanSubscribeRequest* msg);
 
-/*  Cancel previous subscribe requests.*/
+/*  Cancel previous subscribe requests. */
 wifi_error nan_subscribe_cancel_request(transaction_id id,
                                         wifi_interface_handle iface,
                                         NanSubscribeCancelRequest* msg);
 
-/*  NAN transmit follow up request.*/
+/*  NAN transmit follow up request. */
 wifi_error nan_transmit_followup_request(transaction_id id,
                                          wifi_interface_handle iface,
                                          NanTransmitFollowupRequest* msg);
 
-/*  Request NAN statistics from Discovery Engine.*/
+/*  Request NAN statistics from Discovery Engine. */
 wifi_error nan_stats_request(transaction_id id,
                              wifi_interface_handle iface,
                              NanStatsRequest* msg);
 
-/*  NAN configuration request.*/
+/* NAN configuration request. */
 wifi_error nan_config_request(transaction_id id,
                               wifi_interface_handle iface,
                               NanConfigRequest* msg);
 
-/*  Configure the various Threshold crossing alerts */
+/* Configure the various Threshold crossing alerts. */
 wifi_error nan_tca_request(transaction_id id,
                            wifi_interface_handle iface,
                            NanTCARequest* msg);
@@ -1590,13 +1637,17 @@ wifi_error nan_beacon_sdf_payload_request(transaction_id id,
                                          wifi_interface_handle iface,
                                          NanBeaconSdfPayloadRequest* msg);
 
+/* Register NAN callbacks. */
 wifi_error nan_register_handler(wifi_interface_handle iface,
                                 NanCallbackHandler handlers);
 
-/*  Get NAN HAL version*/
+/*  Get NAN HAL version. */
 wifi_error nan_get_version(wifi_handle handle,
                            NanVersion* version);
 
+/*  Get NAN capabilities. */
+wifi_error nan_get_capabilities(transaction_id id,
+                                wifi_interface_handle iface);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
