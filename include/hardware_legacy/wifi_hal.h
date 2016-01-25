@@ -245,8 +245,9 @@ typedef struct {
     wifi_error (* wifi_get_rtt_capabilities)(wifi_interface_handle, wifi_rtt_capabilities *);
     wifi_error (* wifi_set_nodfs_flag)(wifi_interface_handle, u32);
     wifi_error (* wifi_start_logging)(wifi_interface_handle, u32, u32, u32, u32, char *);
-    wifi_error (* wifi_set_epno_list)(int, wifi_interface_info *, int, wifi_epno_network *,
-            wifi_epno_handler);
+    wifi_error (* wifi_set_epno_list)(wifi_request_id, wifi_interface_handle,
+            const wifi_epno_params *, wifi_epno_handler);
+    wifi_error (* wifi_reset_epno_list)(wifi_request_id, wifi_interface_handle);
     wifi_error (* wifi_set_country_code)(wifi_interface_handle, const char *);
     wifi_error (* wifi_get_firmware_memory_dump)( wifi_interface_handle iface,
             wifi_firmware_memory_dump_handler handler);
@@ -276,14 +277,6 @@ typedef struct {
     wifi_error (* wifi_reset_passpoint_list)(wifi_request_id id, wifi_interface_handle iface);
     wifi_error (*wifi_set_bssid_blacklist)(wifi_request_id id, wifi_interface_handle iface,
                   wifi_bssid_params params);
-    wifi_error (*wifi_enable_lazy_roam)(wifi_request_id id,
-                wifi_interface_handle iface, int enable);
-    wifi_error (*wifi_set_bssid_preference)(wifi_request_id id, wifi_interface_handle iface,
-                                            int num_bssid, wifi_bssid_preference *prefs);
-    wifi_error (*wifi_set_gscan_roam_params)(wifi_request_id id, wifi_interface_handle iface,
-                                                wifi_roam_params * params);
-    wifi_error (*wifi_set_ssid_white_list)(wifi_request_id id, wifi_interface_handle iface,
-                               int num_networks, wifi_ssid *ssids);
     wifi_error (*wifi_set_lci) (wifi_request_id id, wifi_interface_handle iface,
 	                             wifi_lci_information *lci);
     wifi_error (*wifi_set_lcr) (wifi_request_id id, wifi_interface_handle iface,
