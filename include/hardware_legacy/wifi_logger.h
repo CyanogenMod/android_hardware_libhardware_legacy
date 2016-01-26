@@ -394,7 +394,8 @@ enum {
     WIFI_LOGGER_POWER_EVENT_SUPPORTED = (1 << (3)),             // POWER of Driver
     WIFI_LOGGER_WAKE_LOCK_SUPPORTED = (1 << (4)),               // WAKE LOCK of Driver
     WIFI_LOGGER_VERBOSE_SUPPORTED = (1 << (5)),                 // verbose log of FW
-    WIFI_LOGGER_WATCHDOG_TIMER_SUPPORTED = (1 << (6))           // monitor the health of FW
+    WIFI_LOGGER_WATCHDOG_TIMER_SUPPORTED = (1 << (6)),          // monitor the health of FW
+    WIFI_LOGGER_DRIVER_DUMP_SUPPORTED = (1 << (7)),             // dumps driver state
 };
 
 /**
@@ -404,10 +405,32 @@ enum {
 wifi_error wifi_get_logger_supported_feature_set(wifi_interface_handle iface,
     unsigned int *support);
 
+typedef struct {
+    /* Buffer is to be allocated and freed by HAL implementation. */
+    void (*on_driver_memory_dump) (char *buffer, int buffer_size);
+} wifi_driver_memory_dump_callbacks;
+
+/**
+    API to collect driver state.
+
+    Framework will call this API soon before or after (but not
+    concurrently with) wifi_get_firmware_memory_dump(). Capturing
+    firmware and driver dumps is intended to help identify
+    inconsistent state between these components.
+
+    - In response to this call, HAL implementation should make one or
+      more calls to callbacks.on_driver_memory_dump(). Framework will
+      copy data out of the received |buffer|s, and concatenate the
+      contents thereof.
+    - HAL implemention will indicate completion of the driver memory
+      dump by returning from this call.
+*/
+wifi_error wifi_get_driver_memory_dump(
+    wifi_interface_handle iface,
+    wifi_driver_memory_dump_callbacks callbacks);
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
 #endif /*__WIFI_HAL_STATS_ */
-

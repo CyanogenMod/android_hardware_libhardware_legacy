@@ -292,6 +292,8 @@ typedef struct {
     wifi_error (*wifi_get_wake_reason_stats)(wifi_interface_handle iface,
                                 WLAN_DRIVER_WAKE_REASON_CNT *wifi_wake_reason_cnt);
     wifi_error (*wifi_configure_nd_offload)(wifi_interface_handle iface, u8 enable);
+    wifi_error (*wifi_get_driver_memory_dump)(wifi_interface_handle iface,
+                                wifi_driver_memory_dump_callbacks callbacks);
 
     /* NAN functions */
     wifi_error (*wifi_nan_enable_request)(transaction_id id,
@@ -356,4 +358,3 @@ wifi_error init_wifi_vendor_hal_func_table(wifi_hal_fn *fn);
 #endif
 
 #endif
-
