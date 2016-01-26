@@ -294,6 +294,15 @@ typedef struct {
     wifi_error (*wifi_configure_nd_offload)(wifi_interface_handle iface, u8 enable);
     wifi_error (*wifi_get_driver_memory_dump)(wifi_interface_handle iface,
                                 wifi_driver_memory_dump_callbacks callbacks);
+    wifi_error (*wifi_start_pkt_fate_monitoring)(wifi_interface_handle iface);
+    wifi_error (*wifi_get_tx_pkt_fates)(wifi_interface_handle handle,
+        wifi_tx_report *tx_report_bufs,
+        size_t n_requested_fates,
+        size_t *n_provided_fates);
+    wifi_error (*wifi_get_rx_pkt_fates)(wifi_interface_handle handle,
+        wifi_rx_report *rx_report_bufs,
+        size_t n_requested_fates,
+        size_t *n_provided_fates);
 
     /* NAN functions */
     wifi_error (*wifi_nan_enable_request)(transaction_id id,

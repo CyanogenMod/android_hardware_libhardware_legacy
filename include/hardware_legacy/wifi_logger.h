@@ -399,6 +399,7 @@ enum {
     WIFI_LOGGER_VERBOSE_SUPPORTED = (1 << (5)),                 // verbose log of FW
     WIFI_LOGGER_WATCHDOG_TIMER_SUPPORTED = (1 << (6)),          // monitor the health of FW
     WIFI_LOGGER_DRIVER_DUMP_SUPPORTED = (1 << (7)),             // dumps driver state
+    WIFI_LOGGER_PACKET_FATE_SUPPORTED = (1 << (8)),             // tracks connection packets' fate
 };
 
 /**
@@ -431,6 +432,204 @@ typedef struct {
 wifi_error wifi_get_driver_memory_dump(
     wifi_interface_handle iface,
     wifi_driver_memory_dump_callbacks callbacks);
+
+
+/* packet fate logs */
+
+#define MD5_PREFIX_LEN             4
+#define MAX_FATE_LOG_LEN           32
+#define MAX_FRAME_LEN_ETHERNET     1518
+#define MAX_FRAME_LEN_80211_MGMT   2352  // 802.11-2012 Fig. 8-34
+
+typedef enum {
+    // Sent over air and ACKed.
+    TX_PKT_FATE_ACKED,
+
+    // Sent over air but not ACKed. (Normal for broadcast/multicast.)
+    TX_PKT_FATE_SENT,
+
+    // Queued within firmware, but not yet sent over air.
+    TX_PKT_FATE_FW_QUEUED,
+
+    // Dropped by firmware as invalid. E.g. bad source address, bad checksum,
+    // or invalid for current state.
+    TX_PKT_FATE_FW_DROP_INVALID,
+
+    // Dropped by firmware due to lack of buffer space.
+    TX_PKT_FATE_FW_DROP_NOBUFS,
+
+    // Dropped by firmware for any other reason. Includes frames that
+    // were sent by driver to firmware, but unaccounted for by
+    // firmware.
+    TX_PKT_FATE_FW_DROP_OTHER,
+
+    // Queued within driver, not yet sent to firmware.
+    TX_PKT_FATE_DRV_QUEUED,
+
+    // Dropped by driver as invalid. E.g. bad source address, or
+    // invalid for current state.
+    TX_PKT_FATE_DRV_DROP_INVALID,
+
+    // Dropped by driver due to lack of buffer space.
+    TX_PKT_FATE_DRV_DROP_NOBUFS,
+
+    // Dropped by driver for any other reason. E.g. out of buffers.
+    TX_PKT_FATE_DRV_DROP_OTHER,
+} wifi_tx_packet_fate;
+
+typedef enum {
+    // Valid and delivered to network stack (e.g., netif_rx()).
+    RX_PKT_FATE_SUCCESS,
+
+    // Queued within firmware, but not yet sent to driver.
+    RX_PKT_FATE_FW_QUEUED,
+
+    // Dropped by firmware due to host-programmable filters.
+    RX_PKT_FATE_FW_DROP_FILTER,
+
+    // Dropped by firmware as invalid. E.g. bad checksum, decrypt failed,
+    // or invalid for current state.
+    RX_PKT_FATE_FW_DROP_INVALID,
+
+    // Dropped by firmware due to lack of buffer space.
+    RX_PKT_FATE_FW_DROP_NOBUFS,
+
+    // Dropped by firmware for any other reason.
+    RX_PKT_FATE_FW_DROP_OTHER,
+
+    // Queued within driver, not yet delivered to network stack.
+    RX_PKT_FATE_DRV_QUEUED,
+
+    // Dropped by driver due to filter rules.
+    RX_PKT_FATE_DRV_DROP_FILTER,
+
+    // Dropped by driver as invalid. E.g. not permitted in current state.
+    RX_PKT_FATE_DRV_DROP_INVALID,
+
+    // Dropped by driver due to lack of buffer space.
+    RX_PKT_FATE_DRV_DROP_NOBUFS,
+
+    // Dropped by driver for any other reason.
+    RX_PKT_FATE_DRV_DROP_OTHER,
+} wifi_rx_packet_fate;
+
+typedef enum {
+    FRAME_TYPE_UNKNOWN,
+    FRAME_TYPE_ETHERNET_II,
+    FRAME_TYPE_80211_MGMT,
+} frame_type;
+
+typedef struct {
+    // The type of MAC-layer frame that this frame_info holds.
+    // - For data frames, use FRAME_TYPE_ETHERNET_II.
+    // - For management frames, use FRAME_TYPE_80211_MGMT.
+    // - If the type of the frame is unknown, use FRAME_TYPE_UNKNOWN.
+    frame_type payload_type;
+
+    // The number of bytes included in |frame_content|. If the frame
+    // contents are missing (e.g. RX frame dropped in firmware),
+    // |frame_len| should be set to 0.
+    size_t frame_len;
+
+    // Host clock when this frame was received by the driver (either
+    // outbound from the host network stack, or inbound from the
+    // firmware).
+    // - The timestamp should be taken from a clock which includes time
+    //   the host spent suspended (e.g. ktime_get_boottime()).
+    // - If no host timestamp is available (e.g. RX frame was dropped in
+    //   firmware), this field should be set to 0.
+    u32 driver_timestamp_usec;
+
+    // Firmware clock when this frame was received by the firmware
+    // (either outbound from the host, or inbound from a remote
+    // station).
+    // - The timestamp should be taken from a clock which includes time
+    //   firmware spent suspended (if applicable).
+    // - If no firmware timestamp is available (e.g. TX frame was
+    //   dropped by driver), this field should be set to 0.
+    // - Consumers of |frame_info| should _not_ assume any
+    //   synchronization between driver and firmware clocks.
+    u32 firmware_timestamp_usec;
+
+    // Actual frame content.
+    // - Should be provided for TX frames originated by the host.
+    // - Should be provided for RX frames received by the driver.
+    // - Optionally provided for TX frames originated by firmware. (At
+    //   discretion of HAL implementation.)
+    // - Optionally provided for RX frames dropped in firmware. (At
+    //   discretion of HAL implementation.)
+    // - If frame content is not provided, |frame_len| should be set
+    //   to 0.
+    union {
+      char ethernet_ii_bytes[MAX_FRAME_LEN_ETHERNET];
+      char ieee_80211_mgmt_bytes[MAX_FRAME_LEN_80211_MGMT];
+    } frame_content;
+} frame_info;
+
+typedef struct {
+    // Prefix of MD5 hash of |frame_inf.frame_content|. If frame
+    // content is not provided, prefix of MD5 hash over the same data
+    // that would be in frame_content, if frame content were provided.
+    char md5_prefix[MD5_PREFIX_LEN];
+    wifi_tx_packet_fate fate;
+    frame_info frame_inf;
+} wifi_tx_report;
+
+typedef struct {
+    // Prefix of MD5 hash of |frame_inf.frame_content|. If frame
+    // content is not provided, prefix of MD5 hash over the same data
+    // that would be in frame_content, if frame content were provided.
+    char md5_prefix[MD5_PREFIX_LEN];
+    wifi_rx_packet_fate fate;
+    frame_info frame_inf;
+} wifi_rx_report;
+
+/**
+    API to start packet fate monitoring.
+    - Once stared, monitoring should remain active until HAL is unloaded.
+    - When HAL is unloaded, all packet fate buffers should be cleared.
+*/
+wifi_error wifi_start_pkt_fate_monitoring(wifi_interface_handle iface);
+
+/**
+    API to retrieve fates of outbound packets.
+    - HAL implementation should fill |tx_report_bufs| with fates of
+      _first_ min(n_requested_fates, actual packets) frames
+      transmitted for the most recent association. The fate reports
+      should follow the same order as their respective packets.
+    - HAL implementation may choose (but is not required) to include
+      reports for management frames.
+    - Packets reported by firmware, but not recognized by driver,
+      should be included.  However, the ordering of the corresponding
+      reports is at the discretion of HAL implementation.
+    - Framework may call this API multiple times for the same association.
+    - Framework will ensure |n_requested_fates <= MAX_FATE_LOG_LEN|.
+    - Framework will allocate and free the referenced storage.
+*/
+wifi_error wifi_get_tx_pkt_fates(wifi_interface_handle handle,
+        wifi_tx_report *tx_report_bufs,
+        size_t n_requested_fates,
+        size_t *n_provided_fates);
+
+/**
+    API to retrieve fates of inbound packets.
+    - HAL implementation should fill |rx_report_bufs| with fates of
+      _first_ min(n_requested_fates, actual packets) frames
+      received for the most recent association. The fate reports
+      should follow the same order as their respective packets.
+    - HAL implementation may choose (but is not required) to include
+      reports for management frames.
+    - Packets reported by firmware, but not recognized by driver,
+      should be included.  However, the ordering of the corresponding
+      reports is at the discretion of HAL implementation.
+    - Framework may call this API multiple times for the same association.
+    - Framework will ensure |n_requested_fates <= MAX_FATE_LOG_LEN|.
+    - Framework will allocate and free the referenced storage.
+*/
+wifi_error wifi_get_rx_pkt_fates(wifi_interface_handle handle,
+        wifi_rx_report *rx_report_bufs,
+        size_t n_requested_fates,
+        size_t *n_provided_fates);
 
 #ifdef __cplusplus
 }
