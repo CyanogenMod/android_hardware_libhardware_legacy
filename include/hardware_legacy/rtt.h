@@ -130,12 +130,12 @@ typedef struct {
                                   // 2-sided RTT: TX rate of initiator's Ack in response to FTM frame.
     wifi_rate rx_rate;            // 1-sided RTT: TX rate of Ack from other side.
                                   // 2-sided RTT: TX rate of FTM frame coming from responder.
-    wifi_timespan rtt;            // round trip time in 0.1 nanoseconds
-    wifi_timespan rtt_sd;         // rtt standard deviation in 0.1 nanoseconds
-    wifi_timespan rtt_spread;     // difference between max and min rtt times recorded
-    int distance;                 // distance in cm (optional)
-    int distance_sd;              // standard deviation in cm (optional)
-    int distance_spread;          // difference between max and min distance recorded (optional)
+    wifi_timespan rtt;            // round trip time in picoseconds
+    wifi_timespan rtt_sd;         // rtt standard deviation in picoseconds
+    wifi_timespan rtt_spread;     // difference between max and min rtt times recorded in picoseconds
+    int distance_mm;              // distance in mm (optional)
+    int distance_sd_mm;           // standard deviation in mm (optional)
+    int distance_spread_mm;       // difference between max and min distance recorded in mm (optional)
     wifi_timestamp ts;            // time of the measurement (in microseconds since boot)
     int burst_duration;           // in ms, actual time taken by the FW to finish one burst
                                   // measurement. Applies to 1-sided and 2-sided RTT.
@@ -199,6 +199,9 @@ typedef struct {
     byte lcr_support;              // if initiator supports LCR request. Applies to 2-sided RTT
     byte preamble_support;         // bit mask indicates what preamble is supported by initiator
     byte bw_support;               // bit mask indicates what BW is supported by initiator
+    byte responder_supported;      // if 11mc responder mode is supported
+    byte mc_version;               // draft 11mc spec version supported by chip. For instance,
+                                   // version 4.0 should be 40 and version 4.3 should be 43 etc.
 } wifi_rtt_capabilities;
 
 /*  RTT capabilities of the device */
@@ -269,6 +272,26 @@ wifi_error wifi_set_lci(wifi_request_id id, wifi_interface_handle iface,
 // API to configure the LCR. Used in RTT Responder mode only.
 wifi_error wifi_set_lcr(wifi_request_id id, wifi_interface_handle iface,
                         wifi_lcr_information *lcr);
+
+/**
+ * Get available WiFi channel to enable RTT responder on.
+ */
+wifi_error wifi_rtt_get_available_channnel(wifi_interface_handle iface, wifi_channel_info* channel);
+
+/**
+ * Enable RTT responder mode.
+ * channel_hint - hint of the channel information where RTT responder should be enabled on.
+ * max_duration_seconds - timeout of responder mode.
+ * channel_used - channel used for RTT responder, NULL if responder is not enabled.
+ */
+wifi_error wifi_enable_responder(wifi_request_id id, wifi_interface_handle iface,
+                                 wifi_channel_info channel_hint, unsigned max_duration_seconds,
+                                 wifi_channel_info* channel_used);
+
+/**
+ * Disable RTT responder mode.
+ */
+wifi_error wifi_disable_responder(wifi_request_id id, wifi_interface_handle iface);
 
 #endif
 

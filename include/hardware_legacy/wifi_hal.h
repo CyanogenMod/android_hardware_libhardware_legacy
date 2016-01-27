@@ -74,7 +74,7 @@ typedef int wifi_rssi;
 typedef byte mac_addr[6];
 typedef byte oui[3];
 typedef int64_t wifi_timestamp;                 // In microseconds (us)
-typedef int64_t wifi_timespan;                  // In nanoseconds  (ns)
+typedef int64_t wifi_timespan;                  // In picoseconds  (ps)
 
 typedef struct wifi_info *wifi_handle;
 typedef struct wifi_interface_info *wifi_interface_handle;
