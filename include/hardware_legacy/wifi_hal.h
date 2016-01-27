@@ -330,6 +330,8 @@ typedef struct {
         NanCallbackHandler handlers);
     wifi_error (*wifi_nan_get_version)(wifi_handle handle,
         NanVersion* version);
+    wifi_error (*wifi_nan_get_capabilities)(transaction_id id,
+        wifi_interface_handle iface);
 
     /**
      * Returns the chipset's hardware filtering capabilities:
