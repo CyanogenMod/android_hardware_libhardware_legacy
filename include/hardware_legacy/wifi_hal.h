@@ -243,6 +243,12 @@ typedef struct {
     wifi_error (* wifi_rtt_range_cancel)(wifi_request_id,  wifi_interface_handle, unsigned,
             mac_addr[]);
     wifi_error (* wifi_get_rtt_capabilities)(wifi_interface_handle, wifi_rtt_capabilities *);
+    wifi_error (* wifi_rtt_get_available_channnel)(wifi_interface_handle iface,
+            wifi_channel_info* channel);
+    wifi_error (* wifi_enable_responder)(wifi_request_id id, wifi_interface_handle iface,
+            wifi_channel_info channel_hint, unsigned max_duration_seconds,
+            wifi_channel_info* channel_used);
+    wifi_error (* wifi_disable_responder)(wifi_request_id id, wifi_interface_handle iface);
     wifi_error (* wifi_set_nodfs_flag)(wifi_interface_handle, u32);
     wifi_error (* wifi_start_logging)(wifi_interface_handle, u32, u32, u32, u32, char *);
     wifi_error (* wifi_set_epno_list)(wifi_request_id, wifi_interface_handle,
