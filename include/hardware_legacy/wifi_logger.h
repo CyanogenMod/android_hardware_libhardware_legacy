@@ -133,6 +133,9 @@ typedef struct {
                                                 // candidate is found
 #define WIFI_EVENT_ROAM_SCAN_CONFIG         46  // Event received from firmware when roam scan
                                                 // configuration gets enabled or disabled
+#define WIFI_EVENT_AUTH_TIMEOUT             47  // firmware/driver timed out authentication
+#define WIFI_EVENT_ASSOC_TIMEOUT            48  // firmware/driver timed out association
+#define WIFI_EVENT_MEM_ALLOC_FAILURE        49  // firmware/driver encountered allocation failure
 
 /**
  * Parameters of wifi logger events are TLVs
