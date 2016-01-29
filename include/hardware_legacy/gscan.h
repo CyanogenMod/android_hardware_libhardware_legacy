@@ -61,7 +61,7 @@ typedef enum {
                                    // report_threshold_num_scans is reached.
     WIFI_SCAN_THRESHOLD_PERCENT,   // can be reported when REPORT_EVENTS_EACH_SCAN is not set and
                                    // report_threshold_percent is reached.
-    WIFI_SCAN_DISABLED,            // reported when currently executing gscans are disabled.
+    WIFI_SCAN_FAILED,              // reported when currently executing gscans have failed.
                                    // start_gscan will need to be called again in order to continue
                                    // scanning. This is intended to indicate abnormal scan
                                    // terminations (not those as a result of stop_gscan).
