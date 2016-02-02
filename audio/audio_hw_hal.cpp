@@ -28,6 +28,8 @@
 
 namespace android_audio_legacy {
 
+class AudioHardwareInterface;
+
 extern "C" {
 
 struct legacy_audio_module {
@@ -37,7 +39,7 @@ struct legacy_audio_module {
 struct legacy_audio_device {
     struct audio_hw_device device;
 
-    struct AudioHardwareInterface *hwif;
+    AudioHardwareInterface *hwif;
 };
 
 struct legacy_stream_out {
