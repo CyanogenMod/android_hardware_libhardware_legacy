@@ -2091,7 +2091,7 @@ status_t AudioPolicyManagerBase::checkInputsForDevice(audio_devices_t device,
             {
                 if (mHwModules[module_index]->mInputProfiles[profile_index]->mSupportedDevices
                         & (device & ~AUDIO_DEVICE_BIT_IN)) {
-                    ALOGV("checkInputsForDevice(): adding profile %d from module %d",
+                    ALOGV("checkInputsForDevice(): adding profile %zu from module %zu",
                           profile_index, module_index);
                     profiles.add(mHwModules[module_index]->mInputProfiles[profile_index]);
                 }
@@ -2218,7 +2218,7 @@ status_t AudioPolicyManagerBase::checkInputsForDevice(audio_devices_t device,
             {
                 IOProfile *profile = mHwModules[module_index]->mInputProfiles[profile_index];
                 if (profile->mSupportedDevices & device) {
-                    ALOGV("checkInputsForDevice(): clearing direct input profile %d on module %d",
+                    ALOGV("checkInputsForDevice(): clearing direct input profile %zu on module %zu",
                           profile_index, module_index);
                     if (profile->mSamplingRates[0] == 0) {
                         profile->mSamplingRates.clear();
