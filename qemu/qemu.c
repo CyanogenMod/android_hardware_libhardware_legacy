@@ -278,7 +278,7 @@ qemu_command_format( char*        buffer,
     int      ret;
 
     va_start(args, format);
-    ret = qemu_command_format(buffer, buffer_size, format, args);
+    ret = qemu_command_vformat(buffer, buffer_size, format, args);
     va_end(args);
     return ret;
 }
