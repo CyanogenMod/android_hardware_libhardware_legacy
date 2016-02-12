@@ -176,15 +176,25 @@ typedef struct rx_multicast_cnt_t{
     int other_rx_multicast_addr_cnt;/*Rx wake packet was non-ipv4 and non-ipv6*/
 } RX_MULTICAST_WAKE_DATA_CNT;
 
-
+/*
+ * Structure holding all the driver/firmware wake count reasons.
+ *
+ * Buffers for the array fields (cmd_event_wake_cnt/driver_fw_local_wake_cnt)
+ * are allocated and freed by the framework. The size of each allocated
+ * array is indicated by the corresponding |_cnt| field. HAL needs to fill in
+ * the corresponding |_used| field to indicate the number of elements used in
+ * the array.
+ */
 typedef struct wlan_driver_wake_reason_cnt_t {
-    int total_cmd_event_wake;   /* Total cmd event wake */
-    int *cmd_event_wake_cnt;    /* Individual wake count, each index a reason */
-    int cmd_event_wake_cnt_sz;  /* How may reasons for wake - driver specific */
+    int total_cmd_event_wake;    /* Total count of cmd event wakes */
+    int *cmd_event_wake_cnt;     /* Individual wake count array, each index a reason */
+    int cmd_event_wake_cnt_sz;   /* Max number of cmd event wake reasons */
+    int cmd_event_wake_cnt_used; /* Number of cmd event wake reasons specific to the driver */
 
-    int total_driver_fw_local_wake; /* Total count of driver fw wake, for local reasons */
-    int *driver_fw_local_wake_cnt;  /* Individual wake count, local to driver/fw */
-    int driver_fw_local_wake_cnt_sz;    /* How many local driver/fw wake - driver specific */
+    int total_driver_fw_local_wake;    /* Total count of drive/fw wakes, for local reasons */
+    int *driver_fw_local_wake_cnt;     /* Individual wake count array, each index a reason */
+    int driver_fw_local_wake_cnt_sz;   /* Max number of local driver/fw wake reasons */
+    int driver_fw_local_wake_cnt_used; /* Number of local driver/fw wake reasons specific to the driver */
 
     int total_rx_data_wake;     /* total data rx packets, that woke up host */
     RX_DATA_WAKE_CNT_DETAILS rx_wake_details;
