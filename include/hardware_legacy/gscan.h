@@ -120,7 +120,6 @@ typedef struct {
 #define REPORT_EVENTS_EACH_SCAN        (1 << 0)
 #define REPORT_EVENTS_FULL_RESULTS     (1 << 1)
 #define REPORT_EVENTS_NO_BATCH         (1 << 2)
-#define REPORT_EVENTS_CONTEXT_HUB      (1 << 3)
 
 typedef struct {
     int bucket;                         // bucket index, 0 based
@@ -141,8 +140,6 @@ typedef struct {
      *                                 events regardless of REPORT_EVENTS_EACH_SCAN.
      *  REPORT_EVENTS_NO_BATCH     => controls if scans for this bucket should be placed in the
      *                                 history buffer
-     *  REPORT_EVENTS_CONTEXT_HUB  => forward full scan results in real time and completion events
-     *                                 to context hub
      */
     byte report_events;
     int max_period; // if max_period is non zero or different than period, then this bucket is
