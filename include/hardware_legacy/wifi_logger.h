@@ -136,6 +136,15 @@ typedef struct {
 #define WIFI_EVENT_AUTH_TIMEOUT             47  // firmware/driver timed out authentication
 #define WIFI_EVENT_ASSOC_TIMEOUT            48  // firmware/driver timed out association
 #define WIFI_EVENT_MEM_ALLOC_FAILURE        49  // firmware/driver encountered allocation failure
+#define WIFI_EVENT_DRIVER_PNO_ADD           50  // driver added a PNO network in firmware
+#define WIFI_EVENT_DRIVER_PNO_REMOVE        51  // driver removed a PNO network in firmware
+#define WIFI_EVENT_DRIVER_PNO_NETWORK_FOUND 52  // driver received PNO networks
+                                                // found indication from firmware
+#define WIFI_EVENT_DRIVER_PNO_SCAN_REQUESTED 53  // driver triggered a scan for PNO networks
+#define WIFI_EVENT_DRIVER_PNO_SCAN_RESULT_FOUND 54  // driver received scan results
+                                                    // of PNO networks
+#define WIFI_EVENT_DRIVER_PNO_SCAN_COMPLETE 55  // driver updated scan results from
+                                                // PNO networks to cfg80211
 
 /**
  * Parameters of wifi logger events are TLVs
