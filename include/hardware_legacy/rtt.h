@@ -276,7 +276,7 @@ wifi_error wifi_set_lcr(wifi_request_id id, wifi_interface_handle iface,
 /**
  * Get available WiFi channel to enable RTT responder on.
  */
-wifi_error wifi_rtt_get_available_channnel(wifi_interface_handle iface, wifi_channel_info* channel);
+wifi_error wifi_rtt_get_available_channel(wifi_interface_handle iface, wifi_channel_info* channel);
 
 /**
  * Enable RTT responder mode.
