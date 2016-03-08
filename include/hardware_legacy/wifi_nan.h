@@ -17,6 +17,7 @@
 #ifndef __NAN_H__
 #define __NAN_H__
 
+#include <net/if.h>
 #include "wifi_hal.h"
 
 #ifdef __cplusplus
@@ -35,6 +36,7 @@ extern "C"
 
 typedef int NanVersion;
 typedef u16 transaction_id;
+typedef u32 NanDataPathId;
 
 #define NAN_MAC_ADDR_LEN                6
 #define NAN_MAJOR_VERSION               2
@@ -54,6 +56,7 @@ typedef u16 transaction_id;
 #define NAN_MAX_FAM_CHANNELS                    32
 #define NAN_MAX_POSTDISCOVERY_LEN               5
 #define NAN_MAX_FRAME_DATA_LEN                  504
+#define NAN_DP_MAX_APP_INFO_LEN                 512
 
 /*
   Definition of various NanResponseType
@@ -71,7 +74,13 @@ typedef enum {
     NAN_RESPONSE_TCA                    = 9,
     NAN_RESPONSE_ERROR                  = 10,
     NAN_RESPONSE_BEACON_SDF_PAYLOAD     = 11,
-    NAN_GET_CAPABILITIES                = 12
+    NAN_GET_CAPABILITIES                = 12,
+    NAN_DP_INTERFACE_CREATE             = 13,
+    NAN_DP_INTERFACE_DELETE             = 14,
+    NAN_DP_INITIATOR_RESPONSE           = 15,
+    NAN_DP_RESPONDER_RESPONSE           = 16,
+    NAN_DP_SCHEDULE_UPDATE              = 17,
+    NAN_DP_END                          = 18
 } NanResponseType;
 
 /* NAN Publish Types */
@@ -228,6 +237,24 @@ typedef enum {
     NAN_SSI_NOT_REQUIRED_IN_MATCH_IND = 0,
     NAN_SSI_REQUIRED_IN_MATCH_IND
 } NanSsiInMatchInd;
+
+/* NAN DP security Configuration */
+typedef enum {
+    NAN_DP_CONFIG_NO_SECURITY = 0,
+    NAN_DP_CONFIG_SECURITY
+} NanDataPathSecurityCfgStatus;
+
+/* Data request Responder's response */
+typedef enum {
+    NAN_DP_REQUEST_ACCEPT = 0,
+    NAN_DP_REQUEST_REJECT
+} NanDataPathResponseCode;
+
+/* Schedule update status */
+typedef enum {
+    NAN_DP_SCHEDULE_UPDATE_SUCCESS = 0,
+    NAN_DP_SCHEDULE_UPDATE_FAILURE
+} NanDataPathScheduleUpdateStatus;
 
 /* Nan/NDP Capabilites info */
 typedef struct {
@@ -1301,6 +1328,15 @@ typedef struct {
     } data;
 } NanStatsResponse;
 
+/* Response returned for Initiators Data request */
+typedef struct {
+    /*
+      Unique token Id generated on the initiator
+      side used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id;
+} NanDataPathRequestResponse;
+
 /*
   NAN Response messages
 */
@@ -1312,6 +1348,7 @@ typedef struct {
         NanPublishResponse publish_response;
         NanSubscribeResponse subscribe_response;
         NanStatsResponse stats_response;
+        NanDataPathRequestResponse data_request_response;
         NanCapabilities nan_capabilities;
     } body;
 } NanResponseMsg;
@@ -1562,6 +1599,184 @@ typedef struct {
     NanBeaconSdfPayloadReceive data;
 } NanBeaconSdfPayloadInd;
 
+/*
+  Data request Initiator/Responder
+  app/service related info
+*/
+typedef struct {
+    u16 ndp_app_info_len;
+    u8 ndp_app_info[NAN_DP_MAX_APP_INFO_LEN];
+} NanDataPathAppInfo;
+
+/* QoS configuration */
+typedef enum {
+    NAN_DP_CONFIG_NO_QOS = 0,
+    NAN_DP_CONFIG_QOS
+} NanDataPathQosCfg;
+
+/* Configuration params of Data request Initiator/Responder */
+typedef struct {
+    /* Status Indicating Security/No Security */
+    NanDataPathSecurityCfgStatus security_cfg;
+    NanDataPathQosCfg qos_cfg;
+} NanDataPathCfg;
+
+/* Nan Data Path Initiator requesting a data session */
+typedef struct {
+    /*
+     Unique Instance Id identifying the Responder's service.
+     This is same as publish_id notified on the subscribe side
+     in a publish/subscribe scenario
+    */
+    u16 service_instance_id; /* Value 0 for no publish/subscribe */
+    /* Channel frequency in MHz to start data-path */
+    wifi_channel channel;
+    /*
+      Discovery MAC addr of the publisher/peer
+    */
+    u8 peer_disc_mac_addr[NAN_MAC_ADDR_LEN];
+    /*
+     Interface name on which this NDP session is to be started.
+     This will be the same interface name provided during interface
+     create.
+    */
+    char ndp_iface[IFNAMSIZ+1];
+    /* Initiator/Responder Security/QoS configuration */
+    NanDataPathCfg ndp_cfg;
+    /* App/Service information of the Initiator */
+    NanDataPathAppInfo app_info;
+} NanDataPathInitiatorRequest;
+
+/*
+  Data struct to initiate a data response on the responder side
+  for an indication received with a data request
+*/
+typedef struct {
+    /*
+      Unique token Id generated on the initiator/responder
+      side used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id;
+    /*
+     Interface name on which this NDP session is to be started.
+     This will be the same interface name provided during interface
+     create.
+    */
+    char ndp_iface[IFNAMSIZ+1];
+    /* Initiator/Responder Security/QoS configuration */
+    NanDataPathCfg ndp_cfg;
+    /* App/Service information of the responder */
+    NanDataPathAppInfo app_info;
+    /* Response Code indicating ACCEPT/REJECT/DEFER */
+    NanDataPathResponseCode rsp_code;
+} NanDataPathIndicationResponse;
+/*
+  Data struct used to update any Qos config of the
+  existing NDP session. The update can be initiated
+  on the initiator or the responder side.
+*/
+typedef struct {
+    /*
+      Unique token Id generated on the initiator/responder side
+      used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id;
+    /* Initiator/Responder QoS configuration */
+    NanDataPathQosCfg qos_cfg;
+} NanDataPathScheduleUpdate;
+
+/* NDP termination info */
+typedef struct {
+    u8 num_ndp_instances;
+    /*
+      Unique token Id generated on the initiator/responder side
+      used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id[];
+} NanDataPathEndRequest;
+
+/*
+  Event indication received on the
+  responder side when a Nan Data request or
+  NDP session is initiated on the Initiator side
+*/
+typedef struct {
+    /*
+      Unique Instance Id corresponding to a service/session.
+      This is similar to the publish_id generated on the
+      publisher side
+    */
+    u16 service_instance_id;
+    /* Discovery MAC addr of the peer/initiator */
+    u8 peer_disc_mac_addr[NAN_MAC_ADDR_LEN];
+    /*
+      Unique token Id generated on the initiator/responder side
+      used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id;
+    /* Initiator/Responder Security/QoS configuration */
+    NanDataPathCfg ndp_cfg;
+    /* App/Service information of the initiator */
+    NanDataPathAppInfo app_info;
+} NanDataPathRequestInd;
+
+/*
+ Event indication of data confirm is received on both
+ initiator and responder side confirming a NDP session
+*/
+typedef struct {
+    /*
+      Unique token Id generated on the initiator/responder side
+      used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id;
+    /*
+      NDI mac address of the peer
+      (required to derive target ipv6 address)
+    */
+    u8 peer_ndi_mac_addr[NAN_MAC_ADDR_LEN];
+    /* Channel frequency in MHz on which data-path is started */
+    wifi_channel channel;
+    /* Initiator/Responder Security/QoS configuration */
+    NanDataPathCfg ndp_cfg;
+    /* App/Service information of Initiator/Responder */
+    NanDataPathAppInfo app_info;
+    /* Response code indicating ACCEPT/REJECT/DEFER */
+    NanDataPathResponseCode rsp_code;
+} NanDataPathConfirmInd;
+
+/*
+ Event indication received on the initiator
+ side confirming a schedule.
+*/
+typedef struct {
+    /*
+      Unique token Id generated on the initiator/responder side
+      used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id;
+    /* Discovery MAC addr of the peer */
+    u8 peer_disc_mac_addr[NAN_MAC_ADDR_LEN];
+    /* Initiator/Responder QoS configuration */
+    NanDataPathQosCfg qos_cfg;
+    /* Status indicating schedule update SUCCESS/FAILURE */
+    NanDataPathScheduleUpdateStatus schedule_status;
+} NanDataPathScheduleUpdateInd;
+
+/*
+  Event indication received on the
+  initiator/responder side terminating
+  a NDP session
+*/
+typedef struct {
+    u8 num_ndp_instances;
+    /*
+      Unique token Id generated on the initiator/responder side
+      used for a NDP session between two NAN devices
+    */
+    NanDataPathId ndp_instance_id[];
+} NanDataPathEndInd;
+
 /* Response and Event Callbacks */
 typedef struct {
     /* NotifyResponse invoked to notify the status of the Request */
@@ -1576,6 +1791,10 @@ typedef struct {
     void (*EventDisabled) (NanDisabledInd* event);
     void (*EventTca) (NanTCAInd* event);
     void (*EventBeaconSdfPayload) (NanBeaconSdfPayloadInd* event);
+    void (*EventDataRequest)(NanDataPathRequestInd* event);
+    void (*EventDataConfirm)(NanDataPathConfirmInd* event);
+    void (*EventScheduleUpdate)(NanDataPathScheduleUpdateInd* event);
+    void (*EventDataEnd)(NanDataPathEndInd* event);
 } NanCallbackHandler;
 
 /*  Enable NAN functionality. */
@@ -1648,6 +1867,42 @@ wifi_error nan_get_version(wifi_handle handle,
 /*  Get NAN capabilities. */
 wifi_error nan_get_capabilities(transaction_id id,
                                 wifi_interface_handle iface);
+
+/* ========== Nan Data Path APIs ================ */
+/* Create NAN Data Interface */
+wifi_error nan_data_interface_create(transaction_id id,
+                                     wifi_interface_handle iface,
+                                     char* iface_name);
+
+/* Delete NAN Data Interface */
+wifi_error nan_data_interface_delete(transaction_id id,
+                                     wifi_interface_handle iface,
+                                     char* iface_name);
+
+/* Initiate a NDP session: Initiator */
+wifi_error nan_data_request_initiator(transaction_id id,
+                                      wifi_interface_handle iface,
+                                      NanDataPathInitiatorRequest* msg);
+
+/*
+ Response to a data indication received
+ corresponding to a NDP session. An indication
+ is received with a data request and the responder
+ will send a data response
+*/
+wifi_error nan_data_indication_response(transaction_id id,
+                                        wifi_interface_handle iface,
+                                        NanDataPathIndicationResponse* msg);
+
+/* NDL termination request: from either Initiator/Responder */
+wifi_error nan_data_end(transaction_id id,
+                        wifi_interface_handle iface,
+                        NanDataPathEndRequest* msg);
+
+/* NDL schedule update request per NDP session: from either Initiator/Responder */
+wifi_error nan_data_schedule_update(transaction_id id,
+                                    wifi_interface_handle iface,
+                                    NanDataPathScheduleUpdate* msg);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
