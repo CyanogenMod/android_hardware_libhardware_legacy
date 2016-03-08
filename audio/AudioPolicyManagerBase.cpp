@@ -740,7 +740,7 @@ audio_io_handle_t AudioPolicyManagerBase::selectOutput(const SortedVector<audio_
 
 status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
                                              AudioSystem::stream_type stream,
-                                             int session)
+                                             audio_session_t session)
 {
     ALOGV("startOutput() output %d, stream %d, session %d", output, stream, session);
     ssize_t index = mOutputs.indexOfKey(output);
@@ -808,7 +808,7 @@ status_t AudioPolicyManagerBase::startOutput(audio_io_handle_t output,
 
 status_t AudioPolicyManagerBase::stopOutput(audio_io_handle_t output,
                                             AudioSystem::stream_type stream,
-                                            int session)
+                                            audio_session_t session)
 {
     ALOGV("stopOutput() output %d, stream %d, session %d", output, stream, session);
     ssize_t index = mOutputs.indexOfKey(output);
@@ -1227,7 +1227,7 @@ audio_io_handle_t AudioPolicyManagerBase::getOutputForEffect(const effect_descri
 status_t AudioPolicyManagerBase::registerEffect(const effect_descriptor_t *desc,
                                 audio_io_handle_t io,
                                 uint32_t strategy,
-                                int session,
+                                audio_session_t session,
                                 int id)
 {
     ssize_t index = mOutputs.indexOfKey(io);

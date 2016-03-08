@@ -98,11 +98,11 @@ public:
     // indicates to the audio policy manager that the output starts being used by corresponding stream.
     virtual status_t startOutput(audio_io_handle_t output,
                                  AudioSystem::stream_type stream,
-                                 int session = 0) = 0;
+                                 audio_session_t session = AUDIO_SESSION_NONE) = 0;
     // indicates to the audio policy manager that the output stops being used by corresponding stream.
     virtual status_t stopOutput(audio_io_handle_t output,
                                 AudioSystem::stream_type stream,
-                                int session = 0) = 0;
+                                audio_session_t session = AUDIO_SESSION_NONE) = 0;
     // releases the output.
     virtual void releaseOutput(audio_io_handle_t output) = 0;
 
@@ -153,7 +153,7 @@ public:
     virtual status_t registerEffect(const effect_descriptor_t *desc,
                                     audio_io_handle_t io,
                                     uint32_t strategy,
-                                    int session,
+                                    audio_session_t session,
                                     int id) = 0;
     virtual status_t unregisterEffect(int id) = 0;
     virtual status_t setEffectEnabled(int id, bool enabled) = 0;
@@ -246,7 +246,7 @@ public:
     virtual status_t setVoiceVolume(float volume, int delayMs = 0) = 0;
 
     // move effect to the specified output
-    virtual status_t moveEffects(int session,
+    virtual status_t moveEffects(audio_session_t session,
                                      audio_io_handle_t srcOutput,
                                      audio_io_handle_t dstOutput) = 0;
 
