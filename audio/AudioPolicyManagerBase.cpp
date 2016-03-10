@@ -3737,7 +3737,7 @@ status_t AudioPolicyManagerBase::EffectDescriptor::dump(int fd)
 // --- IOProfile class implementation
 
 AudioPolicyManagerBase::HwModule::HwModule(const char *name)
-    : mName(strndup(name, AUDIO_HARDWARE_MODULE_ID_MAX_LEN)), mHandle(0)
+    : mName(strndup(name, AUDIO_HARDWARE_MODULE_ID_MAX_LEN)), mHandle(AUDIO_MODULE_HANDLE_NONE)
 {
 }
 
