@@ -482,7 +482,7 @@ typedef enum {
     // Dropped by driver due to lack of buffer space.
     TX_PKT_FATE_DRV_DROP_NOBUFS,
 
-    // Dropped by driver for any other reason. E.g. out of buffers.
+    // Dropped by driver for any other reason.
     TX_PKT_FATE_DRV_DROP_OTHER,
 } wifi_tx_packet_fate;
 
