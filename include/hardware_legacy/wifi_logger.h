@@ -598,7 +598,7 @@ typedef struct {
     - Once stared, monitoring should remain active until HAL is unloaded.
     - When HAL is unloaded, all packet fate buffers should be cleared.
 */
-wifi_error wifi_start_pkt_fate_monitoring(wifi_interface_handle iface);
+wifi_error wifi_start_pkt_fate_monitoring(wifi_interface_handle handle);
 
 /**
     API to retrieve fates of outbound packets.
