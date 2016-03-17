@@ -151,7 +151,7 @@ static audio_io_handle_t ap_get_output(struct audio_policy *pol,
 }
 
 static int ap_start_output(struct audio_policy *pol, audio_io_handle_t output,
-                           audio_stream_type_t stream, int session)
+                           audio_stream_type_t stream, audio_session_t session)
 {
     struct legacy_audio_policy *lap = to_lap(pol);
     return lap->apm->startOutput(output, (AudioSystem::stream_type)stream,
@@ -159,7 +159,7 @@ static int ap_start_output(struct audio_policy *pol, audio_io_handle_t output,
 }
 
 static int ap_stop_output(struct audio_policy *pol, audio_io_handle_t output,
-                          audio_stream_type_t stream, int session)
+                          audio_stream_type_t stream, audio_session_t session)
 {
     struct legacy_audio_policy *lap = to_lap(pol);
     return lap->apm->stopOutput(output, (AudioSystem::stream_type)stream,
@@ -278,7 +278,7 @@ static int ap_register_effect(struct audio_policy *pol,
                               const struct effect_descriptor_s *desc,
                               audio_io_handle_t io,
                               uint32_t strategy,
-                              int session,
+                              audio_session_t session,
                               int id)
 {
     struct legacy_audio_policy *lap = to_lap(pol);

@@ -94,10 +94,10 @@ public:
                                             const audio_offload_info_t *offloadInfo);
         virtual status_t startOutput(audio_io_handle_t output,
                                      AudioSystem::stream_type stream,
-                                     int session = 0);
+                                     audio_session_t session = AUDIO_SESSION_NONE);
         virtual status_t stopOutput(audio_io_handle_t output,
                                     AudioSystem::stream_type stream,
-                                    int session = 0);
+                                    audio_session_t session = AUDIO_SESSION_NONE);
         virtual void releaseOutput(audio_io_handle_t output);
         virtual audio_io_handle_t getInput(int inputSource,
                                             uint32_t samplingRate,
@@ -132,7 +132,7 @@ public:
         virtual status_t registerEffect(const effect_descriptor_t *desc,
                                         audio_io_handle_t io,
                                         uint32_t strategy,
-                                        int session,
+                                        audio_session_t session,
                                         int id);
         virtual status_t unregisterEffect(int id);
         virtual status_t setEffectEnabled(int id, bool enabled);
@@ -335,7 +335,7 @@ protected:
 
             int mIo;                // io the effect is attached to
             routing_strategy mStrategy; // routing strategy the effect is associated to
-            int mSession;               // audio session the effect is on
+            audio_session_t mSession;   // audio session the effect is on
             effect_descriptor_t mDesc;  // effect descriptor
             bool mEnabled;              // enabled state: CPU load being used or not
         };

@@ -90,7 +90,7 @@ status_t AudioPolicyCompatClient::invalidateStream(AudioSystem::stream_type stre
     return mServiceOps->invalidate_stream(mService, (audio_stream_type_t)stream);
 }
 
-status_t AudioPolicyCompatClient::moveEffects(int session, audio_io_handle_t srcOutput,
+status_t AudioPolicyCompatClient::moveEffects(audio_session_t session, audio_io_handle_t srcOutput,
                                                audio_io_handle_t dstOutput)
 {
     return mServiceOps->move_effects(mService, session, srcOutput, dstOutput);

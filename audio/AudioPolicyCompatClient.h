@@ -57,7 +57,7 @@ public:
                                         audio_channel_mask_t *pChannelMask);
     virtual status_t closeInput(audio_io_handle_t input);
     virtual status_t invalidateStream(AudioSystem::stream_type stream);
-    virtual status_t moveEffects(int session,
+    virtual status_t moveEffects(audio_session_t session,
                                  audio_io_handle_t srcOutput,
                                  audio_io_handle_t dstOutput);
 
