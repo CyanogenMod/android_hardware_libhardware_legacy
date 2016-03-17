@@ -84,18 +84,21 @@ typedef struct {
 
 /* radio statistics */
 typedef struct {
-   wifi_radio radio;               // wifi radio (if multiple radio supported)
-   u32 on_time;                    // msecs the radio is awake (32 bits number accruing over time)
-   u32 tx_time;                    // msecs the radio is transmitting (32 bits number accruing over time)
-   u32 rx_time;                    // msecs the radio is in active receive (32 bits number accruing over time)
-   u32 on_time_scan;               // msecs the radio is awake due to all scan (32 bits number accruing over time)
-   u32 on_time_nbd;                // msecs the radio is awake due to NAN (32 bits number accruing over time)
-   u32 on_time_gscan;              // msecs the radio is awake due to G?scan (32 bits number accruing over time)
-   u32 on_time_roam_scan;          // msecs the radio is awake due to roam?scan (32 bits number accruing over time)
-   u32 on_time_pno_scan;           // msecs the radio is awake due to PNO scan (32 bits number accruing over time)
-   u32 on_time_hs20;               // msecs the radio is awake due to HS2.0 scans and GAS exchange (32 bits number accruing over time)
-   u32 num_channels;               // number of channels
-   wifi_channel_stat channels[];   // channel statistics
+   wifi_radio radio;                      // wifi radio (if multiple radio supported)
+   u32 on_time;                           // msecs the radio is awake (32 bits number accruing over time)
+   u32 tx_time;                           // msecs the radio is transmitting (32 bits number accruing over time)
+   u32 num_tx_levels;                     // number of radio transmit power levels
+   u32 *tx_time_per_levels;               // pointer to an array of radio transmit per power levels in
+                                          // msecs accured over time
+   u32 rx_time;                           // msecs the radio is in active receive (32 bits number accruing over time)
+   u32 on_time_scan;                      // msecs the radio is awake due to all scan (32 bits number accruing over time)
+   u32 on_time_nbd;                       // msecs the radio is awake due to NAN (32 bits number accruing over time)
+   u32 on_time_gscan;                     // msecs the radio is awake due to G?scan (32 bits number accruing over time)
+   u32 on_time_roam_scan;                 // msecs the radio is awake due to roam?scan (32 bits number accruing over time)
+   u32 on_time_pno_scan;                  // msecs the radio is awake due to PNO scan (32 bits number accruing over time)
+   u32 on_time_hs20;                      // msecs the radio is awake due to HS2.0 scans and GAS exchange (32 bits number accruing over time)
+   u32 num_channels;                      // number of channels
+   wifi_channel_stat channels[];          // channel statistics
 } wifi_radio_stat;
 
 /**
