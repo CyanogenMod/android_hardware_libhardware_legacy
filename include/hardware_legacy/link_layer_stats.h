@@ -82,6 +82,9 @@ typedef struct {
    u32 cca_busy_time;          // msecs the CCA register is busy (32 bits number accruing over time)
 } wifi_channel_stat;
 
+// Max number of tx power levels. The actual number vary per device and is specified by |num_tx_levels|
+#define RADIO_STAT_MAX_TX_LEVELS 64
+
 /* radio statistics */
 typedef struct {
    wifi_radio radio;                      // wifi radio (if multiple radio supported)
