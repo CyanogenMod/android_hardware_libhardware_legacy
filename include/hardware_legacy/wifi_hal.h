@@ -112,10 +112,15 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 #define WIFI_FEATURE_RSSI_MONITOR       0x80000     // RSSI Monitor
 #define WIFI_FEATURE_MKEEP_ALIVE        0x100000    // WiFi mkeep_alive
 #define WIFI_FEATURE_CONFIG_NDO         0x200000    // ND offload configure
+#define WIFI_FEATURE_TX_TRANSMIT_POWER  0x400000    // Capture Tx transmit power levels
 // Add more features here
 
 
 typedef int feature_set;
+
+#define IS_MASK_SET(mask, flags)        ((flags & mask) == mask)
+
+#define IS_SUPPORTED_FEATURE(feature, featureSet)       IS_MASK_SET(feature, featureSet)
 
 /* Feature set */
 wifi_error wifi_get_supported_feature_set(wifi_interface_handle handle, feature_set *set);
