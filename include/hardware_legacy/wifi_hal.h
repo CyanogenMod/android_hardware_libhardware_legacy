@@ -117,12 +117,6 @@ void wifi_get_error_info(wifi_error err, const char **msg); // return a pointer 
 
 typedef int feature_set;
 
-#define IS_MASK_SET(mask, flags)        ((flags & mask) == mask)
-#define IS_MASK_RESET(mask, flags)      ((flags & mask) == 0)
-
-#define IS_SUPPORTED_FEATURE(feature, featureSet)       IS_MASK_SET(feature, fetureSet)
-#define IS_UNSUPPORTED_FEATURE(feature, featureSet)     IS_MASK_RESET(feature, fetureSet)
-
 /* Feature set */
 wifi_error wifi_get_supported_feature_set(wifi_interface_handle handle, feature_set *set);
 

@@ -83,7 +83,7 @@ typedef struct {
 } wifi_channel_stat;
 
 // Max number of tx power levels. The actual number vary per device and is specified by |num_tx_levels|
-#define RADIO_STAT_MAX_TX_LEVELS 64
+#define RADIO_STAT_MAX_TX_LEVELS 256
 
 /* radio statistics */
 typedef struct {
