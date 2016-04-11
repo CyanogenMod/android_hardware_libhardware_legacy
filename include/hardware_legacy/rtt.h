@@ -139,8 +139,8 @@ typedef struct {
     wifi_timestamp ts;            // time of the measurement (in microseconds since boot)
     int burst_duration;           // in ms, actual time taken by the FW to finish one burst
                                   // measurement. Applies to 1-sided and 2-sided RTT.
-    int negotiated_burst_num;  // Number of bursts allowed by the responder. Applies
-                                   // to 2-sided RTT only.
+    int negotiated_burst_num;     // Number of bursts allowed by the responder. Applies
+                                  // to 2-sided RTT only.
     wifi_information_element *LCI; // for 11mc only
     wifi_information_element *LCR; // for 11mc only
 } wifi_rtt_result;
@@ -274,9 +274,18 @@ wifi_error wifi_set_lcr(wifi_request_id id, wifi_interface_handle iface,
                         wifi_lcr_information *lcr);
 
 /**
- * Get available WiFi channel to enable RTT responder on.
+ * RTT Responder information
  */
-wifi_error wifi_rtt_get_available_channel(wifi_interface_handle iface, wifi_channel_info* channel);
+typedef struct {
+    wifi_channel_info channel;
+    wifi_rtt_preamble preamble;
+} wifi_rtt_responder;
+
+/**
+ * Get RTT responder information e.g. WiFi channel to enable responder on.
+ */
+wifi_error wifi_rtt_get_responder_info(wifi_interface_handle iface,
+                                       wifi_rtt_responder *responder_info);
 
 /**
  * Enable RTT responder mode.
@@ -286,7 +295,7 @@ wifi_error wifi_rtt_get_available_channel(wifi_interface_handle iface, wifi_chan
  */
 wifi_error wifi_enable_responder(wifi_request_id id, wifi_interface_handle iface,
                                  wifi_channel_info channel_hint, unsigned max_duration_seconds,
-                                 wifi_channel_info* channel_used);
+                                 wifi_rtt_responder *responder_info);
 
 /**
  * Disable RTT responder mode.
@@ -294,4 +303,3 @@ wifi_error wifi_enable_responder(wifi_request_id id, wifi_interface_handle iface
 wifi_error wifi_disable_responder(wifi_request_id id, wifi_interface_handle iface);
 
 #endif
-
