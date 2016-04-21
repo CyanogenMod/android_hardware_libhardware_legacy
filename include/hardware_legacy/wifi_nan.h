@@ -79,8 +79,7 @@ typedef enum {
     NAN_DP_INTERFACE_DELETE             = 14,
     NAN_DP_INITIATOR_RESPONSE           = 15,
     NAN_DP_RESPONDER_RESPONSE           = 16,
-    NAN_DP_SCHEDULE_UPDATE              = 17,
-    NAN_DP_END                          = 18
+    NAN_DP_END                          = 17
 } NanResponseType;
 
 /* NAN Publish Types */
@@ -148,7 +147,8 @@ typedef enum {
     NAN_STATUS_NAN_NOT_ALLOWED = 22,
     NAN_STATUS_NO_OTA_ACK = 23,
     NAN_STATUS_TX_FAIL = 24,
-    /* 25-4095 Reserved */
+    NAN_STATUS_ALREADY_ENABLED = 25,
+    /* 26-4095 Reserved */
     /* NAN Configuration Response codes */
     NAN_STATUS_INVALID_RSSI_CLOSE_VALUE = 4096,
     NAN_STATUS_INVALID_RSSI_MIDDLE_VALUE = 4097,
@@ -186,7 +186,26 @@ typedef enum {
     NAN_TERMINATED_REASON_DISABLE_IN_PROGRESS = 8198,
     NAN_TERMINATED_REASON_POST_DISC_ATTR_EXPIRED = 8199,
     NAN_TERMINATED_REASON_POST_DISC_LEN_EXCEEDED = 8200,
-    NAN_TERMINATED_REASON_FURTHER_AVAIL_MAP_EMPTY = 8201
+    NAN_TERMINATED_REASON_FURTHER_AVAIL_MAP_EMPTY = 8201,
+    /* 9000-9500 NDP Status type */
+    NDP_UNSUPPORTED_CONCURRENCY = 9000,
+    NDP_NAN_DATA_IFACE_CREATE_FAILED = 9001,
+    NDP_NAN_DATA_IFACE_DELETE_FAILED = 9002,
+    NDP_DATA_INITIATOR_REQUEST_FAILED = 9003,
+    NDP_DATA_RESPONDER_REQUEST_FAILED = 9004,
+    NDP_INVALID_SERVICE_INSTANCE_ID = 9005,
+    NDP_INVALID_NDP_INSTANCE_ID = 9006,
+    NDP_INVALID_RESPONSE_CODE = 9007,
+    NDP_INVALID_APP_INFO_LEN = 9008,
+    /* OTA failures and timeouts during negotiation */
+    NDP_MGMT_FRAME_REQUEST_FAILED = 9009,
+    NDP_MGMT_FRAME_RESPONSE_FAILED = 9010,
+    NDP_MGMT_FRAME_CONFIRM_FAILED = 9011,
+    NDP_END_FAILED = 9012,
+    NDP_MGMT_FRAME_END_REQUEST_FAILED = 9013,
+
+    /* 9500 onwards vendor specific error codes */
+    NDP_VENDOR_SPECIFIC_ERROR = 9500
 } NanStatusType;
 
 /* NAN Transmit Types */
@@ -250,11 +269,12 @@ typedef enum {
     NAN_DP_REQUEST_REJECT
 } NanDataPathResponseCode;
 
-/* Schedule update status */
+/* NAN DP channel config options */
 typedef enum {
-    NAN_DP_SCHEDULE_UPDATE_SUCCESS = 0,
-    NAN_DP_SCHEDULE_UPDATE_FAILURE
-} NanDataPathScheduleUpdateStatus;
+    NAN_DP_CHANNEL_NOT_REQUESTED = 0,
+    NAN_DP_REQUEST_CHANNEL_SETUP,
+    NAN_DP_FORCE_CHANNEL_SETUP
+} NanDataPathChannelCfg;
 
 /* Nan/NDP Capabilites info */
 typedef struct {
@@ -725,7 +745,7 @@ typedef struct {
     u8 rssi_close_proximity_5g_val;
     /*
        1 byte quantity which defines the window size over
-       which the ìaverage RSSIî will be calculated over.
+       which the ‚Äúaverage RSSI‚Äù will be calculated over.
     */
     u8 config_rssi_window_size;
     u8 rssi_window_size_val;
@@ -747,7 +767,7 @@ typedef struct {
     */
     u8 config_cluster_attribute_val;
     /*
-       The periodicity in seconds between full scanís to find any new
+       The periodicity in seconds between full scan‚Äôs to find any new
        clusters available in the area.  A Full scan should not be done
        more than every 10 seconds and should not be done less than every
        30 seconds.
@@ -824,9 +844,9 @@ typedef struct {
     /*
        flag which specifies that the Publish should use the configured RSSI
        threshold and the received RSSI in order to filter requests
-       0 ñ ignore the configured RSSI threshold when running a Service
+       0 ‚Äì ignore the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
-       1 ñ use the configured RSSI threshold when running a Service
+       1 ‚Äì use the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
 
     */
@@ -930,9 +950,9 @@ typedef struct {
     /*
        Flag which specifies that the Subscribe should use the configured RSSI
        threshold and the received RSSI in order to filter requests
-       0 ñ ignore the configured RSSI threshold when running a Service
+       0 ‚Äì ignore the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
-       1 ñ use the configured RSSI threshold when running a Service
+       1 ‚Äì use the configured RSSI threshold when running a Service
            Descriptor attribute or Service ID List Attribute through the DE matching logic.
 
     */
@@ -1043,7 +1063,7 @@ typedef struct {
     */
     /*
        2 byte quantity which defines the window size over
-       which the ìaverage RSSIî will be calculated over.
+       which the ‚Äúaverage RSSI‚Äù will be calculated over.
     */
     u8 config_rssi_window_size;
     u16 rssi_window_size_val;
@@ -1054,7 +1074,7 @@ typedef struct {
     */
     u8 config_cluster_attribute_val;
     /*
-      The periodicity in seconds between full scanís to find any new
+      The periodicity in seconds between full scan‚Äôs to find any new
       clusters available in the area.  A Full scan should not be done
       more than every 10 seconds and should not be done less than every
       30 seconds.
@@ -1629,6 +1649,9 @@ typedef struct {
      in a publish/subscribe scenario
     */
     u16 service_instance_id; /* Value 0 for no publish/subscribe */
+
+    /* Config flag for channel request */
+    NanDataPathChannelCfg channel_request_type;
     /* Channel frequency in MHz to start data-path */
     wifi_channel channel;
     /*
@@ -1670,20 +1693,6 @@ typedef struct {
     /* Response Code indicating ACCEPT/REJECT/DEFER */
     NanDataPathResponseCode rsp_code;
 } NanDataPathIndicationResponse;
-/*
-  Data struct used to update any Qos config of the
-  existing NDP session. The update can be initiated
-  on the initiator or the responder side.
-*/
-typedef struct {
-    /*
-      Unique token Id generated on the initiator/responder side
-      used for a NDP session between two NAN devices
-    */
-    NanDataPathId ndp_instance_id;
-    /* Initiator/Responder QoS configuration */
-    NanDataPathQosCfg qos_cfg;
-} NanDataPathScheduleUpdate;
 
 /* NDP termination info */
 typedef struct {
@@ -1735,33 +1744,13 @@ typedef struct {
       (required to derive target ipv6 address)
     */
     u8 peer_ndi_mac_addr[NAN_MAC_ADDR_LEN];
-    /* Channel frequency in MHz on which data-path is started */
-    wifi_channel channel;
-    /* Initiator/Responder Security/QoS configuration */
-    NanDataPathCfg ndp_cfg;
     /* App/Service information of Initiator/Responder */
     NanDataPathAppInfo app_info;
     /* Response code indicating ACCEPT/REJECT/DEFER */
     NanDataPathResponseCode rsp_code;
+    /* Reason code indicating the cause for REJECT */
+    NanStatusType reason_code;
 } NanDataPathConfirmInd;
-
-/*
- Event indication received on the initiator
- side confirming a schedule.
-*/
-typedef struct {
-    /*
-      Unique token Id generated on the initiator/responder side
-      used for a NDP session between two NAN devices
-    */
-    NanDataPathId ndp_instance_id;
-    /* Discovery MAC addr of the peer */
-    u8 peer_disc_mac_addr[NAN_MAC_ADDR_LEN];
-    /* Initiator/Responder QoS configuration */
-    NanDataPathQosCfg qos_cfg;
-    /* Status indicating schedule update SUCCESS/FAILURE */
-    NanDataPathScheduleUpdateStatus schedule_status;
-} NanDataPathScheduleUpdateInd;
 
 /*
   Event indication received on the
@@ -1793,7 +1782,6 @@ typedef struct {
     void (*EventBeaconSdfPayload) (NanBeaconSdfPayloadInd* event);
     void (*EventDataRequest)(NanDataPathRequestInd* event);
     void (*EventDataConfirm)(NanDataPathConfirmInd* event);
-    void (*EventScheduleUpdate)(NanDataPathScheduleUpdateInd* event);
     void (*EventDataEnd)(NanDataPathEndInd* event);
 } NanCallbackHandler;
 
@@ -1898,11 +1886,6 @@ wifi_error nan_data_indication_response(transaction_id id,
 wifi_error nan_data_end(transaction_id id,
                         wifi_interface_handle iface,
                         NanDataPathEndRequest* msg);
-
-/* NDL schedule update request per NDP session: from either Initiator/Responder */
-wifi_error nan_data_schedule_update(transaction_id id,
-                                    wifi_interface_handle iface,
-                                    NanDataPathScheduleUpdate* msg);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
