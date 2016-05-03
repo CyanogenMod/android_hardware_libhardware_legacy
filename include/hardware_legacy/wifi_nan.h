@@ -1621,6 +1621,15 @@ typedef struct {
 } NanBeaconSdfPayloadInd;
 
 /*
+  Event Indication notifying the
+  transmit followup in progress
+*/
+typedef struct {
+   transaction_id id;
+   NanStatusType reason;
+} NanTransmitFollowupInd;
+
+/*
   Data request Initiator/Responder
   app/service related info
 */
@@ -1784,6 +1793,7 @@ typedef struct {
     void (*EventDataRequest)(NanDataPathRequestInd* event);
     void (*EventDataConfirm)(NanDataPathConfirmInd* event);
     void (*EventDataEnd)(NanDataPathEndInd* event);
+    void (*EventTransmitFollowup) (NanTransmitFollowupInd* event);
 } NanCallbackHandler;
 
 /*  Enable NAN functionality. */
