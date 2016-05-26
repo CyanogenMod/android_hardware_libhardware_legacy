@@ -76,6 +76,8 @@ typedef byte oui[3];
 typedef int64_t wifi_timestamp;                 // In microseconds (us)
 typedef int64_t wifi_timespan;                  // In picoseconds  (ps)
 
+struct wifi_info;
+struct wifi_interface_info;
 typedef struct wifi_info *wifi_handle;
 typedef struct wifi_interface_info *wifi_interface_handle;
 
