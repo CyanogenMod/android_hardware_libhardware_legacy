@@ -1658,7 +1658,7 @@ typedef struct {
      This is same as publish_id notified on the subscribe side
      in a publish/subscribe scenario
     */
-    u16 service_instance_id; /* Value 0 for no publish/subscribe */
+    u32 service_instance_id; /* Value 0 for no publish/subscribe */
 
     /* Config flag for channel request */
     NanDataPathChannelCfg channel_request_type;
