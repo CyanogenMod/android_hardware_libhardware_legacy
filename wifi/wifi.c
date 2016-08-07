@@ -241,7 +241,7 @@ int is_wifi_driver_loaded() {
     while ((fgets(line, sizeof(line), proc)) != NULL) {
         if (strncmp(line, DRIVER_MODULE_TAG, strlen(DRIVER_MODULE_TAG)) == 0) {
             fclose(proc);
-            return is_fst_driver_loaded();
+            return 1;
         }
     }
     fclose(proc);
@@ -259,7 +259,7 @@ int wifi_load_driver()
     int count = 100; /* wait at most 20 seconds for completion */
 
     if (is_wifi_driver_loaded()) {
-        return 0;
+        return wifi_fst_load_driver();
     }
 
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0)

@@ -183,8 +183,10 @@ int wifi_start_fstman(int softap_mode)
     char fstman_init_prop[PROPERTY_VALUE_MAX] = { '\0' };
     int count = 50; /* wait at most 5 seconds for completion */
 
-    if (!is_fst_enabled())
+    if (!is_fst_enabled() ||
+        (softap_mode && !is_fst_softap_enabled())) {
         return 0;
+    }
 
     if (ensure_config_file_exists(FSTMAN_CONFIG_FILE, FSTMAN_CONFIG_TEMPLATE) < 0) {
         ALOGE("Failed to create fstman config file");
@@ -227,8 +229,10 @@ int wifi_stop_fstman(int softap_mode)
     char fstman_init_prop[PROPERTY_VALUE_MAX] = { '\0' };
     int count = 50; /* wait at most 5 seconds for completion */
 
-    if (!is_fst_enabled())
+    if (!is_fst_enabled() ||
+        (softap_mode && !is_fst_softap_enabled())) {
         return 0;
+    }
 
     get_fstman_props(softap_mode, fstman_svc_name, sizeof(fstman_svc_name),
                      fstman_init_prop, sizeof(fstman_init_prop));
