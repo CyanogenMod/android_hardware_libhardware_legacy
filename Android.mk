@@ -16,6 +16,10 @@ LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 LOCAL_CFLAGS  += -DQEMU_HARDWARE -Wno-unused-parameter -Wno-gnu-designator
 
+ifeq ($(KERNEL_HAS_FINIT_MODULE), false)
+LOCAL_CFLAGS += -DNO_FINIT_MODULE
+endif
+
 ifdef USES_TI_MAC80211
 ifneq ($(wildcard external/libnl),)
 LOCAL_SHARED_LIBRARIES += libnl
